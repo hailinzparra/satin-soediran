@@ -1,3 +1,14 @@
+export interface ExtensionSettings {
+    // global
+    global_allow_copy: boolean
+
+    // reg
+    reg_show_openinnewtab_button: boolean
+
+    // emr
+    emr_show_drug_price: boolean
+}
+
 export enum ExtensionEvent {
     KunjunganFetched = 'KUNJUNGAN_FETCHED',
 }

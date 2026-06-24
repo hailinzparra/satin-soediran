@@ -1,6 +1,6 @@
 import { ExtensionEvent, UrlRouteFilters } from './types'
 
-function start_sencha_interceptor(): void {
+const start_sencha_interceptor = (): void => {
     if (typeof Ext === 'undefined' || !Ext.Ajax) {
         setTimeout(start_sencha_interceptor, 100)
         return
