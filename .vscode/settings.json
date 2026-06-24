@@ -1,0 +1,6 @@
+{
+    "search.exclude": {
+        "public/assets/lib": true,
+        "package-lock.json": true
+    }
+}
