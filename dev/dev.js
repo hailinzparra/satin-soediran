@@ -38,6 +38,14 @@ const build_manifest = () => {
                 "run_at": "document_end"
             }
         ],
+        "web_accessible_resources": [
+            {
+                "resources": [
+                    "assets/js/inject.js"
+                ],
+                "matches": config.targets
+            }
+        ],
         "action": {
             // "default_popup": "popup.html",
             "default_icon": config.icons
