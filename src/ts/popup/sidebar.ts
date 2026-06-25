@@ -1,5 +1,6 @@
 import { ExtensionDriver } from '../types'
 import { SatinPopupEngine } from '../popup'
+import { PopupTabManager, PopupTabName } from './tab'
 
 interface SidebarElements {
     container: HTMLElement
@@ -44,7 +45,7 @@ export class PopupSidebar {
         // call once to match loaded settings
         const popup_settings = this.engine.drivers[ExtensionDriver.PopupSettings]
         this.toggle_sidebar(popup_settings?.data.is_sidebar_collapsed === true)
-        this.update_sidebar_nav()
+        this.switch_active_tab(PopupTabManager.Settings, PopupSidebarNav.Settings)
     }
     bind_events() {
         this.el.toggle_btn.addEventListener('click', () => {
@@ -58,15 +59,44 @@ export class PopupSidebar {
             })
             this.toggle_sidebar(new_is_sidebar_collapsed)
         })
-        this.el.settings_btn.addEventListener('click', () => {
-            this.update_sidebar_nav(PopupSidebarNav.Settings)
-        })
-        this.el.tools_btn.addEventListener('click', () => {
-            this.update_sidebar_nav(PopupSidebarNav.Tools)
-        })
+        this.init_nav_events()
         this.el.tools_accordion_btn.addEventListener('click', (e) => {
             e.stopPropagation()
             this.toggle_tools_accordion()
+        })
+    }
+    init_nav_events() {
+        const nav_mapping = [
+            {
+                btn: this.el.settings_btn,
+                tab_name: PopupTabManager.Settings,
+                nav_state: PopupSidebarNav.Settings,
+            },
+            {
+                btn: this.el.tools_btn,
+                tab_name: PopupTabManager.Tools,
+                nav_state: PopupSidebarNav.Tools,
+            },
+        ]
+        for (const target of nav_mapping) {
+            target.btn.addEventListener('click', () => {
+                this.switch_active_tab(target.tab_name, target.nav_state)
+            })
+        }
+        this.el.template_btn.addEventListener('click', () => {
+            this.switch_active_tab(PopupTabManager.Tools, PopupSidebarNav.Tools)
+            this.engine.tab.open_tab(PopupTabManager.Tools, PopupTabName.Template)
+        })
+        this.el.check_update_btn.addEventListener('click', async () => {
+            const result = await this.engine.swal.main.fire({
+                title: 'Periksa Pembaruan',
+                html: `<div class="text-sm text-gray-500 mt-2">Ini akan membuka halaman unduhan di tab baru.</div>`,
+                showCancelButton: true,
+                confirmButtonText: 'Buka Halaman',
+            })
+            if (result.isConfirmed) {
+                window.open('https://github.com/hailinzparra/satin-soediran/releases', '_blank', 'noopener,noreferrer')
+            }
         })
     }
     toggle_sidebar(is_sidebar_collapsed: boolean) {
@@ -113,5 +143,18 @@ export class PopupSidebar {
             arrow.classList.remove('rotate-0')
             arrow.classList.add('-rotate-90')
         }
+    }
+    switch_active_tab(active_tab_name: PopupTabManager, active_nav_state: PopupSidebarNav) {
+        const managers = this.engine.tab.tab_manager
+        Object.values(PopupTabManager).forEach((tab_name) => {
+            if (managers[tab_name]) {
+                if (tab_name === active_tab_name) {
+                    managers[tab_name].open()
+                } else {
+                    managers[tab_name].close()
+                }
+            }
+        })
+        this.update_sidebar_nav(active_nav_state)
     }
 }

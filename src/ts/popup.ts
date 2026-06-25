@@ -7,6 +7,8 @@ import {
 } from './types'
 import { VaultDriver } from './utils'
 import { PopupSidebar } from './popup/sidebar'
+import { PopupTab } from './popup/tab'
+import { PopupSwal } from './popup/swal'
 
 export interface PopupSettings {
     is_sidebar_collapsed: boolean
@@ -17,15 +19,21 @@ const DEFAULT_POPUP_SETTINGS: PopupSettings = {
 }
 
 export class SatinPopupEngine {
+    main_container: HTMLElement
     sidebar: PopupSidebar
+    tab: PopupTab
     drivers: ExtensionDriversContainer = {
         [ExtensionDriver.Settings]: new VaultDriver<ExtensionSettings>(ExtensionDriver.Settings, DEFAULT_EXTENSION_SETTINGS),
         [ExtensionDriver.PopupSettings]: new VaultDriver<PopupSettings>(ExtensionDriver.PopupSettings, DEFAULT_POPUP_SETTINGS),
     }
     settings_key = ExtensionDriver.Settings
     popup_settings_key = ExtensionDriver.PopupSettings
+    swal: PopupSwal
     constructor() {
+        this.main_container = document.getElementById('main-container-0000')!
         this.sidebar = new PopupSidebar(this)
+        this.tab = new PopupTab(this)
+        this.swal = new PopupSwal(this)
     }
     async init() {
         try {
