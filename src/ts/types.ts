@@ -1,3 +1,6 @@
+import { VaultDriver } from './utils'
+import { PopupSettings } from './popup'
+
 export interface ExtensionSettings {
     // global
     global_allow_copy: boolean
@@ -7,6 +10,35 @@ export interface ExtensionSettings {
 
     // emr
     emr_show_drug_price: boolean
+}
+
+export const DEFAULT_EXTENSION_SETTINGS: ExtensionSettings = {
+    global_allow_copy: true,
+    reg_show_openinnewtab_button: true,
+    emr_show_drug_price: true,
+}
+
+export enum ExtensionDriver {
+    Settings = 'satin_settings',
+    PopupSettings = 'satin_popup_settings',
+    Persistent = 'satin_persistent',
+    Prices = 'satin_prices',
+}
+
+interface ExtensionDriversMap {
+    [ExtensionDriver.Settings]: VaultDriver<ExtensionSettings>
+    [ExtensionDriver.PopupSettings]: VaultDriver<PopupSettings>
+    [ExtensionDriver.Persistent]: VaultDriver<any>
+    [ExtensionDriver.Prices]: VaultDriver<any>
+}
+
+export type ExtensionDriversContainer = Partial<ExtensionDriversMap>
+
+export abstract class ExtensionFunction {
+    constructor(protected get_settings: () => ExtensionSettings) { }
+    init?(): void
+    bind_events?(): void
+    abstract apply(): void
 }
 
 export enum ExtensionEvent {
