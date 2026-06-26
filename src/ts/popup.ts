@@ -19,6 +19,7 @@ const DEFAULT_POPUP_SETTINGS: PopupSettings = {
 }
 
 export class SatinPopupEngine {
+    target_width: number = 360
     main_container: HTMLElement
     sidebar: PopupSidebar
     tab: PopupTab
@@ -29,16 +30,18 @@ export class SatinPopupEngine {
     settings_key = ExtensionDriver.Settings
     popup_settings_key = ExtensionDriver.PopupSettings
     swal: PopupSwal
+    private get_settings = () => this.drivers[ExtensionDriver.Settings]!.data
     constructor() {
         this.main_container = document.getElementById('main-container-0000')!
         this.sidebar = new PopupSidebar(this)
-        this.tab = new PopupTab(this)
+        this.tab = new PopupTab(this, this.get_settings)
         this.swal = new PopupSwal(this)
     }
     async init() {
         try {
             await this.load_settings()
             this.sidebar.init()
+            this.tab.init()
             this.bind_events()
             console.log('Popup engine initialized successfully.')
         } catch (err) {
@@ -50,6 +53,15 @@ export class SatinPopupEngine {
         await Promise.all(load_promises)
     }
     bind_events() {
+        this.main_container.style.minWidth = `${this.target_width}px`
+        const scale_main_container = () => {
+            if (!this.main_container) return
+            const scale = window.innerWidth < this.target_width ? window.innerWidth / this.target_width : 1
+            this.main_container.style.scale = `${scale}`
+            this.main_container.style.height = `${100 / scale}vh`
+        }
+        window.addEventListener('resize', scale_main_container)
+        scale_main_container()
         this.sidebar.bind_events()
     }
 }

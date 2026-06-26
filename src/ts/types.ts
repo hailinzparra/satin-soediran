@@ -1,5 +1,5 @@
 import { VaultDriver } from './utils'
-import { PopupSettings } from './popup'
+import { PopupSettings, SatinPopupEngine } from './popup'
 import { DrugPriceRegistry } from './functions/drug-price'
 
 export interface ExtensionSettings {
@@ -60,6 +60,18 @@ export abstract class ExtensionFunction {
     bind_events?(): void
     on_debounce?(): void
     abstract apply(): void
+}
+
+export interface PopupTabContentElements {
+    container: HTMLElement
+}
+
+export abstract class PopupTabContent<T extends PopupTabContentElements = PopupTabContentElements> {
+    abstract el: T
+    constructor(
+        protected engine: SatinPopupEngine,
+        protected get_settings: () => ExtensionSettings,
+    ) { }
 }
 
 export enum ExtensionEvent {
