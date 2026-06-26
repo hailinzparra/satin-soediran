@@ -15,6 +15,7 @@ export interface ExtensionSettings {
     emr_show_drug_price_summary_more_title: string
     emr_show_drug_price_minimal_display: boolean
     emr_show_drug_price_show_unit_summary: boolean
+    emr_show_drug_prescriber_name: boolean
 }
 
 export const DEFAULT_EXTENSION_SETTINGS: ExtensionSettings = {
@@ -25,18 +26,25 @@ export const DEFAULT_EXTENSION_SETTINGS: ExtensionSettings = {
     emr_show_drug_price_summary_more_title: 'Detail Keuntungan',
     emr_show_drug_price_minimal_display: true,
     emr_show_drug_price_show_unit_summary: false,
+    emr_show_drug_prescriber_name: true,
 }
 
 export enum ExtensionDriver {
     Settings = 'satin_settings',
     PopupSettings = 'satin_popup_settings',
+    Temp = 'satin_temp',
     Persistent = 'satin_persistent',
     DrugPrices = 'satin_drug_prices',
+}
+
+export interface ExtensionTempData {
+    history_order_resep_cache?: Record<string, HistoryOrderResepCache>
 }
 
 interface ExtensionDriversMap {
     [ExtensionDriver.Settings]: VaultDriver<ExtensionSettings>
     [ExtensionDriver.PopupSettings]: VaultDriver<PopupSettings>
+    [ExtensionDriver.Temp]: VaultDriver<ExtensionTempData>
     [ExtensionDriver.Persistent]: VaultDriver<any>
     [ExtensionDriver.DrugPrices]: VaultDriver<DrugPriceRegistry>
 }
@@ -55,11 +63,27 @@ export abstract class ExtensionFunction {
 }
 
 export enum ExtensionEvent {
-    KunjunganFetched = 'KUNJUNGAN_FETCHED',
+    HistoryOrderResepFetched = 'HistoryOrderResepFetched',
 }
 
-export const UrlRouteFilters: Record<ExtensionEvent, string> = {
-    [ExtensionEvent.KunjunganFetched]: '/kunjungan',
+export const UrlRouteFilters: Record<ExtensionEvent, string[][]> = {
+    [ExtensionEvent.HistoryOrderResepFetched]: [
+        ['/kunjungan', 'JENIS_KUNJUNGAN=11'],
+        ['/orderresep', 'HISTORY=1'],
+    ],
+}
+
+export interface HistoryOrderResepCache {
+    id: string
+    date: string
+    prescriber_name: string
+}
+
+export abstract class BaseApiResponse<T> {
+    status?: number
+    success?: boolean
+    total?: number
+    abstract data?: T[]
 }
 
 export interface KunjunganResponse {

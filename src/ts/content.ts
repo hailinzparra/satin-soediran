@@ -2,12 +2,14 @@ import {
     ExtensionSettings, DEFAULT_EXTENSION_SETTINGS,
     ExtensionDriver, ExtensionDriversContainer,
     ExtensionFunction,
+    ExtensionTempData,
     ExtensionEvent,
     KunjunganResponse,
 } from './types'
 import { inject_script, VaultDriver } from './utils'
 import { AllowCopyFunction } from './functions/allow-copy'
 import { DrugPriceFunction, DrugPriceRegistry } from './functions/drug-price'
+import { PrescriberNameFunction } from './functions/prescriber-name'
 
 class SatinContentEngine {
     active_settings: ExtensionSettings = DEFAULT_EXTENSION_SETTINGS
@@ -21,13 +23,15 @@ class SatinContentEngine {
     ]
     emr_functions: ExtensionFunction[] = [
         new DrugPriceFunction(this.get_settings, this.get_drivers),
+        new PrescriberNameFunction(this.get_settings, this.get_drivers),
     ]
     get all_functions(): ExtensionFunction[] {
         return [...this.global_functions, ...this.reg_functions, ...this.emr_functions]
     }
     drivers: ExtensionDriversContainer = {
         [ExtensionDriver.Settings]: new VaultDriver<ExtensionSettings>(ExtensionDriver.Settings, this.active_settings),
-        [ExtensionDriver.Persistent]: new VaultDriver(ExtensionDriver.Persistent),
+        [ExtensionDriver.Temp]: new VaultDriver<ExtensionTempData>(ExtensionDriver.Temp, {}),
+        [ExtensionDriver.Persistent]: new VaultDriver<any>(ExtensionDriver.Persistent),
         [ExtensionDriver.DrugPrices]: new VaultDriver<DrugPriceRegistry>(ExtensionDriver.DrugPrices, {}),
     }
     observer: MutationObserver | null = null
@@ -84,12 +88,6 @@ class SatinContentEngine {
                 }
             })
         })
-        // window.addEventListener(ExtensionEvent.KunjunganFetched, (event) => {
-        //     const custom_event = event as CustomEvent<KunjunganResponse>
-        //     const item = custom_event.detail.data[0]
-
-        //     console.log(item?.NOMOR)
-        // })
     }
     on_debounce_update() {
         this.all_functions.forEach(fn => {
