@@ -1,5 +1,6 @@
 import { VaultDriver } from './utils'
 import { PopupSettings } from './popup'
+import { DrugPriceRegistry } from './functions/drug-price'
 
 export interface ExtensionSettings {
     // global
@@ -10,34 +11,46 @@ export interface ExtensionSettings {
 
     // emr
     emr_show_drug_price: boolean
+    emr_show_drug_price_summary_title: string
+    emr_show_drug_price_summary_more_title: string
+    emr_show_drug_price_minimal_display: boolean
+    emr_show_drug_price_show_unit_summary: boolean
 }
 
 export const DEFAULT_EXTENSION_SETTINGS: ExtensionSettings = {
     global_allow_copy: true,
     reg_show_openinnewtab_button: true,
     emr_show_drug_price: true,
+    emr_show_drug_price_summary_title: 'Ringkasan Harga',
+    emr_show_drug_price_summary_more_title: 'Detail Keuntungan',
+    emr_show_drug_price_minimal_display: true,
+    emr_show_drug_price_show_unit_summary: false,
 }
 
 export enum ExtensionDriver {
     Settings = 'satin_settings',
     PopupSettings = 'satin_popup_settings',
     Persistent = 'satin_persistent',
-    Prices = 'satin_prices',
+    DrugPrices = 'satin_drug_prices',
 }
 
 interface ExtensionDriversMap {
     [ExtensionDriver.Settings]: VaultDriver<ExtensionSettings>
     [ExtensionDriver.PopupSettings]: VaultDriver<PopupSettings>
     [ExtensionDriver.Persistent]: VaultDriver<any>
-    [ExtensionDriver.Prices]: VaultDriver<any>
+    [ExtensionDriver.DrugPrices]: VaultDriver<DrugPriceRegistry>
 }
 
 export type ExtensionDriversContainer = Partial<ExtensionDriversMap>
 
 export abstract class ExtensionFunction {
-    constructor(protected get_settings: () => ExtensionSettings) { }
+    constructor(
+        protected get_settings: () => ExtensionSettings,
+        protected get_drivers: () => ExtensionDriversContainer,
+    ) { }
     init?(): void
     bind_events?(): void
+    on_debounce?(): void
     abstract apply(): void
 }
 

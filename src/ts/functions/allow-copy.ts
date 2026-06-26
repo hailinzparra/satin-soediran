@@ -1,7 +1,6 @@
 import { ExtensionFunction } from '../types'
 
 export class AllowCopyFunction extends ExtensionFunction {
-    init() { }
     bind_events() {
         document.addEventListener('selectstart', (e) => {
             const allow_copy = this.get_settings().global_allow_copy
