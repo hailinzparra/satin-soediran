@@ -32,14 +32,19 @@ const start_sencha_interceptor = (): void => {
             }
 
             (Object.keys(UrlRouteFilters) as ExtensionEvent[]).forEach((event_key) => {
-                const filter = UrlRouteFilters[event_key]
-                const is_matched = filter.some(and_group =>
-                    and_group.every(condition => url.includes(condition))
-                )
-                if (is_matched) {
-                    const data = JSON.parse(response.responseText)
-                    const custom_event = new CustomEvent(event_key, { detail: data })
-                    window.dispatchEvent(custom_event)
+                try {
+                    const filter = UrlRouteFilters[event_key]
+                    const is_matched = filter.some(and_group =>
+                        and_group.every(condition => url.includes(condition))
+                    )
+                    if (is_matched) {
+                        const data = JSON.parse(response.responseText)
+                        const custom_event = new CustomEvent(event_key, { detail: data })
+                        window.dispatchEvent(custom_event)
+                    }
+                }
+                catch (err) {
+                    console.error(`Error dispatching event ${event_key}:`, err)
                 }
             })
         } catch (err) {

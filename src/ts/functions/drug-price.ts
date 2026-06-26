@@ -195,8 +195,8 @@ export class DrugPriceFunction extends ExtensionFunction {
                                 }
                                 cached_item = prices_registry[drug_name]
                                 has_new_data_from_rows = true
-                                did_update_from_row = true
                             }
+                            did_update_from_row = true
                         }
                     }
                 }
@@ -232,10 +232,15 @@ export class DrugPriceFunction extends ExtensionFunction {
                 const unit_capital = cached_item.capital || 0
                 const line_capital_total = unit_capital * quantity
 
-                grand_price_sum += unit_price
                 grand_total_sum += line_total
-                grand_capital_unit_sum += unit_capital
-                grand_capital_total_sum += line_capital_total
+
+                if (!min_display) {
+                    grand_capital_unit_sum += unit_capital
+                    grand_capital_total_sum += line_capital_total
+                    if (options.show_unit_price_summary) {
+                        grand_price_sum += unit_price
+                    }
+                }
 
                 item_count++
                 total_item_count += quantity

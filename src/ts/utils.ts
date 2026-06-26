@@ -21,9 +21,12 @@ export const inject_script = (file_path: string) => {
 export class VaultDriver<T extends Record<string, any> = Record<string, any>> {
     public key: string
     public data: T
+    private default_data: T
+
     constructor(key: string, default_data: T = {} as T) {
         this.key = key
-        this.data = default_data
+        this.data = { ...default_data }
+        this.default_data = default_data
     }
     async update(new_data: Partial<T>): Promise<void> {
         this.data = { ...this.data, ...new_data }
@@ -31,14 +34,19 @@ export class VaultDriver<T extends Record<string, any> = Record<string, any>> {
     }
     async save(): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            chrome.storage.local.set({ [this.key]: this.data }, () => {
-                if (chrome.runtime.lastError) {
-                    console.error(`Failed to save ${this.key}:`, chrome.runtime.lastError)
-                    reject(chrome.runtime.lastError)
-                } else {
-                    resolve()
-                }
-            })
+            try {
+                chrome.storage.local.set({ [this.key]: this.data }, () => {
+                    if (chrome.runtime.lastError) {
+                        throw chrome.runtime.lastError
+                    } else {
+                        resolve()
+                    }
+                })
+            }
+            catch (err) {
+                console.error(`Failed to save ${this.key}:`, err)
+                reject(err)
+            }
         })
     }
     async load(): Promise<T> {
@@ -55,6 +63,10 @@ export class VaultDriver<T extends Record<string, any> = Record<string, any>> {
                 }
             })
         })
+    }
+    async reset(): Promise<void> {
+        this.data = { ...this.default_data }
+        await this.save()
     }
 }
 

@@ -54,10 +54,11 @@ class SatinContentEngine {
     async load_settings() {
         const load_promises = Object.values(this.drivers).map(driver => driver.load())
         await Promise.all(load_promises)
-        const key = this.settings_key
-        if (key && this.drivers[key]) {
-            this.active_settings = this.drivers[key].data
+        const settings_key = this.settings_key
+        if (settings_key && this.drivers[settings_key]) {
+            this.active_settings = this.drivers[settings_key].data
         }
+        this.drivers[ExtensionDriver.Temp]?.reset()
     }
     setup_observer() {
         let debounce_timer: number

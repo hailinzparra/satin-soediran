@@ -6,6 +6,7 @@ interface ToggleConfig {
     key: keyof ExtensionSettings
     title: string
     sub: string
+    ind?: number
 }
 
 export class TabSettingsContent extends PopupTabContent {
@@ -21,11 +22,11 @@ export class TabSettingsContent extends PopupTabContent {
         const settings: ExtensionSettings = this.get_settings()
         const c = create_element
 
-        const create_sub_header = (text: string) => c('div', {
-            classes: 'text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-4 mb-2 border-b border-slate-100 pb-1'
+        const create_sub_header = (text: string, first_header: boolean = false) => c('div', {
+            classes: `text-[10px] font-bold text-slate-400 uppercase tracking-wider ${first_header ? 'mt-4' : 'mt-6'} mb-2 border-b border-slate-100 pb-1`
         }, [c('span', { text })])
 
-        const create_toggle_row = (key: keyof ExtensionSettings, title: string, subtitle: string) => {
+        const create_toggle_row = (key: keyof ExtensionSettings, title: string, subtitle: string, indent: number = 0) => {
             const initial_value = settings[key] === true
 
             const checkbox = c('input', {
@@ -36,13 +37,20 @@ export class TabSettingsContent extends PopupTabContent {
             checkbox.checked = initial_value
             this.checkboxes.set(key, checkbox)
 
+            indent = Math.round(Math.min(4, Math.max(0, indent)))
+
+            const fs = {
+                title: 11 - indent,
+                subtitle: 9 - indent,
+            }
+
             const label_container = c('label', {
-                classes: 'flex items-center justify-between border-b border-slate-100 pb-2 mb-2 transition-colors duration-150 p-1 rounded',
+                classes: `flex items-center justify-between border-b border-slate-100 pb-2 mb-2 transition-colors duration-150 p-1 rounded${indent > 0 ? ` ps-${indent * 4}` : ''}`,
                 attrs: { for: key }
             }, [
                 c('div', { classes: 'flex flex-col' }, [
-                    c('span', { classes: 'text-[12px] font-bold text-slate-700 label-title', text: title }),
-                    c('span', { classes: 'text-[10px] font-medium text-slate-400', text: subtitle }),
+                    c('span', { classes: `text-[${fs.title}px] font-bold text-slate-700 label-title`, html: title }),
+                    c('span', { classes: `text-[${fs.subtitle}px] font-medium text-slate-400`, html: subtitle }),
                 ]),
                 checkbox,
             ])
@@ -62,14 +70,10 @@ export class TabSettingsContent extends PopupTabContent {
             return label_container
         }
 
-        const global_header = create_sub_header('Pengaturan Global')
-        const reg_header = create_sub_header('Pengaturan Dashboard')
-        const emr_header = create_sub_header('Pengaturan Rekam Medis')
-
         const global_configs: ToggleConfig[] = [
             {
                 key: 'global_allow_copy',
-                title: 'Bisa Salin Teks',
+                title: '<span class="text-slate-500">Bisa</span> (Salin Teks)',
                 sub: 'Bebas blok dan copy teks di halaman dengan mudah.',
             }
         ]
@@ -77,7 +81,7 @@ export class TabSettingsContent extends PopupTabContent {
         const reg_configs: ToggleConfig[] = [
             {
                 key: 'reg_show_openinnewtab_button',
-                title: 'Tombol Buka di Tab Baru',
+                title: '<span class="text-slate-500">Tampilkan</span> (Tombol Tab Baru)',
                 sub: 'Munculkan tombol untuk buka detil kunjungan di tab baru browser.',
             }
         ]
@@ -85,29 +89,31 @@ export class TabSettingsContent extends PopupTabContent {
         const emr_configs: ToggleConfig[] = [
             {
                 key: 'emr_show_drug_price',
-                title: 'Tampilkan Harga Obat',
+                title: '<span class="text-slate-500">Tampilkan</span> (Harga Obat)',
                 sub: 'Munculkan estimasi harga obat di halaman rekam medis.',
             },
             {
                 key: 'emr_show_drug_price_minimal_display',
-                title: 'Tampilan Harga Obat Ringkas',
+                title: '<span class="text-slate-500">(Harga Obat)</span>: Tampilan Ringkas',
                 sub: 'Sembunyikan detail rincian harga obat agar tidak makan tempat di layar.',
+                ind: 1,
             },
             {
                 key: 'emr_show_drug_price_show_unit_summary',
-                title: 'Tampilkan Total Harga Satuan Obat',
-                sub: 'Munculkan total harga obat jika masing-masing diambil satu.',
+                title: '<span class="text-slate-500">(Harga Obat)</span>: Total Harga Satuan',
+                sub: 'Munculkan total harga obat jika masing-masing diambil satu. Tidak muncul pada tampilan ringkas.',
+                ind: 1,
             },
             {
                 key: 'emr_show_drug_prescriber_name',
-                title: 'Tampilkan Nama Pembuat Resep',
+                title: '<span class="text-slate-500">Tampilkan</span> (Nama Pembuat Resep)',
                 sub: 'Munculkan nama pembuat resep di daftar order resep.',
             },
         ]
 
-        const global_toggles = global_configs.map(t => create_toggle_row(t.key, t.title, t.sub))
-        const reg_toggles = reg_configs.map(t => create_toggle_row(t.key, t.title, t.sub))
-        const emr_toggles = emr_configs.map(t => create_toggle_row(t.key, t.title, t.sub))
+        const global_toggles = global_configs.map(t => create_toggle_row(t.key, t.title, t.sub, t.ind))
+        const reg_toggles = reg_configs.map(t => create_toggle_row(t.key, t.title, t.sub, t.ind))
+        const emr_toggles = emr_configs.map(t => create_toggle_row(t.key, t.title, t.sub, t.ind))
 
         this.reset_btn = c('button', {
             attrs: { type: 'button' },
@@ -188,12 +194,22 @@ export class TabSettingsContent extends PopupTabContent {
             this.save_btn,
         ])
 
-        const wrapper = c('div', { classes: 'bg-white border border-slate-200 rounded-2xl shadow-sm p-6 max-w-xl mx-auto pt-2' }, [
+        const wrapper_title = c('div', {
+            classes: 'text-[16px] font-bold text-slate-700 mt-4 mb-2 pb-1'
+        }, [c('span', { html: '<span class="text-slate-500">Pengaturan Ekstensi</span> (Satin Soediran)' })])
+
+        const global_header = create_sub_header('Fitur Umum', true)
+        const reg_header = create_sub_header('Fitur Khusus (Dashboard)')
+        const emr_header = create_sub_header('Fitur Khusus (Rekam Medis)')
+
+        const wrapper = c('div', { classes: 'bg-white border border-slate-200 rounded-2xl shadow-sm p-6 max-w-xl mx-auto pt-2 overflow-hidden' }, [
+            wrapper_title,
+
             global_header,
             ...global_toggles,
 
-            reg_header,
-            ...reg_toggles,
+            // reg_header,
+            // ...reg_toggles,
 
             emr_header,
             ...emr_toggles,
