@@ -10,6 +10,7 @@ public/assets/css/
 
 # Production Distribution Bundles (Generated via npm run export)
 satin-soediran-*/
+satin-soediran-*.zip
 
 # Operating System files
 .DS_Store

@@ -352,3 +352,213 @@ export const create_element = <T extends string>(
     }
     return element
 }
+
+interface ModalConfig {
+    id: string
+    title: string
+    content: HTMLElement | string
+    width?: string
+    height?: string
+    parent_el: HTMLElement
+}
+
+class ModalManager {
+    private static instance: ModalManager
+    private modals: Map<string, { el: HTMLElement, parent: HTMLElement }> = new Map()
+    private base_z_index: number = 100
+    private style_id: string = 'custom-modal-manager-styles'
+
+    private constructor() { }
+
+    public static get_instance(): ModalManager {
+        if (!ModalManager.instance) {
+            ModalManager.instance = new ModalManager()
+        }
+        return ModalManager.instance
+    }
+
+    private ensure_styles_injected(): void {
+        if (document.getElementById(this.style_id)) return
+
+        const style_el = document.createElement('style')
+        style_el.id = this.style_id
+        style_el.textContent = `
+            @keyframes modalFirstOpen {
+                0% { opacity: 0; transform: scale(0.92); }
+                100% { opacity: 1; transform: scale(1); }
+            }
+            @keyframes modalPop {
+                0% { transform: scale(0.92); }
+                100% { transform: scale(1); }
+            }
+            .custom-managed-modal {
+                transform-origin: center center;
+            }
+            .custom-managed-modal.animate-open {
+                animation: modalFirstOpen 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            }
+            .custom-managed-modal.animate-pop {
+                animation: modalPop 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            }
+        `
+        document.head.append(style_el)
+    }
+
+    public fire(config: ModalConfig): void {
+        this.ensure_styles_injected()
+
+        const { id, title, content, parent_el } = config
+        const existing = this.modals.get(id)
+
+        if (existing) {
+            if (existing.parent !== parent_el) {
+                this.close(id)
+            } else {
+                this.focus(id, true)
+                return
+            }
+        }
+
+        const modal_el = document.createElement('div')
+        modal_el.id = `custom-modal-${id}`
+        modal_el.className = 'custom-managed-modal animate-open'
+        modal_el.style.position = 'absolute'
+        modal_el.style.width = config.width ? config.width : '400px'
+        modal_el.style.height = config.height ? config.height : '300px'
+        modal_el.style.top = '50px'
+        modal_el.style.left = '50px'
+        modal_el.style.backgroundColor = '#ffffff'
+        modal_el.style.boxShadow = '0 6px 20px rgba(0,0,0,0.3)'
+        modal_el.style.borderRadius = '4px'
+        modal_el.style.display = 'flex'
+        modal_el.style.flexDirection = 'column'
+        modal_el.style.border = '1px solid #b5b5b5'
+
+        modal_el.addEventListener('mousedown', () => this.focus(id, false))
+
+        const header_el = document.createElement('div')
+        header_el.className = 'modal-header-handle'
+        header_el.style.padding = '8px 12px'
+        header_el.style.background = '#f1f1f1'
+        header_el.style.cursor = 'move'
+        header_el.style.display = 'flex'
+        header_el.style.justifyContent = 'space-between'
+        header_el.style.alignItems = 'center'
+        header_el.style.borderBottom = '1px solid #d0d0d0'
+        header_el.style.userSelect = 'none'
+        header_el.style.borderRadius = '4px 4px 0px 0px'
+
+        const title_el = document.createElement('span')
+        title_el.innerText = title
+        title_el.style.fontWeight = 'bold'
+        header_el.append(title_el)
+
+        const close_btn = document.createElement('button')
+        close_btn.innerText = '✕'
+        close_btn.style.border = 'none'
+        close_btn.style.background = 'transparent'
+        close_btn.style.cursor = 'pointer'
+        close_btn.style.fontSize = '14px'
+        close_btn.addEventListener('click', (e) => {
+            e.stopPropagation()
+            this.close(id)
+        })
+        header_el.append(close_btn)
+        modal_el.append(header_el)
+
+        const body_el = document.createElement('div')
+        body_el.style.padding = '12px'
+        body_el.style.flex = '1'
+        body_el.style.overflow = 'auto'
+
+        if (typeof content === 'string') {
+            body_el.innerHTML = content
+        } else {
+            body_el.append(content)
+        }
+        modal_el.append(body_el)
+
+        this.setup_dragging(header_el, modal_el)
+
+        if (parent_el.style.position !== 'relative' && parent_el.style.position !== 'absolute') {
+            parent_el.style.position = 'relative'
+        }
+
+        parent_el.append(modal_el)
+        this.modals.set(id, { el: modal_el, parent: parent_el })
+
+        this.focus(id, false)
+    }
+
+    public focus(id: string, should_animate: boolean = false): void {
+        const target = this.modals.get(id)
+        if (!target) return
+
+        this.modals.forEach((item) => {
+            if (item.el !== target.el) {
+                item.el.classList.remove('animate-open')
+            }
+            item.el.classList.remove('is-focused', 'animate-pop')
+            item.el.style.borderColor = '#b5b5b5'
+            const header = item.el.querySelector<HTMLElement>('.modal-header-handle')
+            if (header) header.style.background = '#f1f1f1'
+        })
+
+        this.base_z_index += 1
+        target.el.style.zIndex = this.base_z_index.toString()
+
+        target.el.classList.add('is-focused')
+        target.el.style.borderColor = '#157fcc'
+        const active_header = target.el.querySelector<HTMLElement>('.modal-header-handle')
+        if (active_header) active_header.style.background = '#e1effb'
+
+        if (should_animate) {
+            target.el.classList.remove('animate-open')
+            void target.el.offsetWidth
+            target.el.classList.add('animate-pop')
+        }
+    }
+
+    public close(id: string): void {
+        const target = this.modals.get(id)
+        if (target) {
+            target.el.remove()
+            this.modals.delete(id)
+        }
+    }
+
+    public close_all(): void {
+        this.modals.forEach((item) => {
+            item.el.remove()
+        })
+        this.modals.clear()
+    }
+
+    private setup_dragging(handle: HTMLElement, target: HTMLElement): void {
+        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0
+
+        handle.onmousedown = (e: MouseEvent) => {
+            e.preventDefault()
+            pos3 = e.clientX
+            pos4 = e.clientY
+
+            document.onmouseup = () => {
+                document.onmouseup = null
+                document.onmousemove = null
+            }
+
+            document.onmousemove = (moveEvent: MouseEvent) => {
+                moveEvent.preventDefault()
+                pos1 = pos3 - moveEvent.clientX
+                pos2 = pos4 - moveEvent.clientY
+                pos3 = moveEvent.clientX
+                pos4 = moveEvent.clientY
+
+                target.style.top = `${target.offsetTop - pos2}px`
+                target.style.left = `${target.offsetLeft - pos1}px`
+            }
+        }
+    }
+}
+
+export const ModalUI = ModalManager.get_instance()

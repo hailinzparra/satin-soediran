@@ -16,6 +16,7 @@ export interface ExtensionSettings {
     emr_show_drug_price_minimal_display: boolean
     emr_show_drug_price_show_unit_summary: boolean
     emr_show_drug_prescriber_name: boolean
+    emr_show_results_menu: boolean
 }
 
 export const DEFAULT_EXTENSION_SETTINGS: ExtensionSettings = {
@@ -27,6 +28,7 @@ export const DEFAULT_EXTENSION_SETTINGS: ExtensionSettings = {
     emr_show_drug_price_minimal_display: true,
     emr_show_drug_price_show_unit_summary: false,
     emr_show_drug_prescriber_name: true,
+    emr_show_results_menu: true,
 }
 
 export enum ExtensionDriver {

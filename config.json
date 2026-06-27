@@ -1,6 +1,6 @@
 {
     "sysname": "satin-soediran",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "name": "Satin Soediran",
     "description": "SIMGOS extension for RSUD Soediran MS.",
     "entrypoints": ["background", "content", "inject", "popup"],

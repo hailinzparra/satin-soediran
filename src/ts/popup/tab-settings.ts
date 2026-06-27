@@ -88,6 +88,11 @@ export class TabSettingsContent extends PopupTabContent {
 
         const emr_configs: ToggleConfig[] = [
             {
+                key: 'emr_show_results_menu',
+                title: '<span class="text-slate-500">Tampilkan</span> (Menu "Hasil")',
+                sub: 'Munculkan tombol menu "Hasil" untuk meninjau hasil lab dan radiologi dengan mudah.',
+            },
+            {
                 key: 'emr_show_drug_price',
                 title: '<span class="text-slate-500">Tampilkan</span> (Harga Obat)',
                 sub: 'Munculkan estimasi harga obat di halaman rekam medis.',

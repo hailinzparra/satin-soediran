@@ -10,6 +10,7 @@ import { inject_script, VaultDriver } from './utils'
 import { AllowCopyFunction } from './functions/allow-copy'
 import { DrugPriceFunction, DrugPriceRegistry } from './functions/drug-price'
 import { PrescriberNameFunction } from './functions/prescriber-name'
+import { ResultsMenuFunction } from './functions/results-menu'
 
 class SatinContentEngine {
     active_settings: ExtensionSettings = DEFAULT_EXTENSION_SETTINGS
@@ -24,6 +25,7 @@ class SatinContentEngine {
     emr_functions: ExtensionFunction[] = [
         new DrugPriceFunction(this.get_settings, this.get_drivers),
         new PrescriberNameFunction(this.get_settings, this.get_drivers),
+        new ResultsMenuFunction(this.get_settings, this.get_drivers),
     ]
     get all_functions(): ExtensionFunction[] {
         return [...this.global_functions, ...this.reg_functions, ...this.emr_functions]
