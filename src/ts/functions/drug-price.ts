@@ -151,145 +151,149 @@ export class DrugPriceFunction extends ExtensionFunction {
                 }
             })
 
-            const name_selector = name_column_id ? `td[data-columnid="${name_column_id}"]` : 'td:nth-child(5)'
-            const qty_selector = qty_column_id ? `td[data-columnid="${qty_column_id}"]` : 'td:nth-child(7)'
-            const row_price_selector = row_price_column_id ? `td[data-columnid="${row_price_column_id}"]` : 'td:nth-child(12)'
-            const total_price_selector = total_price_column_id ? `td[data-columnid="${total_price_column_id}"]` : 'td:nth-child(13)'
+            const name_selector = name_column_id ? `td[data-columnid="${name_column_id}"]` : null
+            if (name_selector) {
+                const qty_selector = qty_column_id ? `td[data-columnid="${qty_column_id}"]` : null
+                const row_price_selector = row_price_column_id ? `td[data-columnid="${row_price_column_id}"]` : null
+                const total_price_selector = total_price_column_id ? `td[data-columnid="${total_price_column_id}"]` : null
+                rows.forEach(row => {
+                    const name_cell_inner = row.querySelector(`${name_selector} .x-grid-cell-inner`)
+                    if (!name_cell_inner) return
 
-            rows.forEach(row => {
-                const name_cell_inner = row.querySelector(`${name_selector} .x-grid-cell-inner`)
-                if (!name_cell_inner) return
-
-                const child_nodes = Array.from(name_cell_inner.childNodes)
-                let drug_name = ''
-                for (const node of child_nodes) {
-                    if (node.nodeType === Node.TEXT_NODE) drug_name += node.textContent
-                    else if (node.nodeType === Node.ELEMENT_NODE && !(node as HTMLElement).classList.contains('ext-price-badge-group')) {
-                        drug_name += node.textContent
-                    }
-                }
-                drug_name = drug_name.trim()
-
-                const qty_cell_inner = row.querySelector(`${qty_selector} .x-grid-cell-inner`)
-                let quantity = parseFloat(qty_cell_inner?.textContent?.trim() || '0')
-                if (isNaN(quantity)) quantity = 0
-
-                const local_item = prices_registry[drug_name]
-                const fallback_item = DB_DRUG_PRICE[drug_name]
-                let cached_item = local_item || fallback_item
-
-                let did_update_from_row = false
-
-                if (total_price_selector && quantity > 0) {
-                    const total_cell_inner = row.querySelector(`${total_price_selector} .x-grid-cell-inner`)
-                    if (total_cell_inner) {
-                        const raw_total_price = total_cell_inner.textContent?.replace(/[^0-9.]/g, '').replace(/\./g, '') || ''
-                        const parsed_total_price = parseFloat(raw_total_price) || 0
-                        if (parsed_total_price > 0) {
-                            const expected_rounded_total = cached_item ? Math.round(cached_item.price * quantity) : -1
-                            if (expected_rounded_total !== Math.round(parsed_total_price)) {
-                                const derived_unit_price = parsed_total_price / quantity
-                                prices_registry[drug_name] = {
-                                    ...(local_item ?? fallback_item ?? { id: '', capital: 0 }),
-                                    price: derived_unit_price,
-                                }
-                                cached_item = prices_registry[drug_name]
-                                has_new_data_from_rows = true
-                            }
-                            did_update_from_row = true
+                    const child_nodes = Array.from(name_cell_inner.childNodes)
+                    let drug_name = ''
+                    for (const node of child_nodes) {
+                        if (node.nodeType === Node.TEXT_NODE) drug_name += node.textContent
+                        else if (node.nodeType === Node.ELEMENT_NODE && !(node as HTMLElement).classList.contains('ext-price-badge-group')) {
+                            drug_name += node.textContent
                         }
                     }
-                }
+                    drug_name = drug_name.trim()
 
-                if (!did_update_from_row && row_price_selector) {
-                    const price_cell_inner = row.querySelector(`${row_price_selector} .x-grid-cell-inner`)
-                    if (price_cell_inner) {
-                        const raw_row_price = price_cell_inner.textContent?.replace(/[^0-9.]/g, '').replace(/\./g, '') || ''
-                        const parsed_row_price = parseFloat(raw_row_price) || 0
+                    let quantity = 0
+                    if (qty_selector) {
+                        const qty_cell_inner = row.querySelector(`${qty_selector} .x-grid-cell-inner`)
+                        quantity = parseFloat(qty_cell_inner?.textContent?.trim() || '0')
+                        if (isNaN(quantity)) quantity = 0
+                    }
 
-                        if (parsed_row_price > 0) {
-                            const should_update = !cached_item || Math.round(cached_item.price) !== Math.round(parsed_row_price)
+                    const local_item = prices_registry[drug_name]
+                    const fallback_item = DB_DRUG_PRICE[drug_name]
+                    let cached_item = local_item || fallback_item
 
-                            if (should_update) {
-                                prices_registry[drug_name] = {
-                                    ...(local_item ?? fallback_item ?? { id: '', capital: 0 }),
-                                    price: parsed_row_price,
+                    let did_update_from_row = false
+
+                    if (total_price_selector && quantity > 0) {
+                        const total_cell_inner = row.querySelector(`${total_price_selector} .x-grid-cell-inner`)
+                        if (total_cell_inner) {
+                            const raw_total_price = total_cell_inner.textContent?.replace(/[^0-9.]/g, '').replace(/\./g, '') || ''
+                            const parsed_total_price = parseFloat(raw_total_price) || 0
+                            if (parsed_total_price > 0) {
+                                const expected_rounded_total = cached_item ? Math.round(cached_item.price * quantity) : -1
+                                if (expected_rounded_total !== Math.round(parsed_total_price)) {
+                                    const derived_unit_price = parsed_total_price / quantity
+                                    prices_registry[drug_name] = {
+                                        ...(local_item ?? fallback_item ?? { id: '', capital: 0 }),
+                                        price: derived_unit_price,
+                                    }
+                                    cached_item = prices_registry[drug_name]
+                                    has_new_data_from_rows = true
                                 }
-                                cached_item = prices_registry[drug_name]
-                                has_new_data_from_rows = true
+                                did_update_from_row = true
                             }
                         }
                     }
-                }
 
-                if (!cached_item || cached_item.price === undefined) {
-                    name_cell_inner.querySelector('.ext-price-badge-group')?.remove()
-                    return
-                }
+                    if (!did_update_from_row && row_price_selector) {
+                        const price_cell_inner = row.querySelector(`${row_price_selector} .x-grid-cell-inner`)
+                        if (price_cell_inner) {
+                            const raw_row_price = price_cell_inner.textContent?.replace(/[^0-9.]/g, '').replace(/\./g, '') || ''
+                            const parsed_row_price = parseFloat(raw_row_price) || 0
 
-                const unit_price = cached_item.price
-                const line_total = unit_price * quantity
-                const unit_capital = cached_item.capital || 0
-                const line_capital_total = unit_capital * quantity
+                            if (parsed_row_price > 0) {
+                                const should_update = !cached_item || Math.round(cached_item.price) !== Math.round(parsed_row_price)
 
-                grand_total_sum += line_total
-
-                if (!min_display) {
-                    grand_capital_unit_sum += unit_capital
-                    grand_capital_total_sum += line_capital_total
-                    if (options.show_unit_price_summary) {
-                        grand_price_sum += unit_price
+                                if (should_update) {
+                                    prices_registry[drug_name] = {
+                                        ...(local_item ?? fallback_item ?? { id: '', capital: 0 }),
+                                        price: parsed_row_price,
+                                    }
+                                    cached_item = prices_registry[drug_name]
+                                    has_new_data_from_rows = true
+                                }
+                            }
+                        }
                     }
-                }
 
-                item_count++
-                total_item_count += quantity
-                valid_badges_rendered++
+                    if (!cached_item || cached_item.price === undefined) {
+                        name_cell_inner.querySelector('.ext-price-badge-group')?.remove()
+                        return
+                    }
 
-                const existing_group = name_cell_inner.querySelector('.ext-price-badge-group') as HTMLElement | null
-                const expected_data_attr = min_display
-                    ? `${unit_price}-${line_total}-min`
-                    : `${unit_price}-${line_total}-${unit_capital}`
+                    const unit_price = cached_item.price
+                    const line_total = unit_price * quantity
+                    const unit_capital = cached_item.capital || 0
+                    const line_capital_total = unit_capital * quantity
 
-                if (existing_group && existing_group.dataset.priceState === expected_data_attr) return
+                    grand_total_sum += line_total
 
-                existing_group?.remove()
+                    if (!min_display) {
+                        grand_capital_unit_sum += unit_capital
+                        grand_capital_total_sum += line_capital_total
+                        if (options.show_unit_price_summary) {
+                            grand_price_sum += unit_price
+                        }
+                    }
 
-                const badge_group = document.createElement('div')
-                badge_group.className = 'ext-price-badge-group'
-                badge_group.dataset.priceState = expected_data_attr
-                badge_group.style.cssText = `display: flex !important; flex-wrap: wrap !important; gap: 6px !important; row-gap: 4px !important; margin-top: 4px !important; font-size: 11px !important; font-weight: bold !important; pointer-events: none !important;`
+                    item_count++
+                    total_item_count += quantity
+                    valid_badges_rendered++
 
-                const unit_badge = document.createElement('span')
-                unit_badge.style.cssText = `background-color: #e8f5e9 !important; color: #2e7d32 !important; padding: 1px 6px !important; border-radius: 4px !important; white-space: nowrap !important;`
-                unit_badge.innerHTML = min_display
-                    ? `${currency_formatter.format(Math.round(unit_price))}`
-                    : `Satuan: Rp ${currency_formatter.format(unit_price)}`
+                    const existing_group = name_cell_inner.querySelector('.ext-price-badge-group') as HTMLElement | null
+                    const expected_data_attr = min_display
+                        ? `${unit_price}-${line_total}-min`
+                        : `${unit_price}-${line_total}-${unit_capital}`
 
-                const total_badge = document.createElement('span')
-                total_badge.style.cssText = `background-color: #e3f2fd !important; color: #1565c0 !important; padding: 1px 6px !important; border-radius: 4px !important; white-space: nowrap !important;`
-                total_badge.innerHTML = min_display
-                    ? `${currency_formatter.format(Math.round(line_total))} (${quantity})`
-                    : `Total (${quantity}): Rp ${currency_formatter.format(line_total)}`
+                    if (existing_group && existing_group.dataset.priceState === expected_data_attr) return
 
-                badge_group.appendChild(unit_badge)
-                badge_group.appendChild(total_badge)
+                    existing_group?.remove()
 
-                if (!min_display && unit_capital > 0) {
-                    const capital_unit_badge = document.createElement('span')
-                    capital_unit_badge.style.cssText = `background-color: #fff3e0 !important; color: #e65100 !important; padding: 1px 6px !important; border-radius: 4px !important; white-space: nowrap !important;`
-                    capital_unit_badge.innerHTML = `Beli: Rp ${currency_formatter.format(unit_capital)}`
+                    const badge_group = document.createElement('div')
+                    badge_group.className = 'ext-price-badge-group'
+                    badge_group.dataset.priceState = expected_data_attr
+                    badge_group.style.cssText = `display: flex !important; flex-wrap: wrap !important; gap: 6px !important; row-gap: 4px !important; margin-top: 4px !important; font-size: 11px !important; font-weight: bold !important; pointer-events: none !important;`
 
-                    const capital_total_badge = document.createElement('span')
-                    capital_total_badge.style.cssText = `background-color: #ffebee !important; color: #c62828 !important; padding: 1px 6px !important; border-radius: 4px !important; white-space: nowrap !important;`
-                    capital_total_badge.innerHTML = `Total Beli (${quantity}): Rp ${currency_formatter.format(line_capital_total)}`
+                    const unit_badge = document.createElement('span')
+                    unit_badge.style.cssText = `background-color: #e8f5e9 !important; color: #2e7d32 !important; padding: 1px 6px !important; border-radius: 4px !important; white-space: nowrap !important;`
+                    unit_badge.innerHTML = min_display
+                        ? `${currency_formatter.format(Math.round(unit_price))}`
+                        : `Satuan: Rp ${currency_formatter.format(unit_price)}`
 
-                    badge_group.appendChild(capital_unit_badge)
-                    badge_group.appendChild(capital_total_badge)
-                }
+                    const total_badge = document.createElement('span')
+                    total_badge.style.cssText = `background-color: #e3f2fd !important; color: #1565c0 !important; padding: 1px 6px !important; border-radius: 4px !important; white-space: nowrap !important;`
+                    total_badge.innerHTML = min_display
+                        ? `${currency_formatter.format(Math.round(line_total))} (${quantity})`
+                        : `Total (${quantity}): Rp ${currency_formatter.format(line_total)}`
 
-                name_cell_inner.appendChild(badge_group)
-            })
+                    badge_group.appendChild(unit_badge)
+                    badge_group.appendChild(total_badge)
+
+                    if (!min_display && unit_capital > 0) {
+                        const capital_unit_badge = document.createElement('span')
+                        capital_unit_badge.style.cssText = `background-color: #fff3e0 !important; color: #e65100 !important; padding: 1px 6px !important; border-radius: 4px !important; white-space: nowrap !important;`
+                        capital_unit_badge.innerHTML = `Beli: Rp ${currency_formatter.format(unit_capital)}`
+
+                        const capital_total_badge = document.createElement('span')
+                        capital_total_badge.style.cssText = `background-color: #ffebee !important; color: #c62828 !important; padding: 1px 6px !important; border-radius: 4px !important; white-space: nowrap !important;`
+                        capital_total_badge.innerHTML = `Total Beli (${quantity}): Rp ${currency_formatter.format(line_capital_total)}`
+
+                        badge_group.appendChild(capital_unit_badge)
+                        badge_group.appendChild(capital_total_badge)
+                    }
+
+                    name_cell_inner.appendChild(badge_group)
+                })
+            }
 
             const expected_summary_state = `${grand_price_sum}-${grand_total_sum}-${grand_capital_unit_sum}-${grand_capital_total_sum}-${valid_badges_rendered}-${options.show_unit_price_summary}`
             const existing_summary = active_table_scroller.querySelector('.ext-grand-summary-card') as HTMLElement | null

@@ -133,7 +133,8 @@ export class PrescriberNameFunction extends ExtensionFunction {
                 }
             })
 
-            const resep_selector = resep_column_id ? `td[data-columnid="${resep_column_id}"]` : 'td:nth-child(2)'
+            const resep_selector = resep_column_id ? `td[data-columnid="${resep_column_id}"]` : null
+            if (resep_selector === null) return
 
             rows.forEach(row => {
                 const cell_inner = row.querySelector(`${resep_selector} .x-grid-cell-inner`) as HTMLElement | null
