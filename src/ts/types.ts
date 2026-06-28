@@ -36,6 +36,7 @@ export enum ExtensionDriver {
     PopupSettings = 'satin_popup_settings',
     Temp = 'satin_temp',
     Persistent = 'satin_persistent',
+    Session = 'satin_session',
     DrugPrices = 'satin_drug_prices',
 }
 
@@ -48,6 +49,7 @@ interface ExtensionDriversMap {
     [ExtensionDriver.PopupSettings]: VaultDriver<PopupSettings>
     [ExtensionDriver.Temp]: VaultDriver<ExtensionTempData>
     [ExtensionDriver.Persistent]: VaultDriver<any>
+    [ExtensionDriver.Session]: VaultDriver<any>
     [ExtensionDriver.DrugPrices]: VaultDriver<DrugPriceRegistry>
 }
 
@@ -77,10 +79,15 @@ export abstract class PopupTabContent<T extends PopupTabContentElements = PopupT
 }
 
 export enum ExtensionEvent {
+    SessionRefreshed = 'SessionRefreshed',
     HistoryOrderResepFetched = 'HistoryOrderResepFetched',
 }
 
 export const UrlRouteFilters: Record<ExtensionEvent, string[][]> = {
+    [ExtensionEvent.SessionRefreshed]: [
+        // ['/isAuthenticate'],
+        ['/isLockApp'],
+    ],
     [ExtensionEvent.HistoryOrderResepFetched]: [
         ['/kunjungan', 'JENIS_KUNJUNGAN=11'],
         ['/orderresep', 'HISTORY=1'],

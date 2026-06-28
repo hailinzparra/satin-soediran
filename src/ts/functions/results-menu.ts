@@ -1,5 +1,5 @@
 import { ExtensionFunction } from '../types'
-import { ModalUI } from '../utils'
+import { open_results_menu_modal } from './results-menu/modal'
 
 export class ResultsMenuFunction extends ExtensionFunction {
     bind_events() {
@@ -31,12 +31,12 @@ export class ResultsMenuFunction extends ExtensionFunction {
 
             if (!target_el) return
 
-            const unique_btn_id = `ext-custom-hasil-btn-${panel_id}`
+            const unique_btn_id = `results-menu-hasil-btn-${panel_id}`
             if (document.getElementById(unique_btn_id)) return
 
             const btn_container = document.createElement('div')
             btn_container.id = unique_btn_id
-            btn_container.className = 'ext-custom-hasil-container'
+            btn_container.className = 'results-menu-btn-container'
             btn_container.style.cssText = `
                 position: absolute;
                 left: 0px;
@@ -106,7 +106,7 @@ export class ResultsMenuFunction extends ExtensionFunction {
     }
 
     remove_and_reset_layout() {
-        document.querySelectorAll('.ext-custom-hasil-container').forEach(el => el.remove())
+        document.querySelectorAll('.results-menu-btn-container').forEach(el => el.remove())
 
         const root_panels = document.querySelectorAll<HTMLElement>('[id^="pasien-short-detil-"]')
         root_panels.forEach(root_panel => {
@@ -119,38 +119,35 @@ export class ResultsMenuFunction extends ExtensionFunction {
             const inner_ct = root_panel.querySelector<HTMLElement>(`#pasien-short-detil-${panel_id}-innerCt`)
             const target_el = root_panel.querySelector<HTMLElement>(`#pasien-short-detil-${panel_id}-targetEl`)
 
-            root_panel.style.overflow = ''
-            if (body_wrap) body_wrap.style.overflow = ''
-            if (body_panel) body_panel.style.overflow = ''
-            if (inner_ct) inner_ct.style.overflow = ''
-            if (target_el) target_el.style.overflow = ''
+            // uncomment if needed, for now commented as we dont store the default value to actually reset it
+            // and the value we are injecting (150px, visible..) is actually not visibly breaking the ui
 
-            const parent_target_el = root_panel.parentElement
-            if (parent_target_el && parent_target_el.id.includes('-targetEl')) {
-                parent_target_el.style.overflow = ''
+            // root_panel.style.overflow = ''
+            // if (body_wrap) body_wrap.style.overflow = ''
+            // if (body_panel) body_panel.style.overflow = ''
+            // if (inner_ct) inner_ct.style.overflow = ''
+            // if (target_el) target_el.style.overflow = ''
 
-                const parent_inner_ct = parent_target_el.parentElement
-                if (parent_inner_ct && parent_inner_ct.id.includes('-innerCt')) {
-                    parent_inner_ct.style.overflow = ''
-                    parent_inner_ct.style.height = ''
-                    parent_inner_ct.style.minHeight = ''
-                    parent_inner_ct.style.maxHeight = ''
-                }
-            }
+            // const parent_target_el = root_panel.parentElement
+            // if (parent_target_el && parent_target_el.id.includes('-targetEl')) {
+            //     parent_target_el.style.overflow = ''
+
+            //     const parent_inner_ct = parent_target_el.parentElement
+            //     if (parent_inner_ct && parent_inner_ct.id.includes('-innerCt')) {
+            //         parent_inner_ct.style.overflow = ''
+            //         parent_inner_ct.style.height = ''
+            //         parent_inner_ct.style.minHeight = ''
+            //         parent_inner_ct.style.maxHeight = ''
+            //     }
+            // }
         })
     }
 
     open_modal(id: string, parent_el: HTMLElement) {
-        const content_div = document.createElement('div')
-        content_div.innerHTML = '<p>This is user-specific data inside ExtJS container.</p>'
-
-        ModalUI.fire({
-            id: id,
-            title: `Hasil - John Doe (689283)`,
-            content: content_div,
-            width: '540px',
-            height: '85vh',
-            parent_el: parent_el,
+        open_results_menu_modal({
+            id,
+            title: 'Hasil',
+            parent_el,
         })
     }
 }

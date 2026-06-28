@@ -18,6 +18,10 @@ export const inject_script = (file_path: string) => {
     }
 }
 
+export const sleep = (ms: number): Promise<any> => {
+    return new Promise(resolve => setTimeout(resolve, ms))
+}
+
 export class VaultDriver<T extends Record<string, any> = Record<string, any>> {
     public key: string
     public data: T
@@ -316,6 +320,12 @@ export const format_fullname = (
 interface CreateElementOptions {
     classes?: string
     attrs?: Record<string, string | number | boolean>
+    styles?: {
+        [K in keyof Omit<
+            CSSStyleDeclaration,
+            'length' | 'parentRule' | 'getPropertyPriority' | 'getPropertyValue' | 'item' | 'removeProperty' | 'setProperty' | number
+        >]?: string | number | null
+    }
     text?: string
     html?: string
 }
@@ -325,31 +335,45 @@ type CreatedElement<T extends string> =
     T extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[T] :
     Element
 
-export const create_element = <T extends string>(
+export const create_element = <T extends (keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap)>(
     tag: T,
-    { classes = '', attrs = {}, text = '', html = '' }: CreateElementOptions = {},
+    { classes = '', attrs = {}, styles = {}, text = '', html = '' }: CreateElementOptions = {},
     children: (Node | string | null | undefined | false)[] = []
 ): CreatedElement<T> => {
     const svg_tags = ['svg', 'path', 'g', 'circle', 'rect', 'line', 'polyline', 'polygon', 'ellipse', 'use', 'defs']
     const is_svg = svg_tags.includes(tag.toLowerCase())
+
     const element = (is_svg
         ? document.createElementNS('http://www.w3.org/2000/svg', tag)
         : document.createElement(tag)) as CreatedElement<T>
+
     if (classes.length) {
         element.setAttribute('class', classes)
     }
+
     for (const [key, val] of Object.entries(attrs)) {
         element.setAttribute(key, String(val))
     }
+
+    if (element instanceof HTMLElement || element instanceof SVGElement) {
+        for (const [key, val] of Object.entries(styles)) {
+            if (val !== null && val !== undefined) {
+                (element.style as any)[key] = String(val)
+            }
+        }
+    }
+
     if (html) {
         element.innerHTML = html
     } else if (text) {
         element.textContent = text
     }
+
     if (children.length) {
         const valid_children = children.filter((child): child is Node | string => !!child)
         element.append(...valid_children)
     }
+
     return element
 }
 
@@ -357,16 +381,73 @@ interface ModalConfig {
     id: string
     title: string
     content: HTMLElement | string
+    top?: string
+    left?: string
     width?: string
     height?: string
     parent_el: HTMLElement
 }
 
+export class ModalInstance {
+    public id: string
+    public el: HTMLElement
+    public header: HTMLElement
+    public title_el: HTMLSpanElement
+    public min_btn: HTMLButtonElement
+    public close_btn: HTMLButtonElement
+    public body: HTMLElement
+    public parent: HTMLElement
+
+    public original_width: string
+    public original_height: string
+    public is_minimized: boolean = false
+
+    constructor(data: {
+        id: string
+        el: HTMLElement
+        header: HTMLElement
+        title_el: HTMLSpanElement
+        min_btn: HTMLButtonElement
+        close_btn: HTMLButtonElement
+        body: HTMLElement
+        parent: HTMLElement
+        original_width: string
+        original_height: string
+    }) {
+        this.id = data.id
+        this.el = data.el
+        this.header = data.header
+        this.title_el = data.title_el
+        this.min_btn = data.min_btn
+        this.close_btn = data.close_btn
+        this.body = data.body
+        this.parent = data.parent
+        this.original_width = data.original_width
+        this.original_height = data.original_height
+    }
+
+    public close(): void {
+        ModalUI.close(this.id)
+    }
+
+    public focus(should_animate: boolean = false): void {
+        ModalUI.focus(this.id, should_animate)
+    }
+
+    public toggle_minimize(): void {
+        ModalUI.toggle_minimize(this.id)
+    }
+}
+
 class ModalManager {
     private static instance: ModalManager
-    private modals: Map<string, { el: HTMLElement, parent: HTMLElement }> = new Map()
+    private modals: Map<string, ModalInstance> = new Map()
     private base_z_index: number = 100
     private style_id: string = 'custom-modal-manager-styles'
+    private font_id: string = 'custom-modal-font-link'
+
+    private static CHEVRON_SVG = `<svg class="modal-chevron-icon" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transform: rotate(0deg);"><path d="M19 9l-7 7-7-7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>`
+    private static CLOSE_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`
 
     private constructor() { }
 
@@ -378,6 +459,14 @@ class ModalManager {
     }
 
     private ensure_styles_injected(): void {
+        if (!document.getElementById(this.font_id)) {
+            const link_el = document.createElement('link')
+            link_el.id = this.font_id
+            link_el.rel = 'stylesheet'
+            link_el.href = 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap'
+            document.head.appendChild(link_el)
+        }
+
         if (document.getElementById(this.style_id)) return
 
         const style_el = document.createElement('style')
@@ -393,6 +482,25 @@ class ModalManager {
             }
             .custom-managed-modal {
                 transform-origin: center center;
+                transition: height 0.2s ease, width 0.2s ease, border-radius 0.2s ease;
+                border-radius: 4px;
+                font-family: "Plus Jakarta Sans", sans-serif !important;
+                letter-spacing: -0.01em;
+                font-size: 13px;
+            }
+            .custom-managed-modal input, 
+            .custom-managed-modal textarea, 
+            .custom-managed-modal button,
+            .custom-managed-modal select {
+                font-family: "Plus Jakarta Sans", sans-serif !important;
+            }
+            .modal-header-handle {
+                transition: border-radius 0.2s ease;
+                border-radius: 4px 4px 0px 0px;
+            }
+            .custom-managed-modal.is-minimized,
+            .custom-managed-modal.is-minimized .modal-header-handle {
+                border-radius: 4px !important;
             }
             .custom-managed-modal.animate-open {
                 animation: modalFirstOpen 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
@@ -400,11 +508,54 @@ class ModalManager {
             .custom-managed-modal.animate-pop {
                 animation: modalPop 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
             }
+            .custom-managed-modal.is-minimized .modal-header-handle span {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 110px;
+            }
+            .modal-action-btn {
+                border: 1px solid transparent;
+                background: transparent;
+                cursor: pointer;
+                padding: 3px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 4px;
+                color: #64748b;
+                transition: all 0.2s ease;
+            }
+            .modal-action-btn svg {
+                transition: transform 0.2s ease;
+            }
+            .modal-min-btn:hover {
+                color: #1d4ed8;
+                background-color: #dbeafe;
+                border-color: #1e40af;
+            }
+            .modal-close-btn:hover {
+                color: #f43f5e;
+                background-color: #ffe4e6;
+                border-color: #9f1239;
+            }
+            .modal-body-content {
+                transition: height 0.2s ease, min-height 0.2s ease, max-height 0.2s ease, padding 0.2s ease;
+            }
+            .custom-managed-modal.is-minimized .modal-body-content {
+                height: 0px !important;
+                min-height: 0px !important;
+                max-height: 0px !important;
+                padding-top: 0px !important;
+                padding-bottom: 0px !important;
+                overflow: hidden !important;
+                border-bottom: none !important;
+            }
         `
         document.head.append(style_el)
     }
 
-    public fire(config: ModalConfig): void {
+    public fire(config: ModalConfig): { instance: ModalInstance; is_existing: boolean } {
         this.ensure_styles_injected()
 
         const { id, title, content, parent_el } = config
@@ -415,21 +566,25 @@ class ModalManager {
                 this.close(id)
             } else {
                 this.focus(id, true)
-                return
+                return { instance: existing, is_existing: true }
             }
         }
+
+        const modal_top = config.top ?? '50px'
+        const modal_left = config.left ?? '50px'
+        const modal_width = config.width ?? '400px'
+        const modal_height = config.height ?? '300px'
 
         const modal_el = document.createElement('div')
         modal_el.id = `custom-modal-${id}`
         modal_el.className = 'custom-managed-modal animate-open'
         modal_el.style.position = 'absolute'
-        modal_el.style.width = config.width ? config.width : '400px'
-        modal_el.style.height = config.height ? config.height : '300px'
-        modal_el.style.top = '50px'
-        modal_el.style.left = '50px'
+        modal_el.style.top = modal_top
+        modal_el.style.left = modal_left
+        modal_el.style.width = modal_width
+        modal_el.style.height = modal_height
         modal_el.style.backgroundColor = '#ffffff'
         modal_el.style.boxShadow = '0 6px 20px rgba(0,0,0,0.3)'
-        modal_el.style.borderRadius = '4px'
         modal_el.style.display = 'flex'
         modal_el.style.flexDirection = 'column'
         modal_el.style.border = '1px solid #b5b5b5'
@@ -446,27 +601,45 @@ class ModalManager {
         header_el.style.alignItems = 'center'
         header_el.style.borderBottom = '1px solid #d0d0d0'
         header_el.style.userSelect = 'none'
-        header_el.style.borderRadius = '4px 4px 0px 0px'
+        header_el.style.overflow = 'hidden'
 
         const title_el = document.createElement('span')
         title_el.innerText = title
         title_el.style.fontWeight = 'bold'
         header_el.append(title_el)
 
+        const actions_wrapper = document.createElement('div')
+        actions_wrapper.style.display = 'flex'
+        actions_wrapper.style.alignItems = 'center'
+        actions_wrapper.style.gap = '2px'
+        actions_wrapper.style.flexShrink = '0'
+
+        const min_btn = document.createElement('button')
+        min_btn.className = 'modal-action-btn modal-min-btn'
+        min_btn.innerHTML = ModalManager.CHEVRON_SVG
+
+        const chevron_svg = min_btn.querySelector('svg') as SVGElement
+        if (chevron_svg) chevron_svg.style.transform = 'rotate(0deg)'
+
+        min_btn.addEventListener('click', (e) => {
+            e.stopPropagation()
+            this.toggle_minimize(id)
+        })
+        actions_wrapper.append(min_btn)
+
         const close_btn = document.createElement('button')
-        close_btn.innerText = '✕'
-        close_btn.style.border = 'none'
-        close_btn.style.background = 'transparent'
-        close_btn.style.cursor = 'pointer'
-        close_btn.style.fontSize = '14px'
+        close_btn.className = 'modal-action-btn modal-close-btn'
+        close_btn.innerHTML = ModalManager.CLOSE_SVG
         close_btn.addEventListener('click', (e) => {
             e.stopPropagation()
             this.close(id)
         })
-        header_el.append(close_btn)
+        actions_wrapper.append(close_btn)
+        header_el.append(actions_wrapper)
         modal_el.append(header_el)
 
         const body_el = document.createElement('div')
+        body_el.className = 'modal-body-content'
         body_el.style.padding = '12px'
         body_el.style.flex = '1'
         body_el.style.overflow = 'auto'
@@ -485,9 +658,45 @@ class ModalManager {
         }
 
         parent_el.append(modal_el)
-        this.modals.set(id, { el: modal_el, parent: parent_el })
 
+        const instance = new ModalInstance({
+            id: id,
+            el: modal_el,
+            header: header_el,
+            title_el: title_el,
+            min_btn: min_btn,
+            close_btn: close_btn,
+            body: body_el,
+            parent: parent_el,
+            original_width: modal_width,
+            original_height: modal_height
+        })
+
+        this.modals.set(id, instance)
         this.focus(id, false)
+
+        return { instance, is_existing: false }
+    }
+
+    public toggle_minimize(id: string): void {
+        const target = this.modals.get(id)
+        if (!target) return
+
+        const chevron_svg = target.min_btn.querySelector('svg') as SVGElement
+
+        if (!target.is_minimized) {
+            target.el.classList.add('is-minimized')
+            target.el.style.width = '200px'
+            target.el.style.height = 'auto'
+            target.is_minimized = true
+            if (chevron_svg) chevron_svg.style.transform = 'rotate(-90deg)'
+        } else {
+            target.el.classList.remove('is-minimized')
+            target.el.style.width = target.original_width
+            target.el.style.height = target.original_height
+            target.is_minimized = false
+            if (chevron_svg) chevron_svg.style.transform = 'rotate(0deg)'
+        }
     }
 
     public focus(id: string, should_animate: boolean = false): void {
@@ -500,8 +709,7 @@ class ModalManager {
             }
             item.el.classList.remove('is-focused', 'animate-pop')
             item.el.style.borderColor = '#b5b5b5'
-            const header = item.el.querySelector<HTMLElement>('.modal-header-handle')
-            if (header) header.style.background = '#f1f1f1'
+            if (item.header) item.header.style.background = '#f1f1f1'
         })
 
         this.base_z_index += 1
@@ -509,8 +717,7 @@ class ModalManager {
 
         target.el.classList.add('is-focused')
         target.el.style.borderColor = '#157fcc'
-        const active_header = target.el.querySelector<HTMLElement>('.modal-header-handle')
-        if (active_header) active_header.style.background = '#e1effb'
+        if (target.header) target.header.style.background = '#e1effb'
 
         if (should_animate) {
             target.el.classList.remove('animate-open')

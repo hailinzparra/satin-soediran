@@ -11,9 +11,20 @@ import { AllowCopyFunction } from './functions/allow-copy'
 import { DrugPriceFunction, DrugPriceRegistry } from './functions/drug-price'
 import { PrescriberNameFunction } from './functions/prescriber-name'
 import { ResultsMenuFunction } from './functions/results-menu'
+import { DEFAULT_EXTENSION_API_SESSION, ApiSession } from './api/api-types'
+import { ApiContextManager } from './api/context'
+import { ApiSoediranDriver } from './api/soediran'
 
 class SatinContentEngine {
     active_settings: ExtensionSettings = DEFAULT_EXTENSION_SETTINGS
+    drivers: ExtensionDriversContainer = {
+        [ExtensionDriver.Settings]: new VaultDriver<ExtensionSettings>(ExtensionDriver.Settings, this.active_settings),
+        [ExtensionDriver.Temp]: new VaultDriver<ExtensionTempData>(ExtensionDriver.Temp, {}),
+        [ExtensionDriver.Persistent]: new VaultDriver<any>(ExtensionDriver.Persistent),
+        [ExtensionDriver.Session]: new VaultDriver<ApiSession>(ExtensionDriver.Session, DEFAULT_EXTENSION_API_SESSION),
+        [ExtensionDriver.DrugPrices]: new VaultDriver<DrugPriceRegistry>(ExtensionDriver.DrugPrices, {}),
+    }
+    api_context: ApiContextManager = new ApiContextManager(new ApiSoediranDriver())
     private get_settings = () => this.active_settings
     private get_drivers = () => this.drivers
     global_functions: ExtensionFunction[] = [
@@ -29,12 +40,6 @@ class SatinContentEngine {
     ]
     get all_functions(): ExtensionFunction[] {
         return [...this.global_functions, ...this.reg_functions, ...this.emr_functions]
-    }
-    drivers: ExtensionDriversContainer = {
-        [ExtensionDriver.Settings]: new VaultDriver<ExtensionSettings>(ExtensionDriver.Settings, this.active_settings),
-        [ExtensionDriver.Temp]: new VaultDriver<ExtensionTempData>(ExtensionDriver.Temp, {}),
-        [ExtensionDriver.Persistent]: new VaultDriver<any>(ExtensionDriver.Persistent),
-        [ExtensionDriver.DrugPrices]: new VaultDriver<DrugPriceRegistry>(ExtensionDriver.DrugPrices, {}),
     }
     observer: MutationObserver | null = null
     settings_key = ExtensionDriver.Settings
@@ -91,6 +96,7 @@ class SatinContentEngine {
                 }
             })
         })
+        this.api_context.bind_events()
     }
     on_debounce_update() {
         this.all_functions.forEach(fn => {
