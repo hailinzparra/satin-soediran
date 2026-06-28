@@ -15,7 +15,7 @@ import { DEFAULT_EXTENSION_API_SESSION, ApiSession } from './api/api-types'
 import { ApiContextManager } from './api/context'
 import { ApiSoediranDriver } from './api/soediran'
 
-class SatinContentEngine {
+export class SatinContentEngine {
     active_settings: ExtensionSettings = DEFAULT_EXTENSION_SETTINGS
     drivers: ExtensionDriversContainer = {
         [ExtensionDriver.Settings]: new VaultDriver<ExtensionSettings>(ExtensionDriver.Settings, this.active_settings),
@@ -28,15 +28,15 @@ class SatinContentEngine {
     private get_settings = () => this.active_settings
     private get_drivers = () => this.drivers
     global_functions: ExtensionFunction[] = [
-        new AllowCopyFunction(this.get_settings, this.get_drivers),
+        new AllowCopyFunction(this, this.get_settings, this.get_drivers),
     ]
     reg_functions: ExtensionFunction[] = [
-        // new OpenInNewTabFunction(this.get_settings, this.get_drivers),
+        // new OpenInNewTabFunction(this, this.get_settings, this.get_drivers),
     ]
     emr_functions: ExtensionFunction[] = [
-        new DrugPriceFunction(this.get_settings, this.get_drivers),
-        new PrescriberNameFunction(this.get_settings, this.get_drivers),
-        new ResultsMenuFunction(this.get_settings, this.get_drivers),
+        new DrugPriceFunction(this, this.get_settings, this.get_drivers),
+        new PrescriberNameFunction(this, this.get_settings, this.get_drivers),
+        new ResultsMenuFunction(this, this.get_settings, this.get_drivers),
     ]
     get all_functions(): ExtensionFunction[] {
         return [...this.global_functions, ...this.reg_functions, ...this.emr_functions]

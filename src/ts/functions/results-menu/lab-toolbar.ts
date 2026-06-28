@@ -1,16 +1,16 @@
 import { create_element, sleep } from '../../utils'
-import { ResultsMenuLabPivotTable } from './lab-pivot-table'
+import { ResultsMenuTabLab } from './tab-lab'
 
 export class ResultsMenuLabToolbar {
+    private tab_lab: ResultsMenuTabLab
     public el: HTMLDivElement
     private btn_load_next: HTMLButtonElement
-    private table_instance: ResultsMenuLabPivotTable
 
-    private current_loaded: number = 0
+    private current_loaded: number = -1
     private current_total: number = 0
 
-    constructor(table_instance: ResultsMenuLabPivotTable) {
-        this.table_instance = table_instance
+    constructor(tab_lab: ResultsMenuTabLab) {
+        this.tab_lab = tab_lab
 
         this.btn_load_next = create_element('button', {
             text: 'Muat Data (...)',
@@ -44,42 +44,42 @@ export class ResultsMenuLabToolbar {
         ])
     }
 
-    private async handle_load_next(): Promise<void> {
+    public async handle_load_next(): Promise<void> {
         this.btn_load_next.disabled = true
         this.btn_load_next.style.opacity = '0.6'
         this.btn_load_next.style.cursor = 'not-allowed'
         this.btn_load_next.textContent = 'Memuat...'
 
         try {
-            await sleep(1000)
-
-            // TODO: Place api_request(...) logic here
-            // const response = await api_request(...)
-            this.current_total = 10
-            this.current_loaded += 3
-
+            await sleep(500)
+            const result = await this.tab_lab.load_next_data()
+            if (result.success) {
+                this.current_total = this.tab_lab.current_total
+                this.current_loaded = this.tab_lab.current_loaded
+            }
         } catch (error) {
             console.error('Error loading next data batch:', error)
         } finally {
-            this.update_counter(this.current_loaded, this.current_total)
+            this.update_counter_ui(this.current_loaded, this.current_total)
         }
     }
 
-    public update_counter(loaded: number, total: number): void {
-        this.current_loaded = loaded
-        this.current_total = total
+    public update_counter_ui(loaded: number, total: number): void {
+        const counter_text = `(${Math.max(0, loaded)}/${Math.max(0, total)})`
 
-        this.btn_load_next.textContent = `Muat Data (${loaded}/${total})`
+        const btn = this.btn_load_next
+        btn.textContent = `Muat Data ${counter_text}`
+        btn.disabled = false
+        btn.style.opacity = '1'
+        btn.style.cursor = 'pointer'
 
-        if (loaded >= total) {
-            this.btn_load_next.disabled = true
-            this.btn_load_next.style.opacity = '0.6'
-            this.btn_load_next.style.cursor = 'not-allowed'
-            this.btn_load_next.textContent = `Data Termuat (${loaded}/${total})`
-        } else {
-            this.btn_load_next.disabled = false
-            this.btn_load_next.style.opacity = '1'
-            this.btn_load_next.style.cursor = 'pointer'
+        if (loaded === -1) {
+            btn.textContent = 'Muat Data (...)'
+        } else if (loaded >= total) {
+            btn.textContent = `Data Termuat ${counter_text}`
+            btn.disabled = true
+            btn.style.opacity = '0.6'
+            btn.style.cursor = 'not-allowed'
         }
     }
 }

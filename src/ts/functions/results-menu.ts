@@ -16,8 +16,32 @@ export class ResultsMenuFunction extends ExtensionFunction {
         }
     }
 
+    /**
+     * Extracts and normalizes the Patient MRN (NORM) from ExtJS DOM structure.
+     * Converts "00.17.08.45" -> "170845", returns '' if not found.
+     * @param target_el The parent element (#pasien-short-detil-*-target_el)
+     * @returns string
+     */
+    extract_mrn(target_el: HTMLElement | null): string {
+        if (!target_el) return ''
+
+        const components = target_el.querySelectorAll('.x-component')
+        const mrn_element = Array.from(components).find(el => {
+            const text = el.textContent?.trim() || ''
+            return /^\d{2}\.\d{2}\.\d{2}\.\d{2}$/.test(text)
+        })
+
+        if (!mrn_element || !mrn_element.textContent) {
+            return ''
+        }
+
+        const clean_string = mrn_element.textContent.trim().replace(/\./g, '')
+
+        return String(parseInt(clean_string, 10))
+    }
+
     inject_results_buttons() {
-        const root_panels = document.querySelectorAll<HTMLElement>('[id^="pasien-short-detil-"]')
+        const root_panels = document.querySelectorAll<HTMLElement>('.x-panel[id^="pasien-short-detil-"]')
 
         root_panels.forEach(root_panel => {
             const match = root_panel.id.match(/pasien-short-detil-(\d+)/)
@@ -30,6 +54,8 @@ export class ResultsMenuFunction extends ExtensionFunction {
             const target_el = root_panel.querySelector<HTMLElement>(`#pasien-short-detil-${panel_id}-targetEl`)
 
             if (!target_el) return
+
+            const mrn = this.extract_mrn(target_el)
 
             const unique_btn_id = `results-menu-hasil-btn-${panel_id}`
             if (document.getElementById(unique_btn_id)) return
@@ -100,7 +126,7 @@ export class ResultsMenuFunction extends ExtensionFunction {
                 e.stopPropagation()
                 const parent_window_el = target_el.closest<HTMLElement>('.x-window')
                 const render_target = parent_window_el || document.body
-                this.open_modal(panel_id, render_target)
+                this.open_modal(panel_id, render_target, mrn)
             })
         })
     }
@@ -143,11 +169,13 @@ export class ResultsMenuFunction extends ExtensionFunction {
         })
     }
 
-    open_modal(id: string, parent_el: HTMLElement) {
+    open_modal(id: string, parent_el: HTMLElement, mrn: string) {
         open_results_menu_modal({
             id,
             title: 'Hasil',
             parent_el,
+            engine: this.engine,
+            mrn,
         })
     }
 }

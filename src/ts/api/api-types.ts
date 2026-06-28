@@ -1,3 +1,5 @@
+import { RequestPayloadBuilder } from '../utils'
+
 export interface ApiSession {
     raw_token: string
     auth_token: string
@@ -30,6 +32,7 @@ export interface ApiConfig {
 export interface ApiResponseWrapper<T> {
     success: boolean
     data: T | null
+    total?: number
     error?: {
         message: string
         code?: string | number
@@ -45,4 +48,10 @@ export abstract class ApiDriver {
         init?: RequestInit,
     ): Promise<ApiResponseWrapper<T>>
     abstract get_session(): Promise<ApiSession>
+}
+
+export type ApiRequestOptions = {
+    base_path: string
+    payload: RequestPayloadBuilder<any>
+    domain?: string
 }

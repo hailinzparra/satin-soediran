@@ -1,6 +1,7 @@
 import { VaultDriver } from './utils'
 import { PopupSettings, SatinPopupEngine } from './popup'
 import { DrugPriceRegistry } from './functions/drug-price'
+import { SatinContentEngine } from './content'
 
 export interface ExtensionSettings {
     // global
@@ -57,6 +58,7 @@ export type ExtensionDriversContainer = Partial<ExtensionDriversMap>
 
 export abstract class ExtensionFunction {
     constructor(
+        protected engine: SatinContentEngine,
         protected get_settings: () => ExtensionSettings,
         protected get_drivers: () => ExtensionDriversContainer,
     ) { }

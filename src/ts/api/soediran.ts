@@ -7,6 +7,7 @@ export interface SoediranApiResponse<T = any> {
     message?: string
     detail?: string
     data?: T
+    total?: number
 }
 
 export class ApiSoediranDriver extends ApiDriver {
@@ -104,6 +105,7 @@ export class ApiSoediranDriver extends ApiDriver {
         return {
             success: true,
             data: finalized_data ?? null,
+            total: result.total,
         }
     }
 

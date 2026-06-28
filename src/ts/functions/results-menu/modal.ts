@@ -1,3 +1,4 @@
+import { SatinContentEngine } from '../../content'
 import { create_element, ModalUI } from '../../utils'
 import { ResultsMenuModalTabManager } from './modal-tab'
 import { ResultsMenuTabLab } from './tab-lab'
@@ -6,6 +7,8 @@ export const open_results_menu_modal = (options: {
     id: string,
     title: string,
     parent_el: HTMLElement,
+    engine?: SatinContentEngine,
+    mrn?: string
 }) => {
     const content_div = document.createElement('div')
 
@@ -50,8 +53,11 @@ export const open_results_menu_modal = (options: {
     const tab_content_radio = build_tab_content('Radio', 'fa-odnoklassniki-square')
     const tab_content_text = build_tab_content('Teks')
 
-    const tab_lab = new ResultsMenuTabLab()
+    const tab_lab = new ResultsMenuTabLab(options.engine, options.mrn)
 
     tab_content_lab.append(...tab_lab.get_dom_contents())
     modal_win.body.append(manager.container)
+
+    // init
+    tab_lab.toolbar.handle_load_next()
 }
