@@ -1,27 +1,16 @@
-import { ExtensionSettings } from '../types'
-import { TabManager } from '../utils'
-import { SatinPopupEngine } from '../popup'
-import { TabSettingsContent } from './tab-settings'
-
-export enum PopupTabManager {
-    Settings = 'tab-manager-settings',
-    Tools = 'tab-manager-tools',
-}
-
-export enum PopupTabName {
-    Home = 'home',
-    Template = 'template'
-}
+import { SatinPopupEngine } from '../engine/popup-engine'
+import { PopupTabManagerName, PopupTabName } from '../types/popup'
+import { TabManager } from '../ui/tab'
+import { PopupSettingsContent } from './settings-content'
 
 export class PopupTab {
-    public tab_manager: Record<PopupTabManager, TabManager>
+    public tab_manager: Record<PopupTabManagerName, TabManager>
     constructor(
         protected engine: SatinPopupEngine,
-        protected get_settings: () => ExtensionSettings,
     ) {
         this.tab_manager = {
-            [PopupTabManager.Settings]: new TabManager(PopupTabManager.Settings),
-            [PopupTabManager.Tools]: new TabManager(PopupTabManager.Tools),
+            [PopupTabManagerName.Settings]: new TabManager(PopupTabManagerName.Settings),
+            [PopupTabManagerName.Tools]: new TabManager(PopupTabManagerName.Tools),
         }
         try {
             const el_content_container = document.getElementById('content-container-0000')! as HTMLDivElement
@@ -35,13 +24,15 @@ export class PopupTab {
             )
         }
     }
+
     init() {
-        this.tab_manager[PopupTabManager.Settings].add_tab(PopupTabName.Home, 'Pengaturan', [
-            new TabSettingsContent(this.engine, this.get_settings).el.container
+        this.tab_manager[PopupTabManagerName.Settings].add_tab(PopupTabName.Home, 'Pengaturan', [
+            new PopupSettingsContent(this.engine).el.container
         ], true)
-        this.tab_manager[PopupTabManager.Tools].add_tab(PopupTabName.Home, 'Lain-lain', [], true)
+        this.tab_manager[PopupTabManagerName.Tools].add_tab(PopupTabName.Home, 'Lain-lain', [], true)
     }
-    open_tab(manager_name: PopupTabManager, name: PopupTabName) {
+
+    open_tab(manager_name: PopupTabManagerName, name: PopupTabName) {
         const manager = this.tab_manager[manager_name]
         switch (name) {
             case PopupTabName.Template:

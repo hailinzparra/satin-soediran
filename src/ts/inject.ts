@@ -1,4 +1,5 @@
-import { ExtensionEvent, UrlRouteFilters } from './types'
+import { SoediranEvent, SoediranUrlRouteFilters } from './types/api/soediran'
+import { Log } from './utils/logger'
 
 const start_sencha_interceptor = (): void => {
     if (typeof Ext === 'undefined' || !Ext.Ajax) {
@@ -6,7 +7,7 @@ const start_sencha_interceptor = (): void => {
         return
     }
 
-    console.log('Ext JS detected! Injecting interceptor...')
+    Log.log('Ext JS detected! Injecting interceptor...')
 
     Ext.Ajax.on('requestcomplete', (conn: any, response: { responseText: string }, options: any) => {
         try {
@@ -31,9 +32,9 @@ const start_sencha_interceptor = (): void => {
                 }
             }
 
-            (Object.keys(UrlRouteFilters) as ExtensionEvent[]).forEach((event_key) => {
+            (Object.keys(SoediranUrlRouteFilters) as SoediranEvent[]).forEach((event_key) => {
                 try {
-                    const filter = UrlRouteFilters[event_key]
+                    const filter = SoediranUrlRouteFilters[event_key]
                     const is_matched = filter.some(and_group =>
                         and_group.every(condition => url.includes(condition))
                     )
@@ -44,11 +45,11 @@ const start_sencha_interceptor = (): void => {
                     }
                 }
                 catch (err) {
-                    console.error(`Error dispatching event ${event_key}:`, err)
+                    Log.error(`Error dispatching event ${event_key}:`, err)
                 }
             })
         } catch (err) {
-            console.error('Error parsing Sencha AJAX response:', err)
+            Log.error('Error parsing Sencha AJAX response:', err)
         }
     })
 }

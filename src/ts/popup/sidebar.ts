@@ -1,32 +1,13 @@
-import { ExtensionDriver } from '../types'
-import { SatinPopupEngine } from '../popup'
-import { PopupTabManager, PopupTabName } from './tab'
-
-interface SidebarElements {
-    container: HTMLElement
-    brand_text: HTMLHeadingElement
-    toggle_btn: HTMLButtonElement
-    toggle_icon: SVGElement
-    settings_btn: HTMLButtonElement
-    tools_btn: HTMLButtonElement
-    tools_accordion_btn: HTMLButtonElement
-    tools_accordion_arrow: SVGElement
-    tools_accordion_content: HTMLDivElement
-    template_btn: HTMLButtonElement
-    check_update_btn: HTMLButtonElement
-}
-
-enum PopupSidebarNav {
-    Settings = 'settings',
-    Tools = 'tools',
-}
+import { SatinPopupEngine } from '../engine/popup-engine'
+import { PopupSidebarElements, PopupSidebarNav, PopupTabManagerName, PopupTabName } from '../types/popup'
 
 export class PopupSidebar {
-    public el: SidebarElements
-    public active_nav: PopupSidebarNav = PopupSidebarNav.Settings
-    private engine: SatinPopupEngine
-    constructor(engine: SatinPopupEngine) {
-        this.engine = engine
+    el: PopupSidebarElements
+    active_nav: PopupSidebarNav = PopupSidebarNav.Settings
+
+    constructor(
+        protected engine: SatinPopupEngine,
+    ) {
         this.el = {
             container: document.getElementById('sidebar-container-0000')!,
             brand_text: document.getElementById('sidebar-brand-text-0000')! as HTMLHeadingElement,
@@ -41,40 +22,47 @@ export class PopupSidebar {
             check_update_btn: document.getElementById('sidebar-check-update-0000')! as HTMLButtonElement,
         }
     }
+
     init() {
         // call once to match loaded settings
-        const popup_settings = this.engine.drivers[ExtensionDriver.PopupSettings]
-        this.toggle_sidebar(popup_settings?.data.is_sidebar_collapsed === true)
-        this.switch_active_tab(PopupTabManager.Settings, PopupSidebarNav.Settings)
+        const settings = this.engine.get_popup_settings()
+        this.toggle_sidebar(settings.is_sidebar_collapsed === true)
+        this.switch_active_tab(PopupTabManagerName.Settings, PopupSidebarNav.Settings)
     }
+
     bind_events() {
         this.el.toggle_btn.addEventListener('click', () => {
-            const popup_settings = this.engine.drivers[ExtensionDriver.PopupSettings]
-            if (!popup_settings) return
+            const driver = this.engine.get_popup_settings_driver()
+            if (!driver) return
 
-            const old_is_sidebar_collapsed = popup_settings.data.is_sidebar_collapsed === true
+            const old_is_sidebar_collapsed = driver.data.is_sidebar_collapsed === true
             const new_is_sidebar_collapsed = !old_is_sidebar_collapsed
-            popup_settings.update({
-                is_sidebar_collapsed: new_is_sidebar_collapsed
+
+            driver.update({
+                is_sidebar_collapsed: new_is_sidebar_collapsed,
             })
+
             this.toggle_sidebar(new_is_sidebar_collapsed)
         })
+
         this.init_nav_events()
+
         this.el.tools_accordion_btn.addEventListener('click', (e) => {
             e.stopPropagation()
             this.toggle_tools_accordion()
         })
     }
+
     init_nav_events() {
         const nav_mapping = [
             {
                 btn: this.el.settings_btn,
-                tab_name: PopupTabManager.Settings,
+                tab_name: PopupTabManagerName.Settings,
                 nav_state: PopupSidebarNav.Settings,
             },
             {
                 btn: this.el.tools_btn,
-                tab_name: PopupTabManager.Tools,
+                tab_name: PopupTabManagerName.Tools,
                 nav_state: PopupSidebarNav.Tools,
             },
         ]
@@ -84,8 +72,8 @@ export class PopupSidebar {
             })
         }
         this.el.template_btn.addEventListener('click', () => {
-            this.switch_active_tab(PopupTabManager.Tools, PopupSidebarNav.Tools)
-            this.engine.tab.open_tab(PopupTabManager.Tools, PopupTabName.Template)
+            this.switch_active_tab(PopupTabManagerName.Tools, PopupSidebarNav.Tools)
+            this.engine.tab.open_tab(PopupTabManagerName.Tools, PopupTabName.Template)
         })
         this.el.check_update_btn.addEventListener('click', async () => {
             const result = await this.engine.swal.main.fire({
@@ -144,9 +132,9 @@ export class PopupSidebar {
             arrow.classList.add('-rotate-90')
         }
     }
-    switch_active_tab(active_tab_name: PopupTabManager, active_nav_state: PopupSidebarNav) {
+    switch_active_tab(active_tab_name: PopupTabManagerName, active_nav_state: PopupSidebarNav) {
         const managers = this.engine.tab.tab_manager
-        Object.values(PopupTabManager).forEach((tab_name) => {
+        Object.values(PopupTabManagerName).forEach((tab_name) => {
             if (managers[tab_name]) {
                 if (tab_name === active_tab_name) {
                     managers[tab_name].open()

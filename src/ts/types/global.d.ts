@@ -11,6 +11,7 @@ declare global {
     }
     const tailwind: any
     const Ext: any
+    const __PROD__: boolean
 }
 
 export { }

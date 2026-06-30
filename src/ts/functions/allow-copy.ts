@@ -1,16 +1,16 @@
-import { ExtensionFunction } from '../types'
+import { SatinBaseFunction } from '../types/functions/base'
 
-export class AllowCopyFunction extends ExtensionFunction {
+export class AllowCopyFunction extends SatinBaseFunction {
     bind_events() {
         document.addEventListener('selectstart', (e) => {
-            const allow_copy = this.get_settings().global_allow_copy
+            const allow_copy = this.engine.get_settings().global_allow_copy
             if (!allow_copy) return
             e.stopPropagation()
             return true
         }, true)
     }
     apply() {
-        const allow_copy = this.get_settings().global_allow_copy
+        const allow_copy = this.engine.get_settings().global_allow_copy
         const unselectable_elements = document.querySelectorAll<HTMLElement>('.x-unselectable')
         unselectable_elements.forEach(el => {
             if (allow_copy) {
@@ -22,7 +22,9 @@ export class AllowCopyFunction extends ExtensionFunction {
             } else {
                 el.style.removeProperty('user-select')
                 el.style.removeProperty('-webkit-user-select')
-                el.style.removeProperty('cursor')
+                if (!el.matches('button, a, .x-btn')) {
+                    el.style.removeProperty('cursor')
+                }
             }
         })
     }

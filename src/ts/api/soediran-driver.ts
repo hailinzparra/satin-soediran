@@ -1,18 +1,13 @@
-import { DB_SOEDIRAN_DATABASE } from '../databases/db-soediran'
-import { ApiDriver, ApiResponseWrapper, ApiSession } from './api-types'
-import { decrypt_data } from './soediran-decrypt'
+import { DB_SOEDIRAN_DATABASE } from '../data/db-soediran'
+import { SatinEngine } from '../engine/base'
+import { BaseApiDriver, BaseApiResponse, SatinSessionData } from '../types/api/base'
+import { SoediranApiResponse, SoediranEvent } from '../types/api/soediran'
+import { Log } from '../utils/logger'
+import { decrypt_data } from '../utils/soediran-decrypt'
 
-export interface SoediranApiResponse<T = any> {
-    success?: boolean
-    message?: string
-    detail?: string
-    data?: T
-    total?: number
-}
-
-export class ApiSoediranDriver extends ApiDriver {
-    constructor() {
-        super({
+export class SoediranApiDriver extends BaseApiDriver {
+    constructor(engine: SatinEngine) {
+        super(engine, {
             id: 0,
             name: 'RSUD Soediran',
             sys_name: 'Soediran',
@@ -33,34 +28,46 @@ export class ApiSoediranDriver extends ApiDriver {
             },
             database: DB_SOEDIRAN_DATABASE,
         })
+        this.bind_events()
     }
 
-    async api_request<T = any>(
-        session: ApiSession,
-        url: string,
-        init?: RequestInit,
-    ): Promise<ApiResponseWrapper<T>> {
-        if (!session || !session.auth_token) {
-            throw new Error('Session not found.')
-        }
+    bind_events(): void {
+        window.addEventListener(SoediranEvent.SessionRefreshed, () => {
+            this.sync_session()
+        })
+    }
 
+    async sync_session(): Promise<any> {
+        try {
+            const new_session = await this.get_session()
+            await this.engine.get_session_driver().update({ ...new_session }, true)
+        } catch (err) {
+            Log.error('Failed to sync session:', err)
+            throw err
+        }
+    }
+
+    async api_request<T = any>(session: SatinSessionData | null, url: string, init?: RequestInit): Promise<BaseApiResponse<T>> {
         const merged_headers = new Headers(init?.headers)
 
-        if (!merged_headers.has('Authorization')) {
+        if (session?.auth_token && !merged_headers.has('Authorization')) {
             merged_headers.set('Authorization', `Bearer ${session.auth_token}`)
         }
+
         if (!merged_headers.has('Accept')) {
-            merged_headers.set('Accept', 'application/json')
+            merged_headers.set('Accept', '*/*')
+            // merged_headers.set('Accept', 'application/json')
         }
-        if (!merged_headers.has('Content-Type')) {
-            merged_headers.set('Content-Type', 'application/json')
-        }
+
+        // if (!merged_headers.has('Content-Type')) {
+        //     merged_headers.set('Content-Type', 'application/json')
+        // }
 
         let response: Response
         try {
             response = await fetch(url, { ...init, headers: merged_headers })
         } catch (error) {
-            console.error('API Request failed:', error)
+            Log.error('API Request failed:', error)
             throw error
         }
 
@@ -77,7 +84,7 @@ export class ApiSoediranDriver extends ApiDriver {
         try {
             result = await response.json()
         } catch (json_error) {
-            console.error('The server returned an invalid data format:', json_error)
+            Log.error('The server returned an invalid data format:', json_error)
             throw json_error
         }
 
@@ -85,6 +92,7 @@ export class ApiSoediranDriver extends ApiDriver {
             return {
                 success: false,
                 data: null,
+                status: result.status,
                 error: {
                     message: result.message || result.detail || 'The API returned an unsuccessful status.'
                 }
@@ -92,12 +100,13 @@ export class ApiSoediranDriver extends ApiDriver {
         }
 
         let finalized_data: T = result.data as T
-        if (session.is_encrypted && typeof result.data === 'string' && result.data.length > 0) {
+
+        if (session?.is_encrypted && typeof result.data === 'string' && result.data.length > 0) {
             try {
                 const decrypted_string = await decrypt_data(result.data, session.raw_token)
                 finalized_data = JSON.parse(decrypted_string) as T
             } catch (decrypt_error) {
-                console.error('Decryption failed:', decrypt_error)
+                Log.error('Decryption failed:', decrypt_error)
                 throw decrypt_error
             }
         }
@@ -109,18 +118,18 @@ export class ApiSoediranDriver extends ApiDriver {
         }
     }
 
-    async get_session(): Promise<ApiSession> {
+    async get_session(): Promise<SatinSessionData | null> {
         const token = localStorage.getItem('_lapp-access_token')
-        const isEncrypted = localStorage.getItem('_lapp-https_encrypt') === 'true'
+        const is_encrypted = localStorage.getItem('_lapp-https_encrypt') === 'true'
 
         if (!token) {
-            throw new Error('Session token not found.')
+            return null
         }
 
         return {
             raw_token: token,
             auth_token: atob(token),
-            is_encrypted: isEncrypted,
+            is_encrypted: is_encrypted,
         }
     }
 }

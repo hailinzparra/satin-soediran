@@ -41,6 +41,7 @@ const build_manifest = () => {
         "web_accessible_resources": [
             {
                 "resources": [
+                    "assets/css/content.css",
                     "assets/js/inject.js"
                 ],
                 "matches": config.targets
@@ -176,6 +177,9 @@ const start = async () => {
         sourcemap: !is_prod,
         outdir: path.join(output_dir, 'assets/js'),
         logLevel: 'silent',
+        define: {
+            __PROD__: JSON.stringify(is_prod),
+        },
         plugins: [{
             name: 'terminal-notifier',
             setup(build) {

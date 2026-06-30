@@ -1,4 +1,4 @@
-import { DrugPriceRegistry } from '../functions/drug-price'
+import { DrugPriceData } from '../types/functions/drug-price'
 
 // updated June 26th, 2026
 const DB_DRUG_PRICE_MIN: { [drug_name: string]: { i: number, p: number, c: number } } = {
@@ -2392,7 +2392,7 @@ const DB_DRUG_PRICE_MIN: { [drug_name: string]: { i: number, p: number, c: numbe
     "BIOSCREW 7MMX30MM": { i: 8234, p: 7405200.72, c: 5559460 },
 }
 
-export const DB_DRUG_PRICE = Object.entries(DB_DRUG_PRICE_MIN).reduce((acc: DrugPriceRegistry, [key, data]) => {
+export const DB_DRUG_PRICE_DATABASE = Object.entries(DB_DRUG_PRICE_MIN).reduce((acc: DrugPriceData, [key, data]) => {
     acc[key] = {
         id: String(data.i),
         price: data.p,
