@@ -2,7 +2,7 @@ import { SatinContentEngine } from '../../engine/content-engine'
 
 export abstract class SatinBaseFunction {
     constructor(
-        protected engine: SatinContentEngine,
+        public engine: SatinContentEngine,
     ) { }
     init?(): void
     bind_events?(): void

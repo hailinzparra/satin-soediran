@@ -11,7 +11,7 @@ export enum SatinDriver {
     Settings = 'satin_settings',
     Persistent = 'satin_persistent',
     PopupSettings = 'satin_popup_settings',
-    DrugPrices = 'satin_drug_prices',
+    NewDrugPrices = 'satin_new_drug_prices',
 }
 
 interface SatinDriversMap {
@@ -20,7 +20,7 @@ interface SatinDriversMap {
     [SatinDriver.Settings]: VaultDriver<SatinSettingsData>
     [SatinDriver.Persistent]: VaultDriver<SatinPersistentData>
     [SatinDriver.PopupSettings]: VaultDriver<SatinPopupSettingsData>
-    [SatinDriver.DrugPrices]: VaultDriver<DrugPriceData>
+    [SatinDriver.NewDrugPrices]: VaultDriver<DrugPriceData>
 }
 
 export type SatinDriversContainer = SatinDriversMap

@@ -16,7 +16,7 @@ export abstract class SatinEngine {
         [SatinDriver.Settings]: new VaultDriver(SatinDriver.Settings, DEFAULT_SATIN_SETTINGS),
         [SatinDriver.Persistent]: new VaultDriver(SatinDriver.Persistent),
         [SatinDriver.PopupSettings]: new VaultDriver(SatinDriver.PopupSettings, DEFAULT_SATIN_POPUP_SETTINGS),
-        [SatinDriver.DrugPrices]: new VaultDriver(SatinDriver.DrugPrices),
+        [SatinDriver.NewDrugPrices]: new VaultDriver(SatinDriver.NewDrugPrices),
     }
     api: SatinApiContext = new SatinApiContext(this, new SoediranApiDriver(this))
     get_temp = (): SatinTempData => this.drivers[SatinDriver.Temp].data

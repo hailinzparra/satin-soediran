@@ -15,6 +15,15 @@
         "http://192.168.13.9/*",
         "http://192.168.13.10/*"
     ],
+    "content_scripts": [
+        "assets/lib/firebase-app-compat.js",
+        "assets/lib/firebase-database-compat.js",
+        "assets/js/content.js"
+    ],
+    "resources": [
+        "assets/css/content.css",
+        "assets/js/inject.js"
+    ],
     "icons": {
         "16": "assets/img/icon16.png",
         "48": "assets/img/icon48.png",

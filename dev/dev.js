@@ -27,23 +27,13 @@ const build_manifest = () => {
         "content_scripts": [
             {
                 "matches": config.targets,
-                "js": [
-                    // "assets/lib/tailwind.min.js",
-                    // "assets/lib/lz-string.min.js",
-                    // "assets/lib/sweetalert2.all.min.js",
-                    "assets/lib/firebase-app-compat.js",
-                    "assets/lib/firebase-database-compat.js",
-                    "assets/js/content.js"
-                ],
+                "js": config.content_scripts,
                 "run_at": "document_end"
             }
         ],
         "web_accessible_resources": [
             {
-                "resources": [
-                    "assets/css/content.css",
-                    "assets/js/inject.js"
-                ],
+                "resources": config.resources,
                 "matches": config.targets
             }
         ],

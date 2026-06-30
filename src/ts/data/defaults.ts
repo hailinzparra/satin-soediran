@@ -14,7 +14,7 @@ export const DEFAULT_SATIN_SETTINGS: SatinSettingsData = {
 
     emr_show_drug_price: true,
     emr_show_drug_price_summary_title: 'Ringkasan Harga',
-    emr_show_drug_price_summary_more_title: 'Detail Keuntungan',
+    emr_show_drug_price_summary_full_title: 'Detail Keuntungan',
     emr_show_drug_price_full_display: false,
     emr_show_drug_price_show_unit_summary: false,
 

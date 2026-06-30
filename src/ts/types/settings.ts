@@ -5,7 +5,7 @@ export interface SatinSettingsData {
 
     emr_show_drug_price: boolean
     emr_show_drug_price_summary_title: string
-    emr_show_drug_price_summary_more_title: string
+    emr_show_drug_price_summary_full_title: string
     emr_show_drug_price_full_display: boolean
     emr_show_drug_price_show_unit_summary: boolean
 

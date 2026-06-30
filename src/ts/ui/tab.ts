@@ -133,8 +133,8 @@ export class TabManager {
 
         header_el.addEventListener('click', () => this.switch_tab(id))
 
-        if (this.headers_container) this.headers_container.appendChild(header_el)
-        if (this.contents_container) this.contents_container.appendChild(content_el)
+        if (this.headers_container) this.headers_container.append(header_el)
+        if (this.contents_container) this.contents_container.append(content_el)
 
         this.switch_tab(id)
     }
