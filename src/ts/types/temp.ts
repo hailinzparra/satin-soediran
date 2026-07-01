@@ -1,5 +1,5 @@
-import { PrescriberNameOrderCache } from './functions/prescriber-name'
+import { PrescriberNameItem } from './functions/prescriber-name'
 
 export interface SatinTempData {
-    prescriber_name_order_cache?: Record<string, PrescriberNameOrderCache>
+    prescriber_name_cache?: Record<string, PrescriberNameItem>
 }

@@ -1,5 +1,6 @@
 import { AllowCopyFunction } from '../functions/allow-copy'
 import { DrugPriceFunction } from '../functions/drug-price/parent'
+import { PrescriberNameFunction } from '../functions/prescriber-name/parent'
 import { SatinDriver, SatinDriversContainer } from '../types/driver'
 import { SatinBaseFunction } from '../types/functions/base'
 import { inject_css, inject_script } from '../utils/injector'
@@ -19,7 +20,7 @@ export class SatinContentEngine extends SatinEngine {
 
     emr_functions: SatinBaseFunction[] = [
         new DrugPriceFunction(this),
-        // new PrescriberNameFunction(this),
+        new PrescriberNameFunction(this),
         // new ResultsMenuFunction(this),
     ]
 

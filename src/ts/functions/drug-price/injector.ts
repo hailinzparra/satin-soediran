@@ -67,7 +67,6 @@ export class DrugPriceInjector {
 
     remove_summary_card(target_node: TargetNode = document) {
         target_node.querySelectorAll(`.${this.parent.classnames.summary_card}`).forEach(el => el.remove())
-
     }
 
     remove_price_badge_group(target_node: TargetNode = document) {

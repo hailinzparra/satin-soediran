@@ -1,4 +1,4 @@
-import { SoediranEvent, SoediranUrlRouteFilters } from './types/api/soediran'
+import { SoediranEvent, SoediranUrlRouteFilters } from './types/api/soediran/base'
 import { Log } from './utils/logger'
 
 const start_sencha_interceptor = (): void => {

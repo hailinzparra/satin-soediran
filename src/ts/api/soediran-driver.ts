@@ -1,7 +1,7 @@
 import { DB_SOEDIRAN_DATABASE } from '../data/db-soediran'
 import { SatinEngine } from '../engine/base'
 import { BaseApiDriver, BaseApiResponse, SatinSessionData } from '../types/api/base'
-import { SoediranApiResponse, SoediranEvent } from '../types/api/soediran'
+import { SoediranApiResponse, SoediranEvent } from '../types/api/soediran/base'
 import { Log } from '../utils/logger'
 import { decrypt_data } from '../utils/soediran-decrypt'
 
