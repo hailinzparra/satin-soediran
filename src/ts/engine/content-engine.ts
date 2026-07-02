@@ -31,6 +31,7 @@ export class SatinContentEngine extends SatinEngine {
     ]
 
     async on_init() {
+        inject_css('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap')
         inject_css('assets/css/content.css')
         inject_script('assets/js/inject.js')
         await this.all_drivers_initialized()

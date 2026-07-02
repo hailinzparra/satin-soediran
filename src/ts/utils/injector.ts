@@ -11,7 +11,8 @@ export const inject_css = (file_path: string, element_id?: string) => {
 
         link.rel = 'stylesheet'
         link.type = 'text/css'
-        link.href = chrome.runtime.getURL(file_path)
+
+        link.href = file_path.startsWith('http') ? file_path : chrome.runtime.getURL(file_path)
 
         link.onload = () => {
             Log.log(`css successfully injected: ${file_path}`)
@@ -41,13 +42,18 @@ export const inject_script = (file_path: string, element_id?: string) => {
         const script = document.createElement('script')
         if (element_id) script.id = element_id
 
-        script.src = chrome.runtime.getURL(file_path)
         script.type = 'text/javascript'
+
+        script.src = file_path.startsWith('http') ? file_path : chrome.runtime.getURL(file_path)
 
         script.onload = (event: Event) => {
             Log.log(`script successfully injected: ${file_path}`)
             const target_script = event.target as HTMLScriptElement
             target_script.remove()
+        }
+
+        script.onerror = (err) => {
+            Log.error(`failed to load script file: ${file_path}`, err)
         }
 
         const target = document.head || document.documentElement

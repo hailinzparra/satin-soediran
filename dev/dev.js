@@ -57,7 +57,10 @@ const build_scss = () => {
     const scss_dir = path_resolve('../src/scss')
     if (!fs.existsSync(scss_dir)) return
 
-    const files = fs.readdirSync(scss_dir).filter(name => /\.scss$/i.test(name) && !name.startsWith('_'))
+    const files = fs.readdirSync(scss_dir, { withFileTypes: true })
+        .filter(dirent => dirent.isFile() && /\.scss$/i.test(dirent.name) && !dirent.name.startsWith('_'))
+        .map(dirent => dirent.name)
+
     const css_out_dir = path.join(output_dir, 'assets/css')
     mkdir(css_out_dir)
 
@@ -67,6 +70,7 @@ const build_scss = () => {
         try {
             const result = sass.compile(src_file, {
                 style: is_prod ? 'compressed' : 'expanded',
+                loadPaths: [scss_dir],
             })
             fs.writeFileSync(dest_file, result.css)
             log(32, '+ scss:', path_relative(dest_file))

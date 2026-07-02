@@ -1,0 +1,12 @@
+$font-default: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+$font-main: "Plus Jakarta Sans";
+
+$font-main-stack: $font-main, $font-default;
+
+@mixin satin-font-main($important: true) {
+    @if $important {
+        font-family: $font-main-stack !important;
+    } @else {
+        font-family: $font-main-stack;
+    }
+}

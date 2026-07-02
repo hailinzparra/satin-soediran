@@ -1,6 +1,6 @@
 import { SoediranDataOrderResep } from '../../types/api/soediran/data'
 import { PrescriberNameData, PrescriberNameItem, PrescriberNameResponse } from '../../types/functions/prescriber-name'
-import { format_medical_name } from '../../utils/misc'
+import { format_medical_name } from '../../utils/formatter'
 import { PrescriberNameFunction } from './parent'
 
 type ExtractedData = PrescriberNameItem & {
