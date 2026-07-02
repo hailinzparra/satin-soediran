@@ -10,6 +10,7 @@ interface ExtractedData {
 export class DrugPriceExtractor {
     private has_new_data: boolean = false
     private new_price_data: DrugPriceData = {}
+    private BRACKETED_ID_NAME_REGEXP = /^\[\s*(\d+)\s*\]\s*-\s*(.+)$/
 
     constructor(
         protected parent: DrugPriceFunction
@@ -44,7 +45,7 @@ export class DrugPriceExtractor {
                 const inner_divs = card.querySelectorAll('div')
 
                 const raw_name = inner_divs[0].textContent?.trim() || ''
-                const match = raw_name.match(/^\[\s*(\d+)\s*\]\s*-\s*(.+)$/)
+                const match = raw_name.match(this.BRACKETED_ID_NAME_REGEXP)
                 if (!match) return
 
                 extracted_data.id = match[1].trim()

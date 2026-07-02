@@ -11,8 +11,8 @@ import { VaultDriver } from '../utils/vault'
 
 export abstract class SatinEngine {
     drivers: SatinDriversContainer = {
-        [SatinDriver.Temp]: new VaultDriver(SatinDriver.Temp, {}, 'session'),
-        [SatinDriver.Session]: new VaultDriver(SatinDriver.Session, DEFAULT_SATIN_SESSION, 'session'),
+        [SatinDriver.Temp]: new VaultDriver(SatinDriver.Temp, {}, 'memory'),
+        [SatinDriver.Session]: new VaultDriver(SatinDriver.Session, DEFAULT_SATIN_SESSION),
         [SatinDriver.Settings]: new VaultDriver(SatinDriver.Settings, DEFAULT_SATIN_SETTINGS),
         [SatinDriver.Persistent]: new VaultDriver(SatinDriver.Persistent),
         [SatinDriver.PopupSettings]: new VaultDriver(SatinDriver.PopupSettings, DEFAULT_SATIN_POPUP_SETTINGS),

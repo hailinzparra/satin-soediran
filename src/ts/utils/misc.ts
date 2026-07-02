@@ -2,66 +2,46 @@ export const sleep = (ms: number): Promise<any> => {
     return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-export const title_case_name = (name: string | undefined): string => {
+const WORD_CAPITALIZATION_REGEXP = /(?:^|[\s\-\.])\S/g
+const TOKEN_SPLIT_REGEXP = /([\s\-\.,]+)/
+const SPECIALIST_SUFFIX_REGEXP = /Sp\.([a-zA-Z\-\.]+)/g
+
+export const format_medical_name = (name?: string): string => {
     if (!name) return ''
-    return name
-        .trim()
+
+    const clean_name = name.trim().replace(/\s+/g, ' ')
+
+    // Initial title casing (handles spaces, hyphens, and dots)
+    let result = clean_name
         .toLowerCase()
-        .replace(/\s+/g, ' ')
-        .replace(/(?:^|[\s\-])\S/g, (match) => match.toUpperCase())
-}
+        .replace(WORD_CAPITALIZATION_REGEXP, (match) => match.toUpperCase())
 
-export const clean_and_format_gelar = (title: string | undefined, is_gelar_depan: boolean): string => {
-    if (!title) return ''
+    // Tokenize to handle specific word rules ("dr" and "IGD")
+    const tokens = result.split(TOKEN_SPLIT_REGEXP)
+    const raw_tokens = clean_name.split(TOKEN_SPLIT_REGEXP) // Pre-split raw for 1:1 index matching
 
-    let cleaned = title
-        .trim()
-        .replace(/\s+/g, ' ')
-        .replace(/\.+/g, '.')
-        .replace(/,+$/, '')
+    const formatted_tokens = tokens.map((token, index) => {
+        const lower_token = token.toLowerCase()
 
-    let result = ''
+        if (lower_token === 'igd') {
+            return 'IGD'
+        }
 
-    if (is_gelar_depan) {
-        const tokens = cleaned.split(' ')
-        const formatted_tokens = tokens.map(token => {
-            const lower_token = token.toLowerCase()
-            if (lower_token === 'dr' || lower_token === 'dr.') {
-                return 'dr.'
+        if (lower_token === 'dr') {
+            const original_token = raw_tokens[index]
+            if (original_token === 'dr' || original_token === 'dr.') {
+                return 'dr'
             }
-            return token.toLowerCase().replace(/(?:^|[\s\-])\S/g, (match) => match.toUpperCase())
-        })
-        result = formatted_tokens.join(' ')
-        if (result && !result.endsWith('.')) result += '.'
-        result = result.replace(/\.+$/, '.')
-    } else {
-        result = cleaned
-        result = result.replace(/,(?!\s)/g, ', ')
-        result = result.replace(/\s+/g, ' ')
-    }
+            return 'Dr'
+        }
 
-    return result.replace(/\.+/g, '.')
-}
+        return token
+    })
 
-export const format_fullname = (
-    raw_name: string | undefined,
-    gelar_depan: string | undefined,
-    gelar_belakang: string | undefined,
-): string => {
-    const clean_name = title_case_name(raw_name)
-    if (!clean_name) return ''
+    result = formatted_tokens.join('')
 
-    const depan = clean_and_format_gelar(gelar_depan, true)
-    const belakang = clean_and_format_gelar(gelar_belakang, false)
-
-    const name_parts: string[] = []
-    if (depan) name_parts.push(depan)
-    name_parts.push(clean_name)
-
-    let fullname = name_parts.join(' ')
-    if (belakang) {
-        fullname += `, ${belakang}`
-    }
-
-    return fullname
+    // Force uppercase on everything following "Sp."
+    return result.replace(SPECIALIST_SUFFIX_REGEXP, (match, suffix) => {
+        return 'Sp.' + suffix.toUpperCase()
+    })
 }

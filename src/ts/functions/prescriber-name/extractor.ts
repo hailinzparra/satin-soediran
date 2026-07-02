@@ -1,6 +1,6 @@
 import { SoediranDataOrderResep } from '../../types/api/soediran/data'
 import { PrescriberNameData, PrescriberNameItem, PrescriberNameResponse } from '../../types/functions/prescriber-name'
-import { title_case_name } from '../../utils/misc'
+import { format_medical_name } from '../../utils/misc'
 import { PrescriberNameFunction } from './parent'
 
 type ExtractedData = PrescriberNameItem & {
@@ -59,7 +59,7 @@ export class PrescriberNameExtractor {
 
             extracted_data.id = extracted_data.order_resep_data.NOMOR || ''
             extracted_data.is_cito = extracted_data.order_resep_data.CITO === '1'
-            extracted_data.prescriber_name = title_case_name(extracted_data.order_resep_data.PEMBERI_RESEP)
+            extracted_data.prescriber_name = format_medical_name(extracted_data.order_resep_data.PEMBERI_RESEP)
 
             this.new_data[extracted_data.id] = {
                 id: extracted_data.id,

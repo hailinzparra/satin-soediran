@@ -1,27 +1,35 @@
 import { Log } from './logger'
 
-export type StorageType = 'local' | 'session'
+export type StorageType = 'local' | 'session' | 'memory'
 
 export class VaultDriver<T extends Record<string, any> = Record<string, any>> {
     public key: string
     public data: T
     private default_data: T
-    private storage: chrome.storage.StorageArea
+    private storage: chrome.storage.StorageArea | null = null
     public is_session: boolean = false
+    public is_memory: boolean = false
     public is_initialized: Promise<void>
 
     constructor(key: string, default_data: T = {} as T, storage_type: StorageType = 'local') {
         this.key = key
         this.data = { ...default_data }
         this.default_data = default_data
-        this.storage = /* storage_type === 'session' ? chrome.storage.session : */ chrome.storage.local
 
         if (storage_type === 'session') {
+            this.storage = chrome.storage.local //chrome.storage.session doesnt work somehow
             this.is_session = true
             this.is_initialized = this.save().then(() => {
                 Log.log(`Session vault reset successfully: ${key}`)
             })
+        } else if (storage_type === 'memory') {
+            this.storage = null
+            this.is_memory = true
+            this.is_initialized = Promise.resolve().then(() => {
+                Log.log(`Memory vault initialized successfully (runtime only): ${key}`)
+            })
         } else {
+            this.storage = chrome.storage.local
             this.is_initialized = this.load().then(() => {
                 Log.log(`Local vault initialized successfully: ${key}`)
             })
@@ -35,11 +43,17 @@ export class VaultDriver<T extends Record<string, any> = Record<string, any>> {
             )
             if (is_duplicate) return
         }
+
         this.data = { ...this.data, ...new_data }
-        await this.save()
+
+        if (!this.is_memory) {
+            await this.save()
+        }
     }
 
     async save(): Promise<void> {
+        if (this.is_memory || !this.storage) return
+
         try {
             await this.storage.set({ [this.key]: this.data })
         } catch (err) {
@@ -49,6 +63,8 @@ export class VaultDriver<T extends Record<string, any> = Record<string, any>> {
     }
 
     async load(): Promise<T> {
+        if (this.is_memory || !this.storage) return this.data
+
         try {
             const result = await this.storage.get(this.key)
             if (result && result[this.key]) {
@@ -63,6 +79,9 @@ export class VaultDriver<T extends Record<string, any> = Record<string, any>> {
 
     async reset(): Promise<void> {
         this.data = { ...this.default_data }
-        await this.save()
+
+        if (!this.is_memory) {
+            await this.save()
+        }
     }
 }
