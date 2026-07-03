@@ -1,8 +1,9 @@
 import { AllowCopyFunction } from '../functions/allow-copy'
 import { DrugPriceFunction } from '../functions/drug-price/parent'
+import { EMRManagerFunction } from '../functions/emr-manager/parent'
 import { PrescriberNameFunction } from '../functions/prescriber-name/parent'
 import { SatinDriver, SatinDriversContainer } from '../types/driver'
-import { SatinBaseFunction } from '../types/functions/base'
+import { SatinCoreFunction } from '../types/functions/core'
 import { inject_css, inject_script } from '../utils/injector'
 import { SatinEngine } from './base'
 
@@ -10,21 +11,22 @@ export class SatinContentEngine extends SatinEngine {
     observer: MutationObserver | null = null
     debounce_time: number = 250
 
-    global_functions: SatinBaseFunction[] = [
+    global_functions: SatinCoreFunction[] = [
         new AllowCopyFunction(this),
     ]
 
-    dash_functions: SatinBaseFunction[] = [
+    dash_functions: SatinCoreFunction[] = [
         // new OpenInNewTabFunction(this),
     ]
 
-    emr_functions: SatinBaseFunction[] = [
+    emr_functions: SatinCoreFunction[] = [
+        new EMRManagerFunction(this),
         new DrugPriceFunction(this),
         new PrescriberNameFunction(this),
         // new ResultsMenuFunction(this),
     ]
 
-    get_all_functions = (): SatinBaseFunction[] => [
+    get_all_functions = (): SatinCoreFunction[] => [
         ...this.global_functions,
         ...this.dash_functions,
         ...this.emr_functions,

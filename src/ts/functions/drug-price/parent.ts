@@ -1,12 +1,12 @@
 import { DB_DRUG_PRICE_DATABASE } from '../../data/db-drug-price'
 import { SatinDriver } from '../../types/driver'
-import { SatinBaseFunction } from '../../types/functions/base'
+import { SatinCoreFunction } from '../../types/functions/core'
 import { DrugPriceData } from '../../types/functions/drug-price'
 import { VaultDriver } from '../../utils/vault'
 import { DrugPriceExtractor } from './extractor'
 import { DrugPriceInjector } from './injector'
 
-export class DrugPriceFunction extends SatinBaseFunction {
+export class DrugPriceFunction extends SatinCoreFunction {
     extractor: DrugPriceExtractor = new DrugPriceExtractor(this)
     injector: DrugPriceInjector = new DrugPriceInjector(this)
 

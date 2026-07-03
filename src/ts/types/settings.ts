@@ -3,6 +3,8 @@ export interface SatinSettingsData {
 
     dash_show_openinnewtab_button: boolean
 
+    emr_enable_manager: boolean
+
     emr_show_drug_price: boolean
     emr_show_drug_price_summary_title: string
     emr_show_drug_price_summary_full_title: string

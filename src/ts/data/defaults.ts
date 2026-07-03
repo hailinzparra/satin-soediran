@@ -12,6 +12,8 @@ export const DEFAULT_SATIN_SETTINGS: SatinSettingsData = {
 
     dash_show_openinnewtab_button: true,
 
+    emr_enable_manager: true,
+
     emr_show_drug_price: true,
     emr_show_drug_price_summary_title: 'Ringkasan Harga',
     emr_show_drug_price_summary_full_title: 'Detail Keuntungan',

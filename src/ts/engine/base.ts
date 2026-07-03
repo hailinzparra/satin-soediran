@@ -3,6 +3,7 @@ import { SoediranApiDriver } from '../api/soediran-driver'
 import { DEFAULT_SATIN_SESSION, DEFAULT_SATIN_POPUP_SETTINGS, DEFAULT_SATIN_SETTINGS } from '../data/defaults'
 import { SatinSessionData } from '../types/api/base'
 import { SatinDriver, SatinDriversContainer } from '../types/driver'
+import { DEFAULT_EMR_MANAGER_CONFIG } from '../types/functions/emr-manager'
 import { SatinPersistentData } from '../types/persistent'
 import { SatinPopupSettingsData, SatinSettingsData } from '../types/settings'
 import { SatinTempData } from '../types/temp'
@@ -17,6 +18,7 @@ export abstract class SatinEngine {
         [SatinDriver.Persistent]: new VaultDriver(SatinDriver.Persistent),
         [SatinDriver.PopupSettings]: new VaultDriver(SatinDriver.PopupSettings, DEFAULT_SATIN_POPUP_SETTINGS),
         [SatinDriver.NewDrugPrices]: new VaultDriver(SatinDriver.NewDrugPrices),
+        [SatinDriver.EMRManagerNewData]: new VaultDriver(SatinDriver.EMRManagerNewData, DEFAULT_EMR_MANAGER_CONFIG['data']['new_data'], 'memory'),
     }
     api: SatinApiContext = new SatinApiContext(this, new SoediranApiDriver(this))
     get_temp = (): SatinTempData => this.drivers[SatinDriver.Temp].data

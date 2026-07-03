@@ -1,6 +1,6 @@
 import { SoediranEvent } from '../../types/api/soediran/base'
 import { SatinDriver } from '../../types/driver'
-import { SatinBaseFunction } from '../../types/functions/base'
+import { SatinCoreFunction } from '../../types/functions/core'
 import { PrescriberNameResponse } from '../../types/functions/prescriber-name'
 import { SatinTempData } from '../../types/temp'
 import { VaultDriver } from '../../utils/vault'
@@ -8,7 +8,7 @@ import { PrescriberNameExtractor } from './extractor'
 import { PrescriberNameInjector } from './injector'
 
 
-export class PrescriberNameFunction extends SatinBaseFunction {
+export class PrescriberNameFunction extends SatinCoreFunction {
     extractor: PrescriberNameExtractor = new PrescriberNameExtractor(this)
     injector: PrescriberNameInjector = new PrescriberNameInjector(this)
 

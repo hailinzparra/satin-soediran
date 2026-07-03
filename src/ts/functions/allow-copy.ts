@@ -1,6 +1,6 @@
-import { SatinBaseFunction } from '../types/functions/base'
+import { SatinCoreFunction } from '../types/functions/core'
 
-export class AllowCopyFunction extends SatinBaseFunction {
+export class AllowCopyFunction extends SatinCoreFunction {
     bind_events() {
         document.addEventListener('selectstart', (e) => {
             const allow_copy = this.engine.get_settings().global_allow_copy
