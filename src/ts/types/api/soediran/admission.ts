@@ -1,4 +1,5 @@
 import { RawDictStatus } from './dictionary'
+import { RawDataPerujukLab } from './lab'
 import { RawDataOrderResep } from './prescription'
 import { RawDataPendaftaran } from './registration'
 import { RawDataRuangan, RawDataRuangKamarTidur } from './room'
@@ -29,6 +30,7 @@ export interface RawDataKunjungan {
         RUANGAN?: RawDataRuangan
         STATUS?: RawDictStatus
         PENDAFTARAN?: RawDataPendaftaran
+        PERUJUK?: RawDataPerujukLab
         ASAL?: RawDataOrderResep
         RUANG_KAMAR_TIDUR?: RawDataRuangKamarTidur
         DPJP?: RawDataDokter

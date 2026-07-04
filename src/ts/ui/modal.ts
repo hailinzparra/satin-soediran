@@ -264,7 +264,7 @@ class ModalManager {
 
         this.setup_dragging(header_el, modal_el)
 
-        modal_el.addEventListener('mousedown', () => this.focus(id))
+        modal_el.addEventListener('mousedown', () => this.focus(id, 'click'))
 
         min_btn.addEventListener('click', (e) => {
             e.stopPropagation()
@@ -304,7 +304,7 @@ class ModalManager {
         })
 
         this.modals.set(id, instance)
-        this.focus(id)
+        this.focus(id, 'click')
 
         return { instance, is_existing: false }
     }
@@ -332,7 +332,7 @@ class ModalManager {
         const target = this.modals.get(id)
         if (!target) return
 
-        target.el.classList.remove('animate-open')
+        target.el.classList.remove('animate-open', 'animate-pop')
 
         if (!target.is_pinned) {
             // --- PINNING TO BODY ---
@@ -342,7 +342,7 @@ class ModalManager {
 
             document.body.append(target.el)
 
-            this.focus(id)
+            this.focus(id, 'click')
         } else {
             // --- UNPINNING BACK TO ORIGINAL CONTAINER ---
             const recovered_parent = document.querySelector<HTMLElement>(
@@ -356,7 +356,7 @@ class ModalManager {
 
                 recovered_parent.append(target.el)
 
-                this.focus(id)
+                this.focus(id, 'click')
             } else {
                 this.close(id)
             }

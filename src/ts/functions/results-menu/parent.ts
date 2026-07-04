@@ -1,0 +1,75 @@
+import { SatinBaseFunction } from '../../types/functions/base'
+import { DEFAULT_RESULTS_MENU_CONFIG, ResultsMenuConfig, ResultsMenuData } from '../../types/functions/results-menu'
+import { ModalUI } from '../../ui/modal'
+import { ResultsMenuExtractor } from './extractor'
+import { ResultsMenuInjector } from './injector'
+import { ResultsMenuRenderer } from './renderer/main'
+
+export interface ResultsMenuOpenModalData {
+    mrn: string
+    panel_id: string
+    target_el: HTMLDivElement
+}
+
+export class ResultsMenuFunction extends SatinBaseFunction<ResultsMenuConfig, ResultsMenuExtractor, ResultsMenuInjector> {
+    public extractor = new ResultsMenuExtractor(this)
+    public injector = new ResultsMenuInjector(this)
+    public config = DEFAULT_RESULTS_MENU_CONFIG
+
+    private static MODAL = {
+        WIDTH: 760,
+        HEIGHT: 490,
+    }
+
+    get_default_data(): ResultsMenuData {
+        return structuredClone(DEFAULT_RESULTS_MENU_CONFIG.data)
+    }
+
+    apply(): void {
+        if (this.get_is_feature_enabled()) {
+            // just injector at work
+            this.injector.execute()
+        } else {
+            // reset injection (if any) if disabled
+            this.injector.reset()
+        }
+    }
+
+    on_btn_click(data: ResultsMenuOpenModalData) {
+        this.open_modal(data)
+    }
+
+    open_modal(data: ResultsMenuOpenModalData) {
+        const window_el = data.target_el.closest<HTMLElement>('.x-window')
+        const parent_el = window_el || document.body
+
+        const w = ResultsMenuFunction.MODAL.WIDTH
+        const h = ResultsMenuFunction.MODAL.HEIGHT
+        const x = Math.max(0, (window.innerWidth - w) / 2)
+        const y = Math.max(0, (window.innerHeight - h) / 2)
+
+        const { instance: modal_win, is_existing } = ModalUI.fire({
+            id: this.config.selectors.ids.modal(data.mrn, data.panel_id),
+            title: `Hasil (${data.mrn})`,
+            content: document.createElement('div'),
+            parent_el: parent_el,
+            options: {
+                top: `${y}px`,
+                left: `${x}px`,
+                width: `${w}px`,
+                height: `${h}px`,
+            },
+        })
+
+        if (is_existing || !modal_win) return
+
+        // a new modal opened! lets build the content
+        const renderer = new ResultsMenuRenderer(this, data.mrn)
+        modal_win.el.style.maxWidth = 'calc(100vw - 20px)'
+        modal_win.body.style.padding = '0'
+        modal_win.body.append(renderer.manager.container)
+
+        // start the first data loading
+        renderer.start()
+    }
+}

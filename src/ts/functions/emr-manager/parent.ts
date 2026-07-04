@@ -1,24 +1,28 @@
 import { SatinBaseFunction } from '../../types/functions/base'
-import { DEFAULT_EMR_MANAGER_CONFIG, EMRManagerConfig } from '../../types/functions/emr-manager'
+import { DEFAULT_EMR_MANAGER_CONFIG, EMRManagerConfig, EMRManagerConfigData } from '../../types/functions/emr-manager'
 import { EMRManagerExtractor } from './extractor'
 import { EMRManagerInjector } from './injector'
 
-export class EMRManagerFunction extends SatinBaseFunction<EMRManagerConfig> {
-    public extractor: EMRManagerExtractor = new EMRManagerExtractor(this)
-    public injector: EMRManagerInjector = new EMRManagerInjector(this)
-    public config: EMRManagerConfig = DEFAULT_EMR_MANAGER_CONFIG
+export class EMRManagerFunction extends SatinBaseFunction<EMRManagerConfig, EMRManagerExtractor, EMRManagerInjector> {
+    public extractor = new EMRManagerExtractor(this)
+    public injector = new EMRManagerInjector(this)
+    public config = DEFAULT_EMR_MANAGER_CONFIG
 
-    get_default_new_data(): EMRManagerConfig['data']['new_data'] {
-        return structuredClone(DEFAULT_EMR_MANAGER_CONFIG.data.new_data)
+    get_default_data(): EMRManagerConfigData {
+        return structuredClone(DEFAULT_EMR_MANAGER_CONFIG.data)
     }
 
-    get_default_extracted_data(): EMRManagerConfig['data']['extracted_data'] {
-        return structuredClone(DEFAULT_EMR_MANAGER_CONFIG.data.extracted_data)
-    }
-
-    on_debounce(): void {
-        this.extractor.execute()
-    }
-
+    // empty apply() to defer auto execute of extractor/injector by default
     apply(): void { }
+
+    // set the feature's main function entrypoint from on_debouce() instead of apply()
+    on_debounce(): void {
+        if (this.get_is_feature_enabled()) {
+            // just extractor at work
+            this.extractor.execute()
+        } else {
+            // do nothing if disabled
+            // no reset no nothing
+        }
+    }
 }

@@ -13,14 +13,9 @@ export class SoediranApiDriver extends BaseApiDriver {
             sys_name: 'Soediran',
             domains: [
                 "https://api.rsudsoediranms.com",
-                "http://192.168.13.3",
-                "http://192.168.13.4",
-                "http://192.168.13.5",
                 "http://192.168.13.6",
                 "http://192.168.13.7",
                 "http://192.168.13.8",
-                "http://192.168.13.9",
-                "http://192.168.13.10",
             ],
             paths: {
                 api: '/webservice/',

@@ -23,21 +23,24 @@ export interface SatinBaseFunctionConfig {
     data: SatinBaseFunctionConfigData
 }
 
-export abstract class SatinBaseFunctionProcessor<C extends SatinBaseFunctionConfig> {
+export abstract class SatinBaseFunctionProcessor<P extends SatinBaseFunction<any, any, any>, C extends SatinBaseFunctionConfig> {
     public has_new_data: boolean = false
-    public new_data: C['data']['new_data'] = {} as any // undefined at init, promised will always be populated before on_execute()
-    public saved_data: SatinDriversContainer[C['primary_driver_key']]['data'] = {} as any // undefined at init, promised will always be populated before on_execute()
+    public extracted_data: C['data']['new_data'] = {} as any
+    public values_to_render: C['data']['new_data'] = {} as any
+    public new_data: C['data']['new_data'] = {} as any
+    public saved_data: SatinDriversContainer[C['primary_driver_key']]['data'] = {} as any
 
-    constructor(protected parent: SatinBaseFunction<C>) {
-        // this.new_data = this.parent.get_default_new_data()
-        // this.saved_data = this.parent.get_saved_data()
-    }
+    constructor(protected parent: P) { }
 
     abstract on_execute(): Promise<void>
 
     public async execute(): Promise<void> {
         this.has_new_data = false
-        this.new_data = this.parent.get_default_new_data()
+
+        const default_data = this.parent.get_default_data()
+        this.extracted_data = default_data.extracted_data
+        this.values_to_render = default_data.values_to_render
+        this.new_data = default_data.new_data
         this.saved_data = this.parent.get_saved_data()
 
         await this.on_execute()
@@ -48,18 +51,22 @@ export abstract class SatinBaseFunctionProcessor<C extends SatinBaseFunctionConf
     }
 }
 
-export abstract class SatinBaseFunctionExtractor<C extends SatinBaseFunctionConfig> extends SatinBaseFunctionProcessor<C> {
+export abstract class SatinBaseFunctionExtractor<P extends SatinBaseFunction<any, any, any>, C extends SatinBaseFunctionConfig> extends SatinBaseFunctionProcessor<P, C> {
     public abstract override on_execute(): Promise<void>
 }
 
-export abstract class SatinBaseFunctionInjector<C extends SatinBaseFunctionConfig> extends SatinBaseFunctionProcessor<C> {
+export abstract class SatinBaseFunctionInjector<P extends SatinBaseFunction<any, any, any>, C extends SatinBaseFunctionConfig> extends SatinBaseFunctionProcessor<P, C> {
     public abstract override on_execute(): Promise<void>
     public abstract reset(target_node?: SatinBaseFunctionTargetNode): void
 }
 
-export abstract class SatinBaseFunction<C extends SatinBaseFunctionConfig> extends SatinCoreFunction {
-    public abstract extractor: SatinBaseFunctionExtractor<C>
-    public abstract injector: SatinBaseFunctionInjector<C>
+export abstract class SatinBaseFunction<
+    C extends SatinBaseFunctionConfig,
+    ExtractorType extends SatinBaseFunctionExtractor<any, C> = SatinBaseFunctionExtractor<any, C>,
+    InjectorType extends SatinBaseFunctionInjector<any, C> = SatinBaseFunctionInjector<any, C>
+> extends SatinCoreFunction {
+    public abstract extractor: ExtractorType
+    public abstract injector: InjectorType
     public abstract config: C
 
     public get_driver(): SatinDriversContainer[C['primary_driver_key']] {
@@ -74,8 +81,8 @@ export abstract class SatinBaseFunction<C extends SatinBaseFunctionConfig> exten
         }
     }
 
-    abstract get_default_extracted_data(): C['data']['extracted_data']
-    abstract get_default_new_data(): C['data']['new_data']
+    abstract get_default_data(): C['data']
+
     public get_saved_data(): SatinDriversContainer[C['primary_driver_key']]['data'] {
         return this.get_driver().data
     }

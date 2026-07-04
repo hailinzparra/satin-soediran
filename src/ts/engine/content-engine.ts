@@ -2,6 +2,7 @@ import { AllowCopyFunction } from '../functions/allow-copy'
 import { DrugPriceFunction } from '../functions/drug-price/parent'
 import { EMRManagerFunction } from '../functions/emr-manager/parent'
 import { PrescriberNameFunction } from '../functions/prescriber-name/parent'
+import { ResultsMenuFunction } from '../functions/results-menu/parent'
 import { SatinDriver, SatinDriversContainer } from '../types/driver'
 import { SatinCoreFunction } from '../types/functions/core'
 import { inject_css, inject_script } from '../utils/injector'
@@ -23,7 +24,7 @@ export class SatinContentEngine extends SatinEngine {
         new EMRManagerFunction(this),
         new DrugPriceFunction(this),
         new PrescriberNameFunction(this),
-        // new ResultsMenuFunction(this),
+        new ResultsMenuFunction(this),
     ]
 
     get_all_functions = (): SatinCoreFunction[] => [
