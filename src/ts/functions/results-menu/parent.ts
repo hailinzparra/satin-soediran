@@ -17,8 +17,10 @@ export class ResultsMenuFunction extends SatinBaseFunction<ResultsMenuConfig, Re
     public config = DEFAULT_RESULTS_MENU_CONFIG
 
     private static MODAL = {
-        WIDTH: 760,
-        HEIGHT: 490,
+        // WIDTH: 760,
+        // HEIGHT: 490,
+        WIDTH: 600,
+        HEIGHT: 760,
     }
 
     get_default_data(): ResultsMenuData {

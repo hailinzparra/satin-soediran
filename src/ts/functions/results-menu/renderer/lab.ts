@@ -27,7 +27,7 @@ export class ResultsMenuLabRenderer {
         },
     }
 
-    limit: number = 5
+    limit: number = 100
 
     hasil_lab_payload = new RequestPayloadBuilder<SoediranParamsHasilLab>({
         NORM: '',
@@ -66,8 +66,8 @@ export class ResultsMenuLabRenderer {
     }
 
     build_dom_elements(target_el: HTMLDivElement) {
-        const table_wrapper = create_element('div', { classes: ResultsMenuLabRenderer.classes.table.wrapper }, [this.table.el])
-        target_el.append(this.toolbar.el, table_wrapper)
+        const wrapper = create_element('div', { classes: ResultsMenuLabRenderer.classes.table.wrapper }, [this.table.el])
+        target_el.append(this.toolbar.el, wrapper)
     }
 
     async load_next_data(): Promise<{ success: boolean }> {
@@ -79,7 +79,7 @@ export class ResultsMenuLabRenderer {
             })
 
             this.process_next_data(result)
-            this.rebuild_table()
+            this.update_table()
 
             return { success: true }
         } catch (err) {
@@ -88,8 +88,8 @@ export class ResultsMenuLabRenderer {
         }
     }
 
-    rebuild_table() {
-        this.table.rebuild_table(this.lab_results)
+    update_table() {
+        this.table.update_table(this.lab_results)
     }
 
     process_next_data(result: BaseApiResponse<SoediranDataHasilLab[]>) {

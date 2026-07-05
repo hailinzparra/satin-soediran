@@ -14,8 +14,8 @@ export class ResultsMenuRenderer {
         this.manager = new ResultsMenuTabManager(this.parent)
 
         const tab_lab = this.add_tab('Lab', 'fa-flask')
-        const tab_rad = this.add_tab('Radio', 'fa-odnoklassniki-square')
-        const tab_text = this.add_tab('Teks')
+        // const tab_rad = this.add_tab('Radio', 'fa-odnoklassniki-square')
+        // const tab_text = this.add_tab('Teks')
 
         this.lab_renderer = new ResultsMenuLabRenderer(this)
         this.lab_renderer.build_dom_elements(tab_lab)

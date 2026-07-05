@@ -41,3 +41,67 @@ export const format_medical_name = (name?: string): string => {
         return 'Sp.' + suffix.toUpperCase()
     })
 }
+
+export const format_gender = (gender: 'Male' | 'Female') => {
+    let long = '??'
+    let short = '?'
+    let color = ''
+    if (gender === 'Male') {
+        long = 'Laki-laki'
+        short = 'L'
+        color = '#157fcc'
+    }
+    else if (gender === 'Female') {
+        long = 'Perempuan'
+        short = 'P'
+        color = '#dc2626'
+    }
+    return { long, short, color }
+}
+
+export const format_pt_name = (name: string): string => {
+    return name
+        .split(' ')
+        .map(word => {
+            if (!word) return ''
+
+            let lowered = word.toLowerCase()
+            let capitalized_word = ''
+            let found_first_letter = false
+
+            for (const char of lowered) {
+                if (/[a-z]/.test(char) && !found_first_letter) {
+                    capitalized_word += char.toUpperCase()
+                    found_first_letter = true
+                } else {
+                    capitalized_word += char
+                }
+            }
+
+            return capitalized_word.replace(/(-)([a-z])/g, (match, hyphen, letter) => {
+                return hyphen + letter.toUpperCase()
+            })
+        })
+        .join(' ')
+}
+
+export const format_pt_age = (birth_str: string, target_str?: string): string => {
+    const birth = new Date(birth_str)
+    const target = target_str ? new Date(target_str) : new Date()
+    if (isNaN(birth.getTime()) || isNaN(target.getTime())) return '0th, 0bl, 0hr'
+
+    let years = target.getFullYear() - birth.getFullYear()
+    let months = target.getMonth() - birth.getMonth()
+    let days = target.getDate() - birth.getDate()
+
+    if (days < 0) {
+        months--
+        const prev_month = new Date(target.getFullYear(), target.getMonth(), 0)
+        days += prev_month.getDate()
+    }
+    if (months < 0) {
+        months += 12
+        years--
+    }
+    return `${years}th, ${months}bl, ${days}hr`
+}
