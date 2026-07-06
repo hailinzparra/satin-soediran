@@ -83,8 +83,11 @@ export class ModalInstance {
     }
 }
 
-class ModalManager {
+export class ModalManager {
     private static instance: ModalManager
+    public static Event = {
+        Interaction: 'modal:interaction',
+    }
 
     private modals: Map<string, ModalInstance> = new Map()
     private modal_stack: string[] = []
@@ -451,12 +454,15 @@ class ModalManager {
         handle.addEventListener('mousedown', (e: MouseEvent) => {
             const clicked_el = e.target as HTMLElement
             if (clicked_el.closest('.sn-modal-action-btn')) {
+                window.dispatchEvent(new CustomEvent(ModalManager.Event.Interaction, { bubbles: true }))
                 return
             }
 
             e.preventDefault()
             pos3 = e.clientX
             pos4 = e.clientY
+
+            window.dispatchEvent(new CustomEvent(ModalManager.Event.Interaction, { bubbles: true }))
 
             document.addEventListener('mousemove', on_mouse_move)
             document.addEventListener('mouseup', on_mouse_up)

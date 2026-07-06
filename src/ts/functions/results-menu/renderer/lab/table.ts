@@ -1,16 +1,10 @@
-import { DEFAULT_RESULTS_MENU_PANELS_CONFIG, LAB_PARAM_MAP, LAB_SYMBOL_MAP, ResultsMenuLabResult } from '../../../../types/functions/results-menu'
+import { DEFAULT_RESULTS_MENU_PANELS_CONFIG, RESULTS_MENU_LAB_PARAM_MAP, RESULTS_MENU_LAB_SYMBOL_MAP, PanelsConfig, ResultsMenuLabResult } from '../../../../types/functions/results-menu'
+import { ModalManager } from '../../../../ui/modal'
 import { create_element } from '../../../../utils/dom'
 import { format_gender, format_pt_age, format_pt_name } from '../../../../utils/formatter'
 import { ResultsMenuLabRenderer } from '../lab'
 
 type LabResults = Map<string, ResultsMenuLabResult>
-
-interface PanelConfig {
-    panel_name: string
-    parameter_names: string[]
-}
-
-type PanelsConfig = Record<string, PanelConfig>
 
 interface TableDataDate {
     id: string
@@ -19,6 +13,7 @@ interface TableDataDate {
     time: string
     iso_date: string
     raw_date: string
+    rounded_date: string
 }
 
 interface LabResultRenderValue {
@@ -43,7 +38,7 @@ interface PanelsRow {
 
 interface TableData {
     dates: Array<TableDataDate>
-    date_id_lookup: Map<ResultsMenuLabResult['order']['order_date'], TableDataDate['id']>
+    date_id_lookup: Map<TableDataDate['rounded_date'], TableDataDate['id']>
     default_panels_config: PanelsConfig
 }
 
@@ -68,6 +63,14 @@ interface TableValuesToRender {
 
 export class ResultsMenuLabTable {
     el: HTMLDivElement
+
+    private static next_date_id = 1000
+    public static get_next_date_id(): string {
+        return String(ResultsMenuLabTable.next_date_id++)
+    }
+    get_minute_string(date_str: string) {
+        return date_str && date_str.length >= 16 ? date_str.slice(0, 16) : date_str
+    }
 
     private data: TableData = {
         dates: [],
@@ -136,33 +139,47 @@ export class ResultsMenuLabTable {
     }
 
     set_data_structure(lab_results: LabResults, panels_config: PanelsConfig) {
-        const sorted_lab_results = Array.from(lab_results.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        const sorted_lab_results = Array.from(lab_results.values()).sort((a, b) => new Date(b.order.order_date).getTime() - new Date(a.order.order_date).getTime())
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des']
 
         this.data.dates = sorted_lab_results
             .filter((item, index, array) => {
                 if (index === 0) return true
-                return item.order.order_date !== array[index - 1].order.order_date
+                return this.get_minute_string(item.order.order_date) !== this.get_minute_string(array[index - 1].order.order_date)
             })
             .map(item => {
                 const order_date = item.order.order_date
                 const d = new Date(order_date)
                 const year = !isNaN(d.getTime()) ? d.getFullYear().toString() : '????'
-                const day_month = !isNaN(d.getTime()) ? `${String(d.getDate()).padStart(2, '0')} ${months[d.getMonth()]}` : '?? ???'
+                const day_month = !isNaN(d.getTime()) ? `${String(d.getDate()).padStart(2, '0')} ${months[d.getMonth()]}` : '?? ??'
                 const time = !isNaN(d.getTime()) ? `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '??:??'
                 const iso_date = !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : '????-??-??'
 
                 return {
-                    id: crypto.randomUUID(),
+                    id: ResultsMenuLabTable.get_next_date_id(),
                     year,
                     day_month,
                     time,
                     iso_date,
                     raw_date: order_date,
+                    rounded_date: this.get_minute_string(order_date),
                 }
             })
 
-        this.data.date_id_lookup = new Map(this.data.dates.map(d => [d.raw_date, d.id]))
+        const min_dates_count = 13 //5
+        while (this.data.dates.length < min_dates_count) {
+            this.data.dates.push({
+                id: ResultsMenuLabTable.get_next_date_id(),
+                year: '----',
+                day_month: '-- --',
+                time: '--:--',
+                iso_date: '--------',
+                raw_date: '--------',
+                rounded_date: '--------',
+            })
+        }
+
+        this.data.date_id_lookup = new Map(this.data.dates.map(d => [d.rounded_date, d.id]))
 
         const year_rows: TableValuesToRender['thead']['year_rows'] = []
         this.data.dates.forEach(d => {
@@ -189,8 +206,8 @@ export class ResultsMenuLabTable {
                     })
                 })
 
-                const short_lookup = param_name.toLowerCase()
-                const param_map = LAB_PARAM_MAP[short_lookup]
+                const lookup_key = param_name
+                const param_map = RESULTS_MENU_LAB_PARAM_MAP[lookup_key]
                 const display_name: PanelsRow['meta']['display_name'] = {
                     full: param_map?.full || param_name,
                     short: param_map?.short || param_name,
@@ -302,12 +319,13 @@ export class ResultsMenuLabTable {
 
     populate_table(lab_results: LabResults) {
         lab_results.forEach(item => {
-            const date_id = this.data.date_id_lookup.get(item.order.order_date)
+            const lookup_key = this.get_minute_string(item.order.order_date)
+            const date_id = this.data.date_id_lookup.get(lookup_key)
             const param_name = item.parameter.name
 
             if (!date_id || !param_name) return
 
-            this.update_cell(date_id, param_name, this.get_render_value(item))
+            this.update_cell(date_id, param_name, ResultsMenuLabTable.get_render_value(item))
         })
     }
 
@@ -374,16 +392,16 @@ export class ResultsMenuLabTable {
         }
     }
 
-    get_render_value(item: ResultsMenuLabResult): LabResultRenderValue {
+    public static get_render_value(item: ResultsMenuLabResult): LabResultRenderValue {
         let value = item.value.trim()
         if (item.unit) {
             const escaped_unit = item.unit.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
             value = value.replace(new RegExp(`\\s*${escaped_unit}$`, 'i'), '').trim()
         }
 
-        const look_key = value.toLowerCase()
-        const display_value = LAB_SYMBOL_MAP[look_key] ? LAB_SYMBOL_MAP[look_key].short : value
-        const evaluation = this.evaluate_abnormality(value, item.normal_values)
+        const lookup_key = value
+        const display_value = RESULTS_MENU_LAB_SYMBOL_MAP[lookup_key] ? RESULTS_MENU_LAB_SYMBOL_MAP[lookup_key].full : value
+        const evaluation = ResultsMenuLabTable.evaluate_abnormality(value, item.normal_values || item.parameter.reference_values)
 
         return {
             value,
@@ -395,7 +413,7 @@ export class ResultsMenuLabTable {
         }
     }
 
-    evaluate_abnormality(value: string, reference_range: string): { is_normal: boolean, arrow_type: 'up' | 'down' | 'exclamation' | null } {
+    public static evaluate_abnormality(value: string, reference_range: string): { is_normal: boolean, arrow_type: 'up' | 'down' | 'exclamation' | null } {
         if (!reference_range || reference_range === '-' || reference_range.trim() === '') {
             return { is_normal: true, arrow_type: null }
         }
@@ -431,9 +449,17 @@ export class ResultsMenuLabTable {
 
         document.addEventListener('click', (e) => {
             const target = e.target as HTMLElement
-            if (!target.closest('.state-loaded') && !target.closest('.ext-singleton-tooltip')) {
+            if (!target.closest('.state-loaded') && !target.closest('.sn-singleton-tooltip')) {
                 ResultsMenuLabTable.hide_tooltip()
             }
+        })
+
+        window.addEventListener('scroll', () => {
+            ResultsMenuLabTable.hide_tooltip()
+        }, true)
+
+        window.addEventListener(ModalManager.Event.Interaction, () => {
+            ResultsMenuLabTable.hide_tooltip()
         })
     }
 
@@ -442,12 +468,55 @@ export class ResultsMenuLabTable {
         if (!tooltip) return
 
         ResultsMenuLabTable.active_cell = target_cell
-        tooltip.innerHTML = `
-                <div class="tt-value">${data.value === '' ? '-' : data.value ?? '-'}</div>
-                <div class="tt-unit">${data.unit === '' ? '-' : data.unit ?? '-'}</div>
-                <div class="tt-divider"></div>
-                <div class="tt-meta">[${data.parameter?.name ?? '------'}]<br><strong>Rujukan:</strong> ${data.normal_values === '' ? '-' : data.normal_values ?? '-'}</div>
-            `
+
+        const render_value = ResultsMenuLabTable.get_render_value(data)
+        const clean = (value: any): string => value === '' ? '??' : value ?? '??'
+
+
+        const value_text_div = create_element('div', { classes: 'tt-value' }, [
+            create_element('span', { html: clean(data.value) }),
+        ])
+
+        if (!render_value.is_normal) {
+            tooltip.classList.add('state-abnormal')
+        } else {
+            tooltip.classList.remove('state-abnormal')
+        }
+
+        if (render_value.arrow_type) {
+            const icon = create_element('span', { classes: 'indicator-icon icon-flagged', text: render_value.arrow_type === 'up' ? '↑' : render_value.arrow_type === 'down' ? '↓' : '⚠' })
+            value_text_div.append(icon)
+        }
+
+        tooltip.innerHTML = ''
+        tooltip.append(
+            value_text_div,
+            create_element('div', { classes: 'tt-unit', html: clean(data.unit) }),
+            create_element('div', { classes: 'tt-divider' }),
+            create_element('div', {
+                classes: 'tt-meta', html: [
+                    `<p>Parameter:</p>`,
+                    `${clean(data.parameter?.name)}`,
+                    `<p>Satuan:</p>`,
+                    `${clean(data.parameter?.reference_unit)}`,
+                    `<p>Nilai Normal:</p>`,
+                    `${clean(data.normal_values)}`,
+                    `<p>Nilai Rujukan:</p>`,
+                    `${clean(data.parameter?.reference_values)}`,
+                    `<p>Tindakan:</p>`,
+                    `${clean(data.order?.panel_desc)}`,
+                    `<p>Dipesan pada:</p>`,
+                    `${clean(data.order?.order_date)}`,
+                    `<p>Selesai pada:</p>`,
+                    `${clean(data.date)}`,
+                    `<p>Perujuk:</p>`,
+                    `${clean(data.referrer?.name)}`,
+                    `<p>Alasan:</p>`,
+                    `${clean(data.referrer?.reason)}`,
+                ].join('')
+            }),
+        )
+
         tooltip.classList.add('is-visible')
         ResultsMenuLabTable.position_tooltip(target_cell)
     }

@@ -61,8 +61,8 @@ export class ResultsMenuInjector extends SatinBaseFunctionInjector<ResultsMenuFu
         btn_container.addEventListener('mousedown', () => link_anchor.style.backgroundColor = active_color)
         btn_container.addEventListener('mouseup', () => link_anchor.style.backgroundColor = hover_color)
         btn_container.addEventListener('click', (e) => {
-            e.preventDefault()
-            e.stopPropagation()
+            // e.preventDefault()
+            // e.stopPropagation()
             this.on_btn_click({
                 mrn: saved_mrn,
                 panel_id: saved_panel_id,

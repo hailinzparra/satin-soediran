@@ -1,6 +1,6 @@
 import { SatinBaseFunction } from '../../types/functions/base'
 import { DEFAULT_RESULTS_MENU_CONFIG, ResultsMenuConfig, ResultsMenuData } from '../../types/functions/results-menu'
-import { ModalUI } from '../../ui/modal'
+import { ModalInstance, ModalUI } from '../../ui/modal'
 import { ResultsMenuExtractor } from './extractor'
 import { ResultsMenuInjector } from './injector'
 import { ResultsMenuRenderer } from './renderer/main'
@@ -19,9 +19,13 @@ export class ResultsMenuFunction extends SatinBaseFunction<ResultsMenuConfig, Re
     private static MODAL = {
         // WIDTH: 760,
         // HEIGHT: 490,
-        WIDTH: 600,
-        HEIGHT: 760,
+        // WIDTH: 600,
+        // HEIGHT: 760,
+        WIDTH: 1200,
+        HEIGHT: 800,
     }
+
+    public modal_instance: ModalInstance | null = null
 
     get_default_data(): ResultsMenuData {
         return structuredClone(DEFAULT_RESULTS_MENU_CONFIG.data)
@@ -50,7 +54,7 @@ export class ResultsMenuFunction extends SatinBaseFunction<ResultsMenuConfig, Re
         const x = Math.max(0, (window.innerWidth - w) / 2)
         const y = Math.max(0, (window.innerHeight - h) / 2)
 
-        const { instance: modal_win, is_existing } = ModalUI.fire({
+        const { instance, is_existing } = ModalUI.fire({
             id: this.config.selectors.ids.modal(data.mrn, data.panel_id),
             title: `Hasil (${data.mrn})`,
             content: document.createElement('div'),
@@ -63,13 +67,15 @@ export class ResultsMenuFunction extends SatinBaseFunction<ResultsMenuConfig, Re
             },
         })
 
-        if (is_existing || !modal_win) return
+        if (is_existing || !instance) return
+
+        this.modal_instance = instance
 
         // a new modal opened! lets build the content
         const renderer = new ResultsMenuRenderer(this, data.mrn)
-        modal_win.el.style.maxWidth = 'calc(100vw - 20px)'
-        modal_win.body.style.padding = '0'
-        modal_win.body.append(renderer.manager.container)
+        this.modal_instance.el.style.maxWidth = 'calc(100vw - 20px)'
+        this.modal_instance.body.style.padding = '0'
+        this.modal_instance.body.append(renderer.manager.container)
 
         // start the first data loading
         renderer.start()

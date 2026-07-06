@@ -1,5 +1,6 @@
 import { SatinDriver } from '../driver'
 import { SatinBaseFunctionConfig, SatinBaseFunctionConfigData, SatinBaseFunctionConfigSelectors } from './base'
+import { LAB_PARAM_MAP, LAB_SYMBOL_MAP, PANELS_CONFIG } from './results-menu-map'
 
 export interface ResultsMenuSelectors extends SatinBaseFunctionConfigSelectors {
     ids: {
@@ -60,6 +61,7 @@ interface LabParamContext {
     id: string
     name: string
     reference_values: string
+    reference_unit: string
     panel_id: string
 }
 
@@ -94,84 +96,13 @@ export interface ResultsMenuLabPatientData {
     dob: string
 }
 
-export const DEFAULT_RESULTS_MENU_PANELS_CONFIG = {
-    hematologi: {
-        panel_name: 'Hematologi',
-        parameter_names: [
-            'Hemoglobin',
-            'Eritrosit',
-            'Hematrokit',
-            'MCV',
-            'MCH',
-            'MCHC',
-            'Leukosit',
-            'Trombosit',
-            'Golongan Darah ABO',
-            'RDW-CV',
-            'MPV',
-            'Eosinofil%',
-            'Basofil%',
-            'Neutrofil%',
-            'Limfosit%',
-            'Monosit%',
-        ],
-    },
-    kimia: {
-        panel_name: 'Kimia',
-        parameter_names: [
-            'Glukosa Darah Sewaktu',
-            'Glukosa Darah Sewaktu (POCT)',
-            'Ureum',
-            'Kreatinin',
-            'SGOT',
-            'SGPT',
-        ],
-    },
-    elektrolit: {
-        panel_name: 'Elektrolit',
-        parameter_names: [
-            'Natrium',
-            'Kalium',
-            'Chlorida',
-            'Ion Calsium',
-        ],
-    },
+interface PanelConfig {
+    panel_name: string
+    parameter_names: string[]
 }
 
-export const LAB_SYMBOL_MAP: Record<string, { short: string }> = {
-    'positif (+3)': { short: '+3' },
-    'positif (+1)': { short: '+' },
-    'positif (+)': { short: '+' },
-    'negatif': { short: '-' },
-    'reaktif': { short: 'R' },
-    'non reaktif': { short: 'NR' },
-}
+export type PanelsConfig = Record<string, PanelConfig>
 
-export const LAB_PARAM_MAP: Record<string, { full: string, short: string }> = {
-    'hemoglobin': { full: 'Hemoglobin', short: 'Hb' },
-    'eritrosit': { full: 'Eritrosit', short: 'AE' },
-    'hematrokit': { full: 'Hematokrit', short: 'Hmt' },
-    'mcv': { full: 'MCV', short: 'MCV' },
-    'mch': { full: 'MCH', short: 'MCH' },
-    'mchc': { full: 'MCHC', short: 'MCHC' },
-    'leukosit': { full: 'Leukosit', short: 'AL' },
-    'trombosit': { full: 'Trombosit', short: 'AT' },
-    'golongan darah abo': { full: 'Golongan Darah ABO', short: 'Goldar' },
-    'rdw-cv': { full: 'RDW-CV', short: 'RDW-CV' },
-    'mpv': { full: 'MPV', short: 'MPV' },
-    'eosinofil%': { full: 'Eosinofil%', short: 'Eos%' },
-    'basofil%': { full: 'Basofil%', short: 'Bas%' },
-    'neutrofil%': { full: 'Neutrofil%', short: 'Neu%' },
-    'limfosit%': { full: 'Limfosit%', short: 'Lim%' },
-    'monosit%': { full: 'Monosit%', short: 'Mon%' },
-    'glukosa darah sewaktu': { full: 'Gula Darah Sewaktu', short: 'GDS' },
-    'glukosa darah sewaktu (poct)': { full: 'Gula Darah Sewaktu (POCT)', short: 'GDS' },
-    'ureum': { full: 'Ureum', short: 'Ur' },
-    'kreatinin': { full: 'Kreatinin', short: 'Cr' },
-    'sgot': { full: 'SGOT', short: 'OT' },
-    'sgpt': { full: 'SGPT', short: 'PT' },
-    'natrium': { full: 'Natrium', short: 'Na' },
-    'kalium': { full: 'Kalium', short: 'K' },
-    'chlorida': { full: 'Klorida', short: 'Cl' },
-    'ion calsium': { full: 'Ion Kalsium', short: 'Ca' },
-}
+export const DEFAULT_RESULTS_MENU_PANELS_CONFIG = PANELS_CONFIG
+export const RESULTS_MENU_LAB_SYMBOL_MAP = LAB_SYMBOL_MAP
+export const RESULTS_MENU_LAB_PARAM_MAP = LAB_PARAM_MAP

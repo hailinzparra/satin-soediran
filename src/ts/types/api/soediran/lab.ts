@@ -1,5 +1,5 @@
 import { RawDataKunjungan } from './admission'
-import { RawDictJenis } from './dictionary'
+import { RawDictJenis, RawDictSatuan } from './dictionary'
 import { RawDataDokter, RawDataPetugas } from './user'
 
 export interface RawDataTindakan {
@@ -28,6 +28,7 @@ export interface RawDataParameterTindakan {
     STATUS?: string //"1",
     REFERENSI?: {
         TINDAKAN?: RawDataTindakan
+        SATUAN?: RawDictSatuan
     }
 }
 

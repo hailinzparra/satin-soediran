@@ -44,7 +44,8 @@ export type RawDictProfesi = RawDataDictionary<RawDictProfesiMap> // "Dokter", e
 
 export type RawDictCara = RawDataDictionary // "Diijinkan Pulang", etc.
 export type RawDictJenis = RawDataDictionary // "Telepon Seluler", etc.
-export type RawDictKeadaan = RawDataDictionary // "Membaik", etc.a
+export type RawDictKeadaan = RawDataDictionary // "Membaik", etc.
+export type RawDictSatuan = RawDataDictionary // "U/l", "md/dl", etc.
 
 export type RawDictSMF = RawDataDictionary<RawDictSMFMap> & {
     REFERENSI?: {

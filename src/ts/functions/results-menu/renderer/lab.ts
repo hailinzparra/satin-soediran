@@ -145,14 +145,22 @@ export class ResultsMenuLabRenderer {
     }
 
     private extract_hasil_lab_data(raw: SoediranDataHasilLab): ResultsMenuLabResult {
+        let param_name = raw?.REFERENSI?.PARAMETER_TINDAKAN?.PARAMETER ?? ''
+        const panel_id = raw?.REFERENSI?.PARAMETER_TINDAKAN?.TINDAKAN ?? ''
+        if (panel_id === '8160') {
+            // workaround for now
+            // urin rutin have similar name: eritrosit, etc that overlaps dr 2/3
+            param_name += ' (Urin)'
+        }
         return {
             id: raw.ID ?? '',
             date: raw.TANGGAL ?? '',
             parameter: {
                 id: raw?.REFERENSI?.PARAMETER_TINDAKAN?.ID ?? '',
-                name: raw?.REFERENSI?.PARAMETER_TINDAKAN?.PARAMETER ?? '',
+                name: param_name,
                 reference_values: raw?.REFERENSI?.PARAMETER_TINDAKAN?.NILAI_RUJUKAN ?? '',
-                panel_id: raw?.REFERENSI?.PARAMETER_TINDAKAN?.TINDAKAN ?? '',
+                reference_unit: raw?.REFERENSI?.PARAMETER_TINDAKAN?.REFERENSI?.SATUAN?.DESKRIPSI ?? '',
+                panel_id: panel_id,
             },
             value: raw?.HASIL ?? '',
             unit: raw?.SATUAN ?? '',
