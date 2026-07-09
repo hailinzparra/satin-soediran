@@ -27,7 +27,7 @@ interface LabResultRenderValue {
 
 interface PanelsRow {
     meta: {
-        param_name: string
+        param_id: string
         display_name: {
             full: string
             short: string
@@ -110,28 +110,28 @@ export class ResultsMenuLabTable {
         const extended_config = { ...default_panels_config }
 
         const existing_params = new Set<string>(
-            Object.values(extended_config).flatMap(panel => panel.parameter_names)
+            Object.values(extended_config).flatMap(panel => panel.parameter_ids)
         )
 
         lab_results.forEach(item => {
-            const param_name = item.parameter.name
-            const fallback_panel_desc = item.order.panel_desc
+            const param_id = item.parameter.id
+            const fallback_panel_name = item.order.panel_desc
 
-            if (!existing_params.has(param_name)) {
-                const new_key = fallback_panel_desc.toLowerCase().replace(/\s+/g, '_')
+            if (!existing_params.has(param_id)) {
+                const new_key = fallback_panel_name.toLowerCase().replace(/\s+/g, '_')
 
                 if (!extended_config[new_key]) {
                     extended_config[new_key] = {
-                        panel_name: fallback_panel_desc,
-                        parameter_names: [],
+                        panel_name: fallback_panel_name,
+                        parameter_ids: [],
                     }
                 }
 
-                if (!extended_config[new_key].parameter_names.includes(param_name)) {
-                    extended_config[new_key].parameter_names.push(param_name)
+                if (!extended_config[new_key].parameter_ids.includes(param_id as any)) {
+                    extended_config[new_key].parameter_ids.push(param_id as any)
                 }
 
-                existing_params.add(param_name)
+                existing_params.add(param_id)
             }
         })
 
@@ -192,7 +192,7 @@ export class ResultsMenuLabTable {
         this.values_to_render.thead.year_rows = year_rows
 
         this.values_to_render.tbody.panels = Object.values(panels_config).map(p => {
-            const rows: PanelsRow[] = p.parameter_names.map(param_name => {
+            const rows: PanelsRow[] = p.parameter_ids.map(param_id => {
                 const values = new Map<string, LabResultRenderValue>()
 
                 // set empty data for each timestamp
@@ -206,16 +206,16 @@ export class ResultsMenuLabTable {
                     })
                 })
 
-                const lookup_key = param_name
+                const lookup_key = param_id
                 const param_map = RESULTS_MENU_LAB_PARAM_MAP[lookup_key]
                 const display_name: PanelsRow['meta']['display_name'] = {
-                    full: param_map?.full || param_name,
-                    short: param_map?.short || param_name,
+                    full: param_map?.full || param_id,
+                    short: param_map?.short || param_id,
                 }
 
                 return {
                     meta: {
-                        param_name,
+                        param_id,
                         display_name,
                     },
                     values,
@@ -278,10 +278,10 @@ export class ResultsMenuLabTable {
                     c('td', { classes: 'param-name-cell', text: row.meta.display_name.full }),
                 ])
                 this.data.dates.forEach(d => {
-                    const val_td = c('td', { attrs: { 'data-date-id': d.id, 'data-param-name': row.meta.param_name } })
+                    const val_td = c('td', { attrs: { 'data-date-id': d.id, 'data-param-id': row.meta.param_id } })
                     tr.append(val_td)
                     const render_value = row.values.get(d.id)
-                    if (render_value) this.update_cell(d.id, row.meta.param_name, render_value)
+                    if (render_value) this.update_cell(d.id, row.meta.param_id, render_value)
                 })
                 panel_rows.push(tr)
             })
@@ -321,11 +321,11 @@ export class ResultsMenuLabTable {
         lab_results.forEach(item => {
             const lookup_key = this.get_minute_string(item.order.order_date)
             const date_id = this.data.date_id_lookup.get(lookup_key)
-            const param_name = item.parameter.name
+            const param_id = item.parameter.id
 
-            if (!date_id || !param_name) return
+            if (!date_id || !param_id) return
 
-            this.update_cell(date_id, param_name, ResultsMenuLabTable.get_render_value(item))
+            this.update_cell(date_id, param_id, ResultsMenuLabTable.get_render_value(item))
         })
     }
 
@@ -362,8 +362,8 @@ export class ResultsMenuLabTable {
         return th_patient
     }
 
-    update_cell(date_id: string, param_name: string, value: LabResultRenderValue) {
-        const cell = this.el.querySelector<HTMLTableCellElement>(`[data-date-id="${date_id}"][data-param-name="${param_name.replace(/"/g, '\\"')}"]`)
+    update_cell(date_id: string, param_id: string, value: LabResultRenderValue) {
+        const cell = this.el.querySelector<HTMLTableCellElement>(`[data-date-id="${date_id}"][data-param-id="${param_id}"]`)
         if (!cell) return
 
         cell.className = 'param-value-cell'

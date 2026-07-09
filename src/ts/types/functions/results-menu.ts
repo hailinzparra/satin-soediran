@@ -1,3 +1,4 @@
+import { CentralizedParamId } from '../api/soediran/lab-map'
 import { SatinDriver } from '../driver'
 import { SatinBaseFunctionConfig, SatinBaseFunctionConfigData, SatinBaseFunctionConfigSelectors } from './base'
 import { LAB_PARAM_MAP, LAB_SYMBOL_MAP, PANELS_CONFIG } from './results-menu-map'
@@ -60,6 +61,7 @@ export const DEFAULT_RESULTS_MENU_CONFIG: ResultsMenuConfig = {
 interface LabParamContext {
     id: string
     name: string
+    raw_id: string
     reference_values: string
     reference_unit: string
     panel_id: string
@@ -98,7 +100,7 @@ export interface ResultsMenuLabPatientData {
 
 interface PanelConfig {
     panel_name: string
-    parameter_names: string[]
+    parameter_ids: CentralizedParamId[]
 }
 
 export type PanelsConfig = Record<string, PanelConfig>

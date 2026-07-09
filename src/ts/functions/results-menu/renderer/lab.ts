@@ -1,5 +1,6 @@
 import { BaseApiResponse } from '../../../types/api/base'
 import { SoediranDataHasilLab } from '../../../types/api/soediran/data'
+import { SOEDIRAN_RAW_LAB_MAP } from '../../../types/api/soediran/lab-map'
 import { SoediranParamsHasilLab } from '../../../types/api/soediran/params'
 import { ResultsMenuLabPatientData, ResultsMenuLabResult } from '../../../types/functions/results-menu'
 import { RequestPayloadBuilder } from '../../../utils/api'
@@ -145,22 +146,18 @@ export class ResultsMenuLabRenderer {
     }
 
     private extract_hasil_lab_data(raw: SoediranDataHasilLab): ResultsMenuLabResult {
-        let param_name = raw?.REFERENSI?.PARAMETER_TINDAKAN?.PARAMETER ?? ''
-        const panel_id = raw?.REFERENSI?.PARAMETER_TINDAKAN?.TINDAKAN ?? ''
-        if (panel_id === '8160') {
-            // workaround for now
-            // urin rutin have similar name: eritrosit, etc that overlaps dr 2/3
-            param_name += ' (Urin)'
-        }
+        const raw_param_id = raw?.REFERENSI?.PARAMETER_TINDAKAN?.ID ?? ''
+        const centralized_param_id = SOEDIRAN_RAW_LAB_MAP[raw_param_id] ?? raw_param_id
         return {
             id: raw.ID ?? '',
             date: raw.TANGGAL ?? '',
             parameter: {
-                id: raw?.REFERENSI?.PARAMETER_TINDAKAN?.ID ?? '',
-                name: param_name,
+                id: centralized_param_id,
+                name: raw?.REFERENSI?.PARAMETER_TINDAKAN?.PARAMETER ?? '',
+                raw_id: raw_param_id,
                 reference_values: raw?.REFERENSI?.PARAMETER_TINDAKAN?.NILAI_RUJUKAN ?? '',
                 reference_unit: raw?.REFERENSI?.PARAMETER_TINDAKAN?.REFERENSI?.SATUAN?.DESKRIPSI ?? '',
-                panel_id: panel_id,
+                panel_id: raw?.REFERENSI?.PARAMETER_TINDAKAN?.TINDAKAN ?? '',
             },
             value: raw?.HASIL ?? '',
             unit: raw?.SATUAN ?? '',
