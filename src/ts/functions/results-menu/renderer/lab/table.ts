@@ -596,8 +596,23 @@ export class ResultsMenuLabTable {
     private static position_tooltip(target: HTMLElement) {
         const tooltip = ResultsMenuLabTable.tooltip_element
         if (!tooltip) return
+
         const rect = target.getBoundingClientRect()
-        tooltip.style.top = `${rect.bottom + window.scrollY + 4}px`
+        const window_h = window.innerHeight
+        const tooltip_h = tooltip.offsetHeight
+        const gap = 4
+
+        let visual_y = rect.bottom + gap
+
+        if (visual_y + tooltip_h > window_h) {
+            visual_y = window_h - tooltip_h
+        }
+
+        if (visual_y < 0) {
+            visual_y = 0
+        }
+
+        tooltip.style.top = `${visual_y + window.scrollY}px`
         tooltip.style.left = `${rect.left + window.scrollX + (rect.width / 2) - (tooltip.offsetWidth / 2)}px`
     }
 

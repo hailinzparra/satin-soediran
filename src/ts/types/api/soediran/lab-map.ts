@@ -84,6 +84,13 @@ export const SOEDIRAN_RAW_LAB_MAP: Record<string, CentralizedParamId> = {
     '8589001': 'LPD_HDL',
     '8590001': 'LPD_LDL',
 
+    // #Cholesterol Total (older panel)
+    '8079001': 'LPD_TC',
+    // #Trigliserida (older panel)
+    '8082001': 'LPD_TG',
+    // #Cholesterol LDL (Direc) (older panel)
+    '8081001': 'LPD_LDL',
+
     '8066001': 'GLC_GDS',
     '8052001': 'GLC_GDS_POCT',
     '8574001': 'GLC_GDP',
