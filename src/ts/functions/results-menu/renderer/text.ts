@@ -1,4 +1,5 @@
 import { create_element } from '../../../utils/dom'
+import { Log } from '../../../utils/logger'
 import { ResultsMenuRenderer } from './main'
 
 export class ResultsMenuTextRenderer {
@@ -95,7 +96,7 @@ export class ResultsMenuTextRenderer {
         // Date selection grid
         this.el.date_filter_container = create_element('div', { classes: ResultsMenuTextRenderer.classes.date_filter_container })
         this.el.btn_select_all_dates = create_element('button', {
-            classes: ResultsMenuTextRenderer.classes.btn_action,
+            classes: ResultsMenuTextRenderer.classes.btn_toggle,
             text: 'Hapus Semua Pilihan',
         })
 
@@ -199,7 +200,7 @@ export class ResultsMenuTextRenderer {
         this.el.btn_copy?.addEventListener('click', () => {
             if (this.el.textarea && this.el.textarea.value) {
                 navigator.clipboard.writeText(this.el.textarea.value)
-                    .catch(err => console.error('Could not copy text: ', err))
+                    .catch(err => Log.error('Could not copy text: ', err))
             }
         })
     }
@@ -225,10 +226,15 @@ export class ResultsMenuTextRenderer {
 
     private update_date_master_button_text(total_available: number) {
         if (!this.el.btn_select_all_dates) return
+
+        const { btn_action, btn_toggle } = ResultsMenuTextRenderer.classes
+
         if (this.config.excluded_date_ids.size === 0 && total_available > 0) {
             this.el.btn_select_all_dates.textContent = 'Hapus Semua Pilihan'
+            this.el.btn_select_all_dates.className = btn_toggle
         } else {
             this.el.btn_select_all_dates.textContent = 'Pilih Semua'
+            this.el.btn_select_all_dates.className = btn_action
         }
     }
 
@@ -239,7 +245,7 @@ export class ResultsMenuTextRenderer {
         this.el.date_toggles.clear()
 
         available_dates.forEach(date => {
-            const formatted_label = `${this.convert_iso_to_indonesian_style(date.iso_date)} (${date.time})`
+            const formatted_label = this.format_date_to_table_style(date)
             const is_active = !this.config.excluded_date_ids.has(date.id)
 
             const date_btn = create_element('button', {
@@ -296,8 +302,8 @@ export class ResultsMenuTextRenderer {
 
         const global_newest = filtered_dates[0]
         const global_oldest = filtered_dates[filtered_dates.length - 1]
-        const global_newest_str = `${this.convert_iso_to_indonesian_style(global_newest.iso_date)}, ${global_newest.time}`
-        const global_oldest_str = `${this.convert_iso_to_indonesian_style(global_oldest.iso_date)}, ${global_oldest.time}`
+        const global_newest_str = this.format_date_to_table_style(global_newest)
+        const global_oldest_str = this.format_date_to_table_style(global_oldest)
         const global_range_str = (global_newest_str === global_oldest_str) ? global_newest_str : `${global_newest_str} <- ${global_oldest_str}`
 
         let final_text_buffer = `HASIL LAB (${global_range_str})\n\n`
@@ -363,8 +369,8 @@ export class ResultsMenuTextRenderer {
             if (dates_with_data_in_panel.length > 0) {
                 const p_newest = dates_with_data_in_panel[0]
                 const p_oldest = dates_with_data_in_panel[dates_with_data_in_panel.length - 1]
-                const p_newest_str = `${this.convert_iso_to_indonesian_style(p_newest.iso_date)}, ${p_newest.time}`
-                const p_oldest_str = `${this.convert_iso_to_indonesian_style(p_oldest.iso_date)}, ${p_oldest.time}`
+                const p_newest_str = this.format_date_to_table_style(p_newest)
+                const p_oldest_str = this.format_date_to_table_style(p_oldest)
                 panel_range_string = (p_newest_str === p_oldest_str) ? p_newest_str : `${p_newest_str} <- ${p_oldest_str}`
             } else {
                 panel_range_string = global_range_str // fallback if somehow empty
@@ -381,9 +387,17 @@ export class ResultsMenuTextRenderer {
         this.el.textarea.value = final_text_buffer.trim()
     }
 
-    private convert_iso_to_indonesian_style(iso_str: string): string {
-        const parts = iso_str.split('-')
-        if (parts.length !== 3) return iso_str
-        return `${parts[2]}/${parts[1]}/${parts[0]}`
+    private format_date_to_table_style(date_obj: any): string {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des']
+
+        const d = new Date(date_obj?.raw_date || date_obj)
+        if (isNaN(d.getTime())) return '?? ?? \'?? (??:??)'
+
+        const day_month = `${String(d.getDate()).padStart(2, '0')} ${months[d.getMonth()]}`
+        const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+
+        const short_year = String(d.getFullYear()).slice(-2)
+
+        return `${day_month} '${short_year} (${time})`
     }
 }

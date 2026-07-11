@@ -105,7 +105,7 @@ export const PANELS_CONFIG: PanelsConfig = {
             'URN_MAC_LEUKOSIT', 'URN_MAC_NITRIT', 'URN_MAC_PROTEIN', 'URN_MAC_GLUKOSA',
             'URN_MAC_KETON', 'URN_MAC_UROBILINOGEN', 'URN_MAC_BILIRUBIN', 'URN_MAC_DARAH',
             'URN_MIC_ERITROSIT', 'URN_MIC_LEUKOSIT', 'URN_MIC_EPITHEL', 'URN_MIC_BAKTERI',
-            'URN_MIC_KRISTAL_FOSFAT_AMORF',
+            'URN_MIC_KRISTAL_URAT_AMORF', 'URN_MIC_KRISTAL_FOSFAT_AMORF',
         ],
     },
     DEFAULT_PANEL_FCL: {
@@ -214,6 +214,7 @@ export const LAB_PARAM_MAP: Record<CentralizedParamId, { full: string, short: st
     'URN_MIC_LEUKOSIT': { full: '(Mikro) Leukosit', short: '(Mi) Leukosit' },
     'URN_MIC_EPITHEL': { full: '(Mikro) Epithel', short: '(Mi) Epithel' },
     'URN_MIC_BAKTERI': { full: '(Mikro) Bakteri', short: '(Mi) Bakteri' },
+    'URN_MIC_KRISTAL_URAT_AMORF': { full: '(Mikro) Kristal Urat Amorf', short: '(Mi) Kristal Urat Amorf' },
     'URN_MIC_KRISTAL_FOSFAT_AMORF': { full: '(Mikro) Kristal Fosfat Amorf', short: '(Mi) Kristal Fosfat Amorf' },
 
     'FCL_MAC_WARNA': { full: 'Warna', short: 'Warna' },
