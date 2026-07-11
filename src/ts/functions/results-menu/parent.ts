@@ -49,7 +49,7 @@ export class ResultsMenuFunction extends SatinBaseFunction<ResultsMenuConfig, Re
         const window_el = data.target_el.closest<HTMLElement>('.x-window')
         const parent_el = window_el || document.body
 
-        const w = ResultsMenuFunction.MODAL.WIDTH
+        const w = Math.min(window.innerWidth, ResultsMenuFunction.MODAL.WIDTH)
         const h = ResultsMenuFunction.MODAL.HEIGHT
         const x = Math.max(0, (window.innerWidth - w) / 2)
         const y = Math.max(0, (window.innerHeight - h) / 2)

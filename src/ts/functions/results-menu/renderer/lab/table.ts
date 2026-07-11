@@ -72,13 +72,13 @@ export class ResultsMenuLabTable {
         return date_str && date_str.length >= 16 ? date_str.slice(0, 16) : date_str
     }
 
-    private data: TableData = {
+    public data: TableData = {
         dates: [],
         date_id_lookup: new Map(),
         default_panels_config: DEFAULT_RESULTS_MENU_PANELS_CONFIG,
     }
 
-    private values_to_render: TableValuesToRender = {
+    public values_to_render: TableValuesToRender = {
         thead: {
             year_rows: [],
             date_rows: [],
@@ -90,6 +90,12 @@ export class ResultsMenuLabTable {
 
     private static tooltip_element: HTMLDivElement | null = null
     private static active_cell: HTMLElement | null = null
+
+    private static readonly RANGE_REGEX = /^([0-9.]+)\s*-\s*([0-9.]+)$/
+    private static readonly LESS_THAN_REGEX = /^<\s*([0-9.]+)$/
+    private static readonly GREATER_THAN_REGEX = /^>\s*([0-9.]+)$/
+    private static readonly SINGLE_NUM_REGEX = /^([0-9.]+)$/
+    private static readonly REGEX_ESCAPE_CHARS = /[-\/\\^$*+?.()|[\]{}]/g
 
     constructor(
         protected lab_renderer: ResultsMenuLabRenderer,
@@ -104,6 +110,7 @@ export class ResultsMenuLabTable {
         this.set_data_structure(lab_results, updated_config)
         this.render_table()
         this.populate_table(lab_results)
+        this.lab_renderer.main_renderer.sync_tab_text()
     }
 
     extend_default_panels_config(lab_results: LabResults, default_panels_config: PanelsConfig): PanelsConfig {
@@ -200,7 +207,10 @@ export class ResultsMenuLabTable {
                     values.set(d.id, {
                         value: '',
                         display_value: '',
-                        status: 'loading',
+                        status: 'empty',
+                        // status: 'loading', TODO: find a way to know if the value is expected/loading
+                        // use another api call? call the order list first then the bulk data
+                        // later, if that order data still expected but the bulk data failed to fulfill, call that specific order
                         is_normal: true,
                         arrow_type: null,
                     })
@@ -363,6 +373,8 @@ export class ResultsMenuLabTable {
     }
 
     update_cell(date_id: string, param_id: string, value: LabResultRenderValue) {
+        this.update_internal_state(date_id, param_id, value)
+
         const cell = this.el.querySelector<HTMLTableCellElement>(`[data-date-id="${date_id}"][data-param-id="${param_id}"]`)
         if (!cell) return
 
@@ -392,10 +404,20 @@ export class ResultsMenuLabTable {
         }
     }
 
+    private update_internal_state(date_id: string, param_id: string, value: LabResultRenderValue) {
+        for (const panel of this.values_to_render.tbody.panels) {
+            const matching_row = panel.rows.find(row => row.meta.param_id === param_id)
+            if (matching_row) {
+                matching_row.values.set(date_id, value)
+                break
+            }
+        }
+    }
+
     public static get_render_value(item: ResultsMenuLabResult): LabResultRenderValue {
         let value = item.value.trim()
         if (item.unit) {
-            const escaped_unit = item.unit.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
+            const escaped_unit = item.unit.replace(ResultsMenuLabTable.REGEX_ESCAPE_CHARS, '\\$&')
             value = value.replace(new RegExp(`\\s*${escaped_unit}$`, 'i'), '').trim()
         }
 
@@ -413,30 +435,80 @@ export class ResultsMenuLabTable {
         }
     }
 
+    private static parse_interval(str: string): [number, number] | null {
+        const trimmed = str.trim()
+
+        // Case 1: Range "3-5" -> [3, 5]
+        const range_match = trimmed.match(ResultsMenuLabTable.RANGE_REGEX)
+        if (range_match) return [parseFloat(range_match[1]), parseFloat(range_match[2])]
+
+        // Case 2: Less than "<10" -> [-Infinity, 10]
+        const less_match = trimmed.match(ResultsMenuLabTable.LESS_THAN_REGEX)
+        if (less_match) return [-Infinity, parseFloat(less_match[1])]
+
+        // Case 3: Greater than ">20" -> [20, Infinity]
+        const greater_match = trimmed.match(ResultsMenuLabTable.GREATER_THAN_REGEX)
+        if (greater_match) return [parseFloat(greater_match[1]), Infinity]
+
+        // Case 4: Single number "4.5" -> [4.5, 4.5]
+        const single_match = trimmed.match(ResultsMenuLabTable.SINGLE_NUM_REGEX)
+        if (single_match) {
+            const num = parseFloat(single_match[1])
+            return [num, num]
+        }
+
+        return null
+    }
+
     public static evaluate_abnormality(value: string, reference_range: string): { is_normal: boolean, arrow_type: 'up' | 'down' | 'exclamation' | null } {
         if (!reference_range || reference_range === '-' || reference_range.trim() === '') {
             return { is_normal: true, arrow_type: null }
         }
 
-        const numeric_val = parseFloat(value)
-        const range_regex = /^([0-9.]+)\s*-\s*([0-9.]+)$/
-        const match = reference_range.trim().match(range_regex)
+        const val_interval = ResultsMenuLabTable.parse_interval(value)
+        const ref_interval = ResultsMenuLabTable.parse_interval(reference_range)
 
-        if (match && !isNaN(numeric_val)) {
-            const min = parseFloat(match[1])
-            const max = parseFloat(match[2])
-            if (numeric_val < min) return { is_normal: false, arrow_type: 'down' }
-            if (numeric_val > max) return { is_normal: false, arrow_type: 'up' }
-            return { is_normal: true, arrow_type: null }
-        } else {
-            const val_low = value.toLowerCase()
-            const ref_low = reference_range.toLowerCase()
-            if (val_low !== ref_low && reference_range !== '-') {
-                if ((ref_low.includes('-') || ref_low.includes('neg')) && (val_low.includes('+') || val_low.includes('pos'))) {
-                    return { is_normal: false, arrow_type: 'exclamation' }
-                }
+        // If both parsed successfully as numeric intervals, run the smart comparison logic
+        if (val_interval && ref_interval) {
+            const [val_min, val_max] = val_interval
+            const [ref_min, ref_max] = ref_interval
+
+            // Calculate how much the value drops BELOW the reference floor
+            let low_margin = 0
+            if (val_min < ref_min) {
+                low_margin = val_min === -Infinity ? Infinity : ref_min - val_min
+            }
+
+            // Calculate how much the value exceeds ABOVE the reference ceiling
+            let high_margin = 0
+            if (val_max > ref_max) {
+                high_margin = val_max === Infinity ? Infinity : val_max - ref_max
+            }
+
+            // If it doesn't break any boundaries, it's normal
+            if (low_margin === 0 && high_margin === 0) {
+                return { is_normal: true, arrow_type: null }
+            }
+
+            // Tie-breaker: If it breaks both boundaries equally (Example 1: 0-6 vs 1-5)
+            if (low_margin === high_margin) {
+                return { is_normal: false, arrow_type: 'exclamation' }
+            }
+
+            // Return directional arrow based on which margin is worse
+            if (high_margin > low_margin) return { is_normal: false, arrow_type: 'up' }
+            if (low_margin > high_margin) return { is_normal: false, arrow_type: 'down' }
+        }
+
+        // Fallback to text/qualitative evaluation (pos/neg)
+        const val_low = value.toLowerCase()
+        const ref_low = reference_range.toLowerCase()
+        if (val_low !== ref_low && reference_range !== '-') {
+            if ((ref_low.includes('-') || ref_low.includes('neg')) && (val_low.includes('+') || val_low.includes('pos'))) {
+                return { is_normal: false, arrow_type: 'exclamation' }
             }
         }
+
         return { is_normal: true, arrow_type: null }
     }
 

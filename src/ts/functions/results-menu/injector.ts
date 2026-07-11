@@ -9,6 +9,18 @@ export class ResultsMenuInjector extends SatinBaseFunctionInjector<ResultsMenuFu
     }
 
     public reset(target_node?: SatinBaseFunctionTargetNode): void {
+        const saved_mrn = this.saved_data.active_mrn
+        if (!saved_mrn) return
+
+        const saved_panel_id = this.saved_data.active_panel_short_detail_id
+        if (!saved_panel_id) return
+
+        const btn_id = this.parent.config.selectors.ids.btn(saved_panel_id)
+
+        const existing_btn = document.querySelector(`#${btn_id}`)
+        if (existing_btn) {
+            existing_btn.remove()
+        }
     }
 
     private inject_results_menu_button() {
