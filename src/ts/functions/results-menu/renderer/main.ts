@@ -26,8 +26,8 @@ export class ResultsMenuRenderer {
         this.text_renderer.build_dom_elements(tab_text)
     }
 
-    start() {
-        this.lab_renderer.toolbar.handle_load_next()
+    async start() {
+        await this.lab_renderer.start()
     }
 
     add_tab(name: string, icon?: string): HTMLDivElement {

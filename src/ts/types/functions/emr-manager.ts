@@ -50,3 +50,25 @@ export const DEFAULT_EMR_MANAGER_CONFIG: EMRManagerConfig = {
         }
     },
 }
+
+export interface EMRManagerSession {
+    mrn: string
+    visits: EMRManagerSessionVisit[]
+}
+
+export interface EMRManagerSessionVisit {
+    id: string
+    reg_id: string
+    dpjp: {
+        id: string
+        name: string
+    }
+    room: {
+        id: string
+        name: string
+        bed_name: string
+    }
+    admission_date: string | null
+    discharge_date: string | null
+    is_active: boolean
+}

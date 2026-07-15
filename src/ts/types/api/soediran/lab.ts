@@ -113,3 +113,32 @@ export interface RawDataHasilLab {
         TINDAKAN_MEDIS?: RawDataTindakanMedis
     }
 }
+
+export interface RawDataTindakanMedisLab {
+    ID?: string //"26071502306",
+    KUNJUNGAN?: string //"1010502022607150116",
+    TINDAKAN?: string //"8047",
+    TANGGAL?: string //"2026-07-15 12:42:31",
+    VERIFIKASI?: string //"0",
+    VERIFIKASI_OLEH?: string | null
+    VERIFIKASI_TANGGAL?: string | null
+    OLEH?: string //"663",
+    STATUS?: string //"1",
+    OTOMATIS?: string //"0",
+    REFERENSI?: {
+        JENIS_TINDAKAN?: {
+            DESKRIPSI?: string //"Laboratorium"
+        }
+        PENGGUNA?: {
+            NAMA?: string //"Magendi Indra Mukti",
+            GELAR_DEPAN?: string //"dr",
+            GELAR_BELAKANG?: string //"Sp.PK"
+        }
+        VERIFIKASI?: {
+            NAMA?: string | null
+        }
+    }
+    NOPEN?: string //"2607150415",
+    HARI_KE?: string //"1",
+    TINDAKAN_DESKRIPSI?: string //"Golongan Darah ABO"
+}

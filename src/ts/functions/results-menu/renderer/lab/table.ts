@@ -91,10 +91,15 @@ export class ResultsMenuLabTable {
     private static tooltip_element: HTMLDivElement | null = null
     private static active_cell: HTMLElement | null = null
 
-    private static readonly RANGE_REGEX = /^([0-9.]+)\s*-\s*([0-9.]+)$/
-    private static readonly LESS_THAN_REGEX = /^<\s*([0-9.]+)$/
-    private static readonly GREATER_THAN_REGEX = /^>\s*([0-9.]+)$/
-    private static readonly SINGLE_NUM_REGEX = /^([0-9.]+)$/
+    // Matches: "3-5", "-3-+4", "-3-3", "-5--2"
+    // The middle dash is the separator, capture groups handle optional signs attached to numbers
+    private static readonly RANGE_REGEX = /^([-+]?[0-9.]+)-([-+]?[0-9.]+)$/
+    // Matches: "<10", "<-5"
+    private static readonly LESS_THAN_REGEX = /^<([-+]?[0-9.]+)$/
+    // Matches: ">20", ">-10"
+    private static readonly GREATER_THAN_REGEX = /^>([-+]?[0-9.]+)$/
+    // Matches: "4.5", "-2.5", "+3"
+    private static readonly SINGLE_NUM_REGEX = /^([-+]?[0-9.]+)$/
     private static readonly REGEX_ESCAPE_CHARS = /[-\/\\^$*+?.()|[\]{}]/g
 
     constructor(
@@ -136,6 +141,8 @@ export class ResultsMenuLabTable {
 
                 if (!extended_config[new_key].parameter_ids.includes(param_id as any)) {
                     extended_config[new_key].parameter_ids.push(param_id as any)
+                    // FOR DEBUG
+                    // extended_config[new_key].parameter_ids.push((param_id + ': ' + item.parameter.name) as any)
                 }
 
                 existing_params.add(param_id)
@@ -436,22 +443,25 @@ export class ResultsMenuLabTable {
     }
 
     private static parse_interval(str: string): [number, number] | null {
-        const trimmed = str.trim()
+        // Strip ALL whitespace
+        // Example: "- 3.0 - + 3.0" becomes "-3.0-+3.0"
+        // Example: "-5 - -2" becomes "-5--2"
+        const clean_str = str.replace(/\s+/g, '')
 
-        // Case 1: Range "3-5" -> [3, 5]
-        const range_match = trimmed.match(ResultsMenuLabTable.RANGE_REGEX)
+        // Case 1: Range "-3.0-+3.0" or "-5--2"
+        const range_match = clean_str.match(ResultsMenuLabTable.RANGE_REGEX)
         if (range_match) return [parseFloat(range_match[1]), parseFloat(range_match[2])]
 
-        // Case 2: Less than "<10" -> [-Infinity, 10]
-        const less_match = trimmed.match(ResultsMenuLabTable.LESS_THAN_REGEX)
+        // Case 2: Less than "<-5"
+        const less_match = clean_str.match(ResultsMenuLabTable.LESS_THAN_REGEX)
         if (less_match) return [-Infinity, parseFloat(less_match[1])]
 
-        // Case 3: Greater than ">20" -> [20, Infinity]
-        const greater_match = trimmed.match(ResultsMenuLabTable.GREATER_THAN_REGEX)
+        // Case 3: Greater than ">-20"
+        const greater_match = clean_str.match(ResultsMenuLabTable.GREATER_THAN_REGEX)
         if (greater_match) return [parseFloat(greater_match[1]), Infinity]
 
-        // Case 4: Single number "4.5" -> [4.5, 4.5]
-        const single_match = trimmed.match(ResultsMenuLabTable.SINGLE_NUM_REGEX)
+        // Case 4: Single number "-4.5"
+        const single_match = clean_str.match(ResultsMenuLabTable.SINGLE_NUM_REGEX)
         if (single_match) {
             const num = parseFloat(single_match[1])
             return [num, num]
@@ -500,13 +510,42 @@ export class ResultsMenuLabTable {
             if (low_margin > high_margin) return { is_normal: false, arrow_type: 'down' }
         }
 
-        // Fallback to text/qualitative evaluation (pos/neg)
-        const val_low = value.toLowerCase()
-        const ref_low = reference_range.toLowerCase()
-        if (val_low !== ref_low && reference_range !== '-') {
-            if ((ref_low.includes('-') || ref_low.includes('neg')) && (val_low.includes('+') || val_low.includes('pos'))) {
-                return { is_normal: false, arrow_type: 'exclamation' }
-            }
+        // --- Fallback to text/qualitative evaluation ---
+
+        // Clean whitespaces and force lowercase
+        const clean = (str: string) => str.toLowerCase().replace(/\s+/g, '')
+        const val_clean = clean(value)
+        const ref_clean = clean(reference_range)
+
+        // Helper functions to identify positive/negative indicators
+        const is_positive = (str: string) => str.includes('+') || str.includes('pos')
+        const is_negative = (str: string) => str.includes('-') || str.includes('neg')
+
+        // Direct exact match after cleaning (e.g. "normal" === "normal")
+        if (val_clean === ref_clean) {
+            return { is_normal: true, arrow_type: null }
+        }
+
+        // Handle variation matches (e.g. "neg" vs "negatif" or "pos" vs "+")
+        if (is_negative(val_clean) && is_negative(ref_clean)) {
+            return { is_normal: true, arrow_type: null }
+        }
+        if (is_positive(val_clean) && is_positive(ref_clean)) {
+            return { is_normal: true, arrow_type: null }
+        }
+
+        // Handle explicit positive/negative cross-mismatches
+        // (covers: ref is negative/val is positive, OR ref is positive/val is negative)
+        if (
+            (is_negative(ref_clean) && is_positive(val_clean)) ||
+            (is_positive(ref_clean) && is_negative(val_clean))
+        ) {
+            return { is_normal: false, arrow_type: 'exclamation' }
+        }
+
+        // Default string mismatch fallback (e.g. "keruh" vs "jernih", "penuh" vs "0-5")
+        if (val_clean !== ref_clean) {
+            return { is_normal: false, arrow_type: 'exclamation' }
         }
 
         return { is_normal: true, arrow_type: null }

@@ -24,11 +24,14 @@ export type CentralizedParamId =
 
     'ELC_NATRIUM' | 'ELC_KALIUM' | 'ELC_KLORIDA' | 'ELC_ION_KALSIUM' |
 
+    'ABG_PH' | 'ABG_PCO2' | 'ABG_PO2' | 'ABG_HCO3' | 'ABG_CTCO2' | 'ABG_BE' | 'ABG_SO2' |
+
     'ANM_RETIKULOSIT' |
     'ANM_SI' | 'ANM_FERRITIN' | 'ANM_TIBC' |
 
     'IMN_HBSAG' | 'IMN_ANTI_HCV' |
     'IMN_TUBEX_TF' | 'IMN_IGM_SALMONELLA' |
+    'IMN_ANTIGEN_SARSCOV2' |
     'IMN_ANTI_HIV' |
     'IMN_ASTO' |
     'IMN_RF' |
@@ -39,6 +42,7 @@ export type CentralizedParamId =
     'URN_MAC_LEUKOSIT' | 'URN_MAC_NITRIT' | 'URN_MAC_PROTEIN' | 'URN_MAC_GLUKOSA' |
     'URN_MAC_KETON' | 'URN_MAC_UROBILINOGEN' | 'URN_MAC_BILIRUBIN' | 'URN_MAC_DARAH' |
     'URN_MIC_ERITROSIT' | 'URN_MIC_LEUKOSIT' | 'URN_MIC_EPITHEL' | 'URN_MIC_BAKTERI' |
+    'URN_MIC_SILINDER_GRANULA' |
     'URN_MIC_KRISTAL_URAT_AMORF' | 'URN_MIC_KRISTAL_FOSFAT_AMORF' |
 
     'FCL_MAC_WARNA' | 'FCL_MAC_KONSISTENSI' | 'FCL_MAC_LENDIR' | 'FCL_MAC_DARAH' |
@@ -66,7 +70,7 @@ export const SOEDIRAN_RAW_LAB_MAP: Record<string, CentralizedParamId> = {
     '8054012': 'BLD_MPV',
 
     '8049001': 'BLD_LED_BBS_I',
-    // 'x': 'BLD_LED_BBS_II',
+    '8049002': 'BLD_LED_BBS_II',
 
     '8045001': 'BLD_CT',
     '8046001': 'BLD_BT',
@@ -97,8 +101,8 @@ export const SOEDIRAN_RAW_LAB_MAP: Record<string, CentralizedParamId> = {
     '8575001': 'GLC_GD2PP',
     '8058001': 'GLC_HBA1C',
 
-    '8070001': 'LIV_SGPT',
     '8069001': 'LIV_SGOT',
+    '8070001': 'LIV_SGPT',
     '8075001': 'LIV_BILIRUBIN_TOTAL',
     '8076001': 'LIV_BILIRUBIN_DIREK',
     '8071001': 'LIV_PROTEIN_TOTAL',
@@ -118,6 +122,14 @@ export const SOEDIRAN_RAW_LAB_MAP: Record<string, CentralizedParamId> = {
     '8086001': 'ELC_KLORIDA',
     '8087001': 'ELC_ION_KALSIUM',
 
+    '8089001': 'ABG_PH',
+    '8089002': 'ABG_PCO2',
+    '8089006': 'ABG_PO2',
+    '8089003': 'ABG_HCO3',
+    '8089007': 'ABG_CTCO2',
+    '8089005': 'ABG_BE',
+    '8089004': 'ABG_SO2',
+
     '8050001': 'ANM_RETIKULOSIT',
     '8060001': 'ANM_SI',
     '8059001': 'ANM_FERRITIN',
@@ -127,6 +139,7 @@ export const SOEDIRAN_RAW_LAB_MAP: Record<string, CentralizedParamId> = {
     '8097002': 'IMN_ANTI_HCV',
     '8106002': 'IMN_TUBEX_TF',
     '8106001': 'IMN_IGM_SALMONELLA',
+    '8183001': 'IMN_ANTIGEN_SARSCOV2',
     '8099001': 'IMN_ANTI_HIV',
     '8105001': 'IMN_ASTO',
     '8104001': 'IMN_RF',
@@ -150,6 +163,7 @@ export const SOEDIRAN_RAW_LAB_MAP: Record<string, CentralizedParamId> = {
     '8160011': 'URN_MIC_LEUKOSIT',
     '8160009': 'URN_MIC_EPITHEL',
     '8160008': 'URN_MIC_BAKTERI',
+    '8160022': 'URN_MIC_SILINDER_GRANULA',
     '8160020': 'URN_MIC_KRISTAL_URAT_AMORF',
     '8160019': 'URN_MIC_KRISTAL_FOSFAT_AMORF',
 

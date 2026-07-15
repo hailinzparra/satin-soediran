@@ -61,10 +61,12 @@ export const PANELS_CONFIG: PanelsConfig = {
             'ELC_NATRIUM', 'ELC_KALIUM', 'ELC_KLORIDA', 'ELC_ION_KALSIUM',
         ],
     },
-    // analisa_gas_darah: {
-    //     panel_name: 'Analisa Gas Darah',
-    //     parameter_ids: [],
-    // },
+    DEFAULT_PANEL_ABG: {
+        panel_name: 'Analisa Gas Darah',
+        parameter_ids: [
+            'ABG_PH', 'ABG_PCO2', 'ABG_PO2', 'ABG_HCO3', 'ABG_CTCO2', 'ABG_BE', 'ABG_SO2',
+        ],
+    },
     DEFAULT_PANEL_ANM: {
         panel_name: 'Anemia',
         parameter_ids: [
@@ -80,6 +82,8 @@ export const PANELS_CONFIG: PanelsConfig = {
             'IMN_HBSAG', 'IMN_ANTI_HCV',
             // gastro
             'IMN_TUBEX_TF', 'IMN_IGM_SALMONELLA',
+            // respi
+            'IMN_ANTIGEN_SARSCOV2',
             // sti
             'IMN_ANTI_HIV',
             // torch
@@ -105,6 +109,7 @@ export const PANELS_CONFIG: PanelsConfig = {
             'URN_MAC_LEUKOSIT', 'URN_MAC_NITRIT', 'URN_MAC_PROTEIN', 'URN_MAC_GLUKOSA',
             'URN_MAC_KETON', 'URN_MAC_UROBILINOGEN', 'URN_MAC_BILIRUBIN', 'URN_MAC_DARAH',
             'URN_MIC_ERITROSIT', 'URN_MIC_LEUKOSIT', 'URN_MIC_EPITHEL', 'URN_MIC_BAKTERI',
+            'URN_MIC_SILINDER_GRANULA',
             'URN_MIC_KRISTAL_URAT_AMORF', 'URN_MIC_KRISTAL_FOSFAT_AMORF',
         ],
     },
@@ -164,8 +169,8 @@ export const LAB_PARAM_MAP: Record<CentralizedParamId, { full: string, short: st
     'GLC_GD2PP': { full: 'Gula Darah 2 Jam PP', short: 'GD2PP' },
     'GLC_HBA1C': { full: 'HbA1c', short: 'HbA1c' },
 
-    'LIV_SGPT': { full: 'SGOT', short: 'SGOT' },
-    'LIV_SGOT': { full: 'SGPT', short: 'SGPT' },
+    'LIV_SGOT': { full: 'SGOT', short: 'SGOT' },
+    'LIV_SGPT': { full: 'SGPT', short: 'SGPT' },
     'LIV_BILIRUBIN_TOTAL': { full: 'Bilirubin Total', short: 'TBIL' },
     'LIV_BILIRUBIN_DIREK': { full: 'Bilirubin Direk', short: 'DBIL' },
     'LIV_PROTEIN_TOTAL': { full: 'Protein Total', short: 'TP' },
@@ -182,6 +187,14 @@ export const LAB_PARAM_MAP: Record<CentralizedParamId, { full: string, short: st
     'ELC_KLORIDA': { full: 'Klorida', short: 'Cl' },
     'ELC_ION_KALSIUM': { full: 'Ion Kalsium', short: 'Ca' },
 
+    'ABG_PH': { full: 'pH', short: 'pH' },
+    'ABG_PCO2': { full: 'PCO2', short: 'PCO2' },
+    'ABG_PO2': { full: 'PO2', short: 'PO2' },
+    'ABG_HCO3': { full: 'HCO3', short: 'HCO3' },
+    'ABG_CTCO2': { full: 'ctCO2', short: 'ctCO2' },
+    'ABG_BE': { full: 'BE', short: 'BE' },
+    'ABG_SO2': { full: 'sO2', short: 'sO2' },
+
     'ANM_RETIKULOSIT': { full: 'Retikulosit', short: 'Reti' },
     'ANM_SI': { full: 'Serum Iron', short: 'SI' },
     'ANM_FERRITIN': { full: 'Ferritin', short: 'Ferritin' },
@@ -191,6 +204,7 @@ export const LAB_PARAM_MAP: Record<CentralizedParamId, { full: string, short: st
     'IMN_ANTI_HCV': { full: 'Anti HCV', short: 'HCV' },
     'IMN_TUBEX_TF': { full: 'TUBEX (1)', short: 'TUBEX (1)' },
     'IMN_IGM_SALMONELLA': { full: 'TUBEX (2)', short: 'TUBEX (2)' },
+    'IMN_ANTIGEN_SARSCOV2': { full: 'Antigen SARS-CoV-2', short: 'Antigen SARS-CoV-2' },
     'IMN_ANTI_HIV': { full: 'Anti HIV', short: 'HIV' },
     'IMN_ASTO': { full: 'ASTO', short: 'ASTO' },
     'IMN_RF': { full: 'RF', short: 'RF' },
@@ -214,6 +228,7 @@ export const LAB_PARAM_MAP: Record<CentralizedParamId, { full: string, short: st
     'URN_MIC_LEUKOSIT': { full: '(Mikro) Leukosit', short: '(Mi) Leukosit' },
     'URN_MIC_EPITHEL': { full: '(Mikro) Epithel', short: '(Mi) Epithel' },
     'URN_MIC_BAKTERI': { full: '(Mikro) Bakteri', short: '(Mi) Bakteri' },
+    'URN_MIC_SILINDER_GRANULA': { full: '(Mikro) Silinder Granula', short: '(Mi) Silinder Granula' },
     'URN_MIC_KRISTAL_URAT_AMORF': { full: '(Mikro) Kristal Urat Amorf', short: '(Mi) Kristal Urat Amorf' },
     'URN_MIC_KRISTAL_FOSFAT_AMORF': { full: '(Mikro) Kristal Fosfat Amorf', short: '(Mi) Kristal Fosfat Amorf' },
 

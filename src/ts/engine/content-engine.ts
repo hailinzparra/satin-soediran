@@ -21,7 +21,7 @@ export class SatinContentEngine extends SatinEngine {
     ]
 
     emr_functions: SatinCoreFunction[] = [
-        new EMRManagerFunction(this),
+        EMRManagerFunction.get_instance(this),
         new DrugPriceFunction(this),
         new PrescriberNameFunction(this),
         new ResultsMenuFunction(this),

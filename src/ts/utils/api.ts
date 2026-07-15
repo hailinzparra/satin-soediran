@@ -1,19 +1,19 @@
 export class RequestPayloadBuilder<T extends Record<string, any>> {
-    private initial_state: Partial<T>
-    public current_params: Partial<T>
+    private default_params: Partial<T>
+    public params: Partial<T>
 
     constructor(default_params: Partial<T> = {}) {
-        this.initial_state = { ...default_params }
-        this.current_params = { ...default_params }
+        this.default_params = { ...default_params }
+        this.params = { ...default_params }
     }
 
     update(fields: Partial<T>): this {
-        Object.assign(this.current_params, fields)
+        Object.assign(this.params, fields)
         return this
     }
 
     reset(): this {
-        this.current_params = { ...this.initial_state }
+        this.params = { ...this.default_params }
         return this
     }
 
@@ -24,7 +24,7 @@ export class RequestPayloadBuilder<T extends Record<string, any>> {
             params_to_send._dc = Date.now()
         }
 
-        const { _dc, ...rest_params } = this.current_params
+        const { _dc, ...rest_params } = this.params
         params_to_send = { ...params_to_send, ...rest_params }
 
         const search_params = new URLSearchParams()
