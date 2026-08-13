@@ -4,6 +4,8 @@ import { Log } from '../../../utils/logger'
 import { ResultsMenuRenderer } from './main'
 
 export class ResultsMenuTextLabRenderer {
+    public on_change?: () => void
+
     private el: {
         container: HTMLDivElement | null
         textarea: HTMLTextAreaElement | null
@@ -388,6 +390,7 @@ export class ResultsMenuTextLabRenderer {
         const table = this.main_renderer.lab_renderer.table
         if (!table || !table.data?.dates || table.data.dates.length === 0) {
             this.el.textarea.value = ''
+            this.trigger_on_change()
             return
         }
 
@@ -398,6 +401,7 @@ export class ResultsMenuTextLabRenderer {
         if (available_dates.length === 0) {
             this.el.textarea.value = ''
             if (this.el.date_filter_container) this.el.date_filter_container.innerHTML = ''
+            this.trigger_on_change()
             return
         }
 
@@ -409,6 +413,7 @@ export class ResultsMenuTextLabRenderer {
 
         if (filtered_dates.length === 0) {
             this.el.textarea.value = ''
+            this.trigger_on_change()
             return
         }
 
@@ -496,6 +501,7 @@ export class ResultsMenuTextLabRenderer {
             })
 
             this.el.textarea.value = date_blocks.join('\n\n').trim()
+            this.trigger_on_change()
             return
         }
 
@@ -621,6 +627,7 @@ export class ResultsMenuTextLabRenderer {
         }
 
         this.el.textarea.value = final_text_buffer.trim()
+        this.trigger_on_change()
     }
 
     private format_date_to_table_style(date_obj: any, hide_parens_and_time = false): string {
@@ -644,5 +651,15 @@ export class ResultsMenuTextLabRenderer {
         }
 
         return `${day_month} '${short_year} (${time})`
+    }
+
+    private trigger_on_change() {
+        if (this.on_change) {
+            this.on_change()
+        }
+    }
+
+    public get_text(): string {
+        return this.el.textarea?.value || ''
     }
 }
