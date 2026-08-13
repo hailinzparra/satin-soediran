@@ -83,7 +83,8 @@ export const PANELS_CONFIG: PanelsConfig = {
             // gastro
             'IMN_TUBEX_TF', 'IMN_IGM_SALMONELLA',
             // infeksi tropis / vector-borne
-            'IMN_DENGUE_IGG', 'IMN_DENGUE_IGM',
+            'IMN_DENGUE_IGM', 'IMN_DENGUE_IGG',
+            'IMN_LEPTOSPIRA_IGM', 'IMN_LEPTOSPIRA_IGG',
             // respi
             'IMN_ANTIGEN_SARSCOV2',
             // sti
@@ -94,7 +95,7 @@ export const PANELS_CONFIG: PanelsConfig = {
             // ...
             // autoimun
             'IMN_ASTO',
-            'IMN_RF',
+            'IMN_RF', 'IMN_CRP',
         ],
     },
     DEFAULT_PANEL_HRM: {
@@ -206,12 +207,15 @@ export const LAB_PARAM_MAP: Record<CentralizedParamId, { full: string, short: st
     'IMN_ANTI_HCV': { full: 'Anti HCV', short: 'HCV' },
     'IMN_TUBEX_TF': { full: 'TUBEX (1)', short: 'TUBEX (1)' },
     'IMN_IGM_SALMONELLA': { full: 'TUBEX (2)', short: 'TUBEX (2)' },
-    'IMN_DENGUE_IGG': { full: 'IgG Dengue', short: 'IgG Dengue' },
-    'IMN_DENGUE_IGM': { full: 'IgM Dengue', short: 'IgM Dengue' },
+    'IMN_DENGUE_IGM': { full: 'IgM Anti Dengue', short: 'IgM Anti Dengue' },
+    'IMN_DENGUE_IGG': { full: 'IgG Anti Dengue', short: 'IgG Anti Dengue' },
+    'IMN_LEPTOSPIRA_IGM': { full: 'IgM Anti Leptospira', short: 'IgM Anti Leptospira' },
+    'IMN_LEPTOSPIRA_IGG': { full: 'IgG Anti Leptospira', short: 'IgG Anti Leptospira' },
     'IMN_ANTIGEN_SARSCOV2': { full: 'Antigen SARS-CoV-2', short: 'Antigen SARS-CoV-2' },
     'IMN_ANTI_HIV': { full: 'Anti HIV', short: 'HIV' },
     'IMN_ASTO': { full: 'ASTO', short: 'ASTO' },
     'IMN_RF': { full: 'RF', short: 'RF' },
+    'IMN_CRP': { full: 'CRP', short: 'CRP' },
 
     'HRM_FT4': { full: 'FT4', short: 'FT4' },
     'HRM_TSHS': { full: 'TSHs', short: 'TSH' },

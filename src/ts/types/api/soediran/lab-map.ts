@@ -31,11 +31,12 @@ export type CentralizedParamId =
 
     'IMN_HBSAG' | 'IMN_ANTI_HCV' |
     'IMN_TUBEX_TF' | 'IMN_IGM_SALMONELLA' |
-    'IMN_DENGUE_IGG' | 'IMN_DENGUE_IGM' |
+    'IMN_DENGUE_IGM' | 'IMN_DENGUE_IGG' |
+    'IMN_LEPTOSPIRA_IGM' | 'IMN_LEPTOSPIRA_IGG' |
     'IMN_ANTIGEN_SARSCOV2' |
     'IMN_ANTI_HIV' |
     'IMN_ASTO' |
-    'IMN_RF' |
+    'IMN_RF' | 'IMN_CRP' |
 
     'HRM_FT4' | 'HRM_TSHS' |
 
@@ -140,12 +141,15 @@ export const SOEDIRAN_RAW_LAB_MAP: Record<string, CentralizedParamId> = {
     '8097002': 'IMN_ANTI_HCV',
     '8106002': 'IMN_TUBEX_TF',
     '8106001': 'IMN_IGM_SALMONELLA',
-    '8111001': 'IMN_DENGUE_IGG',
     '8111002': 'IMN_DENGUE_IGM',
+    '8111001': 'IMN_DENGUE_IGG',
+    '8102001': 'IMN_LEPTOSPIRA_IGM',
+    // '...': 'IMN_LEPTOSPIRA_IGG',
     '8183001': 'IMN_ANTIGEN_SARSCOV2',
     '8099001': 'IMN_ANTI_HIV',
     '8105001': 'IMN_ASTO',
     '8104001': 'IMN_RF',
+    '8103001': 'IMN_CRP',
 
     '8117001': 'HRM_FT4',
     '8118001': 'HRM_TSHS',
