@@ -131,7 +131,7 @@ export class ResultsMenuTextLabRenderer {
                 this.el.toggle_split_by_date,
                 this.el.toggle_short_date,
                 this.el.toggle_reverse_dates,
-                this.el.btn_template_flat_no_unit,
+                // this.el.btn_template_flat_no_unit,
                 this.el.btn_template_interna_1,
                 this.el.btn_template_interna_2,
                 this.el.btn_template_reset,

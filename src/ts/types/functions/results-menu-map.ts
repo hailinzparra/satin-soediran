@@ -34,19 +34,19 @@ export const PANELS_CONFIG: PanelsConfig = {
             'GLC_HBA1C',
         ],
     },
+    DEFAULT_PANEL_KDN: {
+        panel_name: 'Fungsi Ginjal',
+        parameter_ids: [
+            'KDN_UREUM', 'KDN_KREATININ',
+            'KDN_ASAM_URAT',
+        ],
+    },
     DEFAULT_PANEL_LIV: {
         panel_name: 'Fungsi Hati',
         parameter_ids: [
             'LIV_SGOT', 'LIV_SGPT',
             'LIV_BILIRUBIN_TOTAL', 'LIV_BILIRUBIN_DIREK',
             'LIV_PROTEIN_TOTAL', 'LIV_ALBUMIN',
-        ],
-    },
-    DEFAULT_PANEL_KDN: {
-        panel_name: 'Fungsi Ginjal',
-        parameter_ids: [
-            'KDN_UREUM', 'KDN_KREATININ',
-            'KDN_ASAM_URAT',
         ],
     },
     DEFAULT_PANEL_HRT: {
@@ -82,6 +82,8 @@ export const PANELS_CONFIG: PanelsConfig = {
             'IMN_HBSAG', 'IMN_ANTI_HCV',
             // gastro
             'IMN_TUBEX_TF', 'IMN_IGM_SALMONELLA',
+            // infeksi tropis / vector-borne
+            'IMN_DENGUE_IGG', 'IMN_DENGUE_IGM',
             // respi
             'IMN_ANTIGEN_SARSCOV2',
             // sti
@@ -109,7 +111,7 @@ export const PANELS_CONFIG: PanelsConfig = {
             'URN_MAC_LEUKOSIT', 'URN_MAC_NITRIT', 'URN_MAC_PROTEIN', 'URN_MAC_GLUKOSA',
             'URN_MAC_KETON', 'URN_MAC_UROBILINOGEN', 'URN_MAC_BILIRUBIN', 'URN_MAC_DARAH',
             'URN_MIC_ERITROSIT', 'URN_MIC_LEUKOSIT', 'URN_MIC_EPITHEL', 'URN_MIC_BAKTERI',
-            'URN_MIC_SILINDER_GRANULA',
+            'URN_MIC_SILINDER_GRANULA', 'URN_MIC_SILINDER_HIALIN',
             'URN_MIC_KRISTAL_URAT_AMORF', 'URN_MIC_KRISTAL_FOSFAT_AMORF',
         ],
     },
@@ -169,16 +171,16 @@ export const LAB_PARAM_MAP: Record<CentralizedParamId, { full: string, short: st
     'GLC_GD2PP': { full: 'Gula Darah 2 Jam PP', short: 'GD2PP' },
     'GLC_HBA1C': { full: 'HbA1c', short: 'HbA1c' },
 
+    'KDN_UREUM': { full: 'Ureum', short: 'Ur' },
+    'KDN_KREATININ': { full: 'Kreatinin', short: 'Cr' },
+    'KDN_ASAM_URAT': { full: 'Asam Urat', short: 'UA' },
+
     'LIV_SGOT': { full: 'SGOT', short: 'SGOT' },
     'LIV_SGPT': { full: 'SGPT', short: 'SGPT' },
     'LIV_BILIRUBIN_TOTAL': { full: 'Bilirubin Total', short: 'TBIL' },
     'LIV_BILIRUBIN_DIREK': { full: 'Bilirubin Direk', short: 'DBIL' },
     'LIV_PROTEIN_TOTAL': { full: 'Protein Total', short: 'TP' },
     'LIV_ALBUMIN': { full: 'Albumin', short: 'Alb' },
-
-    'KDN_UREUM': { full: 'Ureum', short: 'Ur' },
-    'KDN_KREATININ': { full: 'Kreatinin', short: 'Cr' },
-    'KDN_ASAM_URAT': { full: 'Asam Urat', short: 'UA' },
 
     'HRT_HS_TROPONIN_I': { full: 'hs-Troponin I', short: 'TnI' },
 
@@ -204,6 +206,8 @@ export const LAB_PARAM_MAP: Record<CentralizedParamId, { full: string, short: st
     'IMN_ANTI_HCV': { full: 'Anti HCV', short: 'HCV' },
     'IMN_TUBEX_TF': { full: 'TUBEX (1)', short: 'TUBEX (1)' },
     'IMN_IGM_SALMONELLA': { full: 'TUBEX (2)', short: 'TUBEX (2)' },
+    'IMN_DENGUE_IGG': { full: 'IgG Dengue', short: 'IgG Dengue' },
+    'IMN_DENGUE_IGM': { full: 'IgM Dengue', short: 'IgM Dengue' },
     'IMN_ANTIGEN_SARSCOV2': { full: 'Antigen SARS-CoV-2', short: 'Antigen SARS-CoV-2' },
     'IMN_ANTI_HIV': { full: 'Anti HIV', short: 'HIV' },
     'IMN_ASTO': { full: 'ASTO', short: 'ASTO' },
@@ -229,6 +233,7 @@ export const LAB_PARAM_MAP: Record<CentralizedParamId, { full: string, short: st
     'URN_MIC_EPITHEL': { full: '(Mikro) Epithel', short: '(Mi) Epithel' },
     'URN_MIC_BAKTERI': { full: '(Mikro) Bakteri', short: '(Mi) Bakteri' },
     'URN_MIC_SILINDER_GRANULA': { full: '(Mikro) Silinder Granula', short: '(Mi) Silinder Granula' },
+    'URN_MIC_SILINDER_HIALIN': { full: '(Mikro) Silinder Hialin', short: '(Mi) Silinder Hialin' },
     'URN_MIC_KRISTAL_URAT_AMORF': { full: '(Mikro) Kristal Urat Amorf', short: '(Mi) Kristal Urat Amorf' },
     'URN_MIC_KRISTAL_FOSFAT_AMORF': { full: '(Mikro) Kristal Fosfat Amorf', short: '(Mi) Kristal Fosfat Amorf' },
 
@@ -243,11 +248,26 @@ export const LAB_PARAM_MAP: Record<CentralizedParamId, { full: string, short: st
 export const LAB_SYMBOL_MAP: Record<string, { full: string, short: string }> = {
     'Reaktif': { full: 'Reaktif', short: 'R' },
     'Non Reaktif': { full: 'Non Reaktif', short: 'NR' },
-    'Negatif': { full: 'Negatif', short: '-' },
+    'Positif': { full: 'Positif', short: '+Pos' },
+    'Negatif': { full: 'Negatif', short: '-Neg' },
     '+/Positif 1': { full: '+1', short: '+1' },
     '++/Positif 2': { full: '+2', short: '+2' },
     '+++/Positif 3': { full: '+3', short: '+3' },
     '++++/Positif 4': { full: '+4', short: '+4' },
+    '+++++/Positif 5': { full: '+5', short: '+5' },
+    '++++++/Positif 6': { full: '+6', short: '+6' },
+    '+++++++/Positif 7': { full: '+7', short: '+7' },
+    '++++++++/Positif 8': { full: '+8', short: '+8' },
+    '+++++++++/Positif 9': { full: '+9', short: '+9' },
+    '++++++++++/Positif 10': { full: '+10', short: '+10' },
+    'Positif 1/10': { full: '+1', short: '+1' },
+    'Positif 2/10': { full: '+2', short: '+2' },
+    'Positif 3/10': { full: '+3', short: '+3' },
     'Positif 4/10': { full: '+4', short: '+4' },
+    'Positif 5/10': { full: '+5', short: '+5' },
     'Positif 6/10': { full: '+6', short: '+6' },
+    'Positif 7/10': { full: '+7', short: '+7' },
+    'Positif 8/10': { full: '+8', short: '+8' },
+    'Positif 9/10': { full: '+9', short: '+9' },
+    'Positif 10/10': { full: '+10', short: '+10' },
 }
