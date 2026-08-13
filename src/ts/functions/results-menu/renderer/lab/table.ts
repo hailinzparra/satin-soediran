@@ -102,6 +102,13 @@ export class ResultsMenuLabTable {
     private static readonly SINGLE_NUM_REGEX = /^([-+]?[0-9.]+)$/
     private static readonly REGEX_ESCAPE_CHARS = /[-\/\\^$*+?.()|[\]{}]/g
 
+    // Time-related Regexes
+    private static readonly HAS_TIME_MARKER_REGEX = /['"]/
+    private static readonly HAS_TIME_REGEX = /(\d+)'(?:(\d+)'?)?/g
+    private static readonly PLAIN_NUMBERS_REGEX = /\b\d+\b/g
+    private static readonly DOUBLE_QUOTE_FIX_REGEX = /''|"/g
+    private static readonly WHITESPACE_REGEX = /\s+/g
+
     constructor(
         protected lab_renderer: ResultsMenuLabRenderer,
     ) {
@@ -442,11 +449,34 @@ export class ResultsMenuLabTable {
         }
     }
 
-    private static parse_interval(str: string): [number, number] | null {
+    private static normalize_time_to_seconds(str: string, is_time_context = false): string {
+        let normalized = str.replace(ResultsMenuLabTable.DOUBLE_QUOTE_FIX_REGEX, "'")
+
+        const converted = normalized.replace(ResultsMenuLabTable.HAS_TIME_REGEX, (_, mins, secs) => {
+            const m = parseInt(mins, 10) || 0
+            const s = parseInt(secs, 10) || 0
+            return (m * 60 + s).toString()
+        })
+
+        if (is_time_context && !str.includes("'")) {
+            return converted.replace(ResultsMenuLabTable.PLAIN_NUMBERS_REGEX, (num) => (parseInt(num, 10) * 60).toString())
+        }
+
+        return converted
+    }
+
+    private static parse_interval(str: string, is_time_context = false): [number, number] | null {
+        if (!str) return null
+
         // Strip ALL whitespace
         // Example: "- 3.0 - + 3.0" becomes "-3.0-+3.0"
         // Example: "-5 - -2" becomes "-5--2"
-        const clean_str = str.replace(/\s+/g, '')
+        let clean_str = str.replace(ResultsMenuLabTable.WHITESPACE_REGEX, '')
+
+        const has_time_marker = ResultsMenuLabTable.HAS_TIME_MARKER_REGEX.test(clean_str)
+        if (has_time_marker || is_time_context) {
+            clean_str = ResultsMenuLabTable.normalize_time_to_seconds(clean_str, is_time_context)
+        }
 
         // Case 1: Range "-3.0-+3.0" or "-5--2"
         const range_match = clean_str.match(ResultsMenuLabTable.RANGE_REGEX)
@@ -475,8 +505,10 @@ export class ResultsMenuLabTable {
             return { is_normal: true, arrow_type: null }
         }
 
-        const val_interval = ResultsMenuLabTable.parse_interval(value)
-        const ref_interval = ResultsMenuLabTable.parse_interval(reference_range)
+        const is_time_context = ResultsMenuLabTable.HAS_TIME_MARKER_REGEX.test(value) || ResultsMenuLabTable.HAS_TIME_MARKER_REGEX.test(reference_range)
+
+        const val_interval = ResultsMenuLabTable.parse_interval(value, is_time_context)
+        const ref_interval = ResultsMenuLabTable.parse_interval(reference_range, is_time_context)
 
         // If both parsed successfully as numeric intervals, run the smart comparison logic
         if (val_interval && ref_interval) {
@@ -582,7 +614,6 @@ export class ResultsMenuLabTable {
 
         const render_value = ResultsMenuLabTable.get_render_value(data)
         const clean = (value: any): string => value === '' ? '??' : value ?? '??'
-
 
         const value_text_div = create_element('div', { classes: 'tt-value' }, [
             create_element('span', { html: clean(data.value) }),
