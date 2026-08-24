@@ -91,22 +91,23 @@ export class ResultsMenuLabTable {
     private static tooltip_element: HTMLDivElement | null = null
     private static active_cell: HTMLElement | null = null
 
-    // Matches: "3-5", "-3-+4", "-3-3", "-5--2"
-    // The middle dash is the separator, capture groups handle optional signs attached to numbers
+    // --- Existing & Updated Regexes ---
     private static readonly RANGE_REGEX = /^([-+]?[0-9.]+)-([-+]?[0-9.]+)$/
-    // Matches: "<10", "<-5"
     private static readonly LESS_THAN_REGEX = /^<([-+]?[0-9.]+)$/
-    // Matches: ">20", ">-10"
     private static readonly GREATER_THAN_REGEX = /^>([-+]?[0-9.]+)$/
-    // Matches: "4.5", "-2.5", "+3"
     private static readonly SINGLE_NUM_REGEX = /^([-+]?[0-9.]+)$/
     private static readonly REGEX_ESCAPE_CHARS = /[-\/\\^$*+?.()|[\]{}]/g
 
-    // Time-related Regexes
+    // --- Time-related Regexes ---
     private static readonly HAS_TIME_MARKER_REGEX = /['"]/
-    private static readonly HAS_TIME_REGEX = /(\d+)['"]+(?:(\d+)['"]*)?/g
-    private static readonly PLAIN_NUMBERS_REGEX = /\b\d+\b/g
+    private static readonly HAS_TIME_REGEX = /(\d+(?:[.,]\d+)?)['"]+(?:(\d+)['"]*)?/g
+    private static readonly PLAIN_NUMBERS_REGEX = /\b\d+(?:[.,]\d+)?\b/g
     private static readonly WHITESPACE_REGEX = /\s+/g
+
+    // --- Formatting & Number Sanitization Regexes ---
+    private static readonly DECIMAL_COMMA_REGEX = /(\d+),(\d{1,2})(?!\d)/g
+    private static readonly EU_THOUSANDS_REGEX = /\d+\.\d{3},/
+    private static readonly US_THOUSANDS_REGEX = /\d+,\d{3}\./
 
     constructor(
         protected lab_renderer: ResultsMenuLabRenderer,
@@ -448,16 +449,38 @@ export class ResultsMenuLabTable {
         }
     }
 
+    private static sanitize_number_format(str: string): string {
+        let sanitized = str
+
+        // Handle European thousands dot (e.g. "1.234,56" -> "1234,56")
+        if (ResultsMenuLabTable.EU_THOUSANDS_REGEX.test(sanitized)) {
+            sanitized = sanitized.replace(/\./g, '')
+        }
+        // Handle Standard thousands comma (e.g. "1,234.56" -> "1234.56")
+        else if (ResultsMenuLabTable.US_THOUSANDS_REGEX.test(sanitized)) {
+            sanitized = sanitized.replace(/,/g, '')
+        }
+
+        // Replace decimal commas (e.g., "5,4" -> "5.4")
+        sanitized = sanitized.replace(ResultsMenuLabTable.DECIMAL_COMMA_REGEX, '$1.$2')
+
+        return sanitized
+    }
+
     private static normalize_time_to_seconds(str: string, is_time_context = false): string {
-        // HAS_TIME_REGEX will parse "12''00''''", "12'00''", or "12\"00\"" directly
         const converted = str.replace(ResultsMenuLabTable.HAS_TIME_REGEX, (_, mins, secs) => {
-            const m = parseInt(mins, 10) || 0
+            const normalized_mins = mins ? mins.replace(',', '.') : '0'
+            const m = parseFloat(normalized_mins) || 0
             const s = parseInt(secs, 10) || 0
-            return (m * 60 + s).toString()
+
+            return Math.round(m * 60 + s).toString()
         })
 
         if (is_time_context && !str.includes("'") && !str.includes('"')) {
-            return converted.replace(ResultsMenuLabTable.PLAIN_NUMBERS_REGEX, (num) => (parseInt(num, 10) * 60).toString())
+            return converted.replace(ResultsMenuLabTable.PLAIN_NUMBERS_REGEX, (num) => {
+                const normalized_num = num.replace(',', '.')
+                return Math.round(parseFloat(normalized_num) * 60).toString()
+            })
         }
 
         return converted
@@ -470,6 +493,9 @@ export class ResultsMenuLabTable {
         // Example: "- 3.0 - + 3.0" becomes "-3.0-+3.0"
         // Example: "-5 - -2" becomes "-5--2"
         let clean_str = str.replace(ResultsMenuLabTable.WHITESPACE_REGEX, '')
+
+        // Standardize numbers (convert decimal commas like 5,4 to 5.4)
+        clean_str = ResultsMenuLabTable.sanitize_number_format(clean_str)
 
         const has_time_marker = ResultsMenuLabTable.HAS_TIME_MARKER_REGEX.test(clean_str)
         if (has_time_marker || is_time_context) {
