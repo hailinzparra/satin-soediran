@@ -23,6 +23,10 @@ export const format_medical_name = (name?: string): string => {
             return 'IGD'
         }
 
+        if (lower_token === 'icu') {
+            return 'ICU'
+        }
+
         if (lower_token === 'dr') {
             const original_token = raw_tokens[index]
             if (original_token === 'dr' || original_token === 'dr.') {
