@@ -25,7 +25,7 @@ export class ResultsMenuRenderer {
         const tab_rad = this.add_tab('Radio', 'fa-odnoklassniki-square')
         const tab_text_lab = this.add_tab('Teks Lab')
         const tab_text_rad = this.add_tab('Teks Radio')
-        const tab_text_all = this.add_tab('Teks Lengkap')
+        const tab_text_all = this.add_tab('Teks Semua')
 
         this.lab_renderer = new ResultsMenuLabRenderer(this)
         this.lab_renderer.build_dom_elements(tab_lab)

@@ -31,20 +31,41 @@
         }
     }
 
-    &-date-filter {
-        &-row {
+    &-divider {
+        &-group {
             display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 6px 12px;
-            background: #f1f5f9;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
         }
 
         &-label {
             font-size: 10px;
             font-weight: 700;
             color: #1e293b;
-            padding-top: 5px;
+            min-width: 95px;
+            white-space: nowrap;
+        }
+    }
+
+    &-date-filter {
+        &-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 4px 12px;
+            background: #f1f5f9;
+            border-bottom: 1px dashed #e2e8f0;
+
+            &:last-child {
+                border-bottom: none;
+            }
+        }
+
+        &-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #1e293b;
             white-space: nowrap;
         }
 
