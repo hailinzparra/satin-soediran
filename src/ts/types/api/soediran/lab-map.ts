@@ -94,6 +94,8 @@ export const SOEDIRAN_RAW_LAB_MAP: Record<string, CentralizedParamId> = {
     '8079001': 'LPD_TC',
     // #Trigliserida (older panel)
     '8082001': 'LPD_TG',
+    // #Cholesterol HDL (Direc) (older panel)
+    '8080001': 'LPD_HDL',
     // #Cholesterol LDL (Direc) (older panel)
     '8081001': 'LPD_LDL',
 
@@ -144,7 +146,7 @@ export const SOEDIRAN_RAW_LAB_MAP: Record<string, CentralizedParamId> = {
     '8111002': 'IMN_DENGUE_IGM',
     '8111001': 'IMN_DENGUE_IGG',
     '8102001': 'IMN_LEPTOSPIRA_IGM',
-    // '...': 'IMN_LEPTOSPIRA_IGG',
+    '8102002': 'IMN_LEPTOSPIRA_IGG',
     '8183001': 'IMN_ANTIGEN_SARSCOV2',
     '8099001': 'IMN_ANTI_HIV',
     '8105001': 'IMN_ASTO',

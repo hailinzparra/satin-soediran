@@ -104,9 +104,8 @@ export class ResultsMenuLabTable {
 
     // Time-related Regexes
     private static readonly HAS_TIME_MARKER_REGEX = /['"]/
-    private static readonly HAS_TIME_REGEX = /(\d+)'(?:(\d+)'?)?/g
+    private static readonly HAS_TIME_REGEX = /(\d+)['"]+(?:(\d+)['"]*)?/g
     private static readonly PLAIN_NUMBERS_REGEX = /\b\d+\b/g
-    private static readonly DOUBLE_QUOTE_FIX_REGEX = /''|"/g
     private static readonly WHITESPACE_REGEX = /\s+/g
 
     constructor(
@@ -450,15 +449,14 @@ export class ResultsMenuLabTable {
     }
 
     private static normalize_time_to_seconds(str: string, is_time_context = false): string {
-        let normalized = str.replace(ResultsMenuLabTable.DOUBLE_QUOTE_FIX_REGEX, "'")
-
-        const converted = normalized.replace(ResultsMenuLabTable.HAS_TIME_REGEX, (_, mins, secs) => {
+        // HAS_TIME_REGEX will parse "12''00''''", "12'00''", or "12\"00\"" directly
+        const converted = str.replace(ResultsMenuLabTable.HAS_TIME_REGEX, (_, mins, secs) => {
             const m = parseInt(mins, 10) || 0
             const s = parseInt(secs, 10) || 0
             return (m * 60 + s).toString()
         })
 
-        if (is_time_context && !str.includes("'")) {
+        if (is_time_context && !str.includes("'") && !str.includes('"')) {
             return converted.replace(ResultsMenuLabTable.PLAIN_NUMBERS_REGEX, (num) => (parseInt(num, 10) * 60).toString())
         }
 
