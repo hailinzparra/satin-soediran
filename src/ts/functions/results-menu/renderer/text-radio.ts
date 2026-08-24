@@ -6,6 +6,7 @@ import { ResultsMenuRadioResult } from './radio'
 export class ResultsMenuTextRadioRenderer {
     private selected_dates: Set<string> = new Set()
     private hide_findings: boolean = true
+    private reverse_date_order: boolean = false
     public on_change?: () => void
 
     private el: {
@@ -15,6 +16,7 @@ export class ResultsMenuTextRadioRenderer {
         btn_reset: HTMLButtonElement | null
         btn_clear: HTMLButtonElement | null
         btn_hide_findings: HTMLButtonElement | null
+        btn_reverse_date_order: HTMLButtonElement | null
         dates_container: HTMLDivElement | null
     } = {
             container: null,
@@ -23,6 +25,7 @@ export class ResultsMenuTextRadioRenderer {
             btn_reset: null,
             btn_clear: null,
             btn_hide_findings: null,
+            btn_reverse_date_order: null,
             dates_container: null,
         }
 
@@ -45,10 +48,42 @@ export class ResultsMenuTextRadioRenderer {
 
     constructor(public main_renderer: ResultsMenuRenderer) { }
 
+    private format_date_label(raw_date_str: string): string {
+        const date_obj = new Date(raw_date_str)
+        if (isNaN(date_obj.getTime())) {
+            return raw_date_str
+        }
+
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des']
+        const day = String(date_obj.getDate()).padStart(2, '0')
+        const month = months[date_obj.getMonth()]
+        const year = String(date_obj.getFullYear()).slice(-2)
+
+        const hours = date_obj.getHours()
+        const minutes = date_obj.getMinutes()
+
+        if (hours !== 0 || minutes !== 0) {
+            const time_str = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+            return `${day} ${month} '${year} (${time_str})`
+        }
+
+        return `${day} ${month} '${year}`
+    }
+
     build_dom_elements(target_el: HTMLDivElement) {
         this.el.btn_hide_findings = create_element('button', {
             classes: `${ResultsMenuTextRadioRenderer.classes.btn_toggle} ${ResultsMenuTextRadioRenderer.classes.btn_toggle_active}`,
             text: 'Sembunyikan Hasil',
+        })
+
+        this.el.btn_reverse_date_order = create_element('button', {
+            classes: ResultsMenuTextRadioRenderer.classes.btn_toggle,
+            text: 'Balik Urutan Tanggal',
+        })
+
+        this.el.btn_reset = create_element('button', {
+            classes: `${ResultsMenuTextRadioRenderer.classes.btn_macro} reset`,
+            text: 'Reset Filter',
         })
 
         this.el.btn_copy = create_element('button', {
@@ -59,6 +94,8 @@ export class ResultsMenuTextRadioRenderer {
         const toolbar_row = create_element('div', { classes: ResultsMenuTextRadioRenderer.classes.toolbar_row }, [
             create_element('div', { classes: ResultsMenuTextRadioRenderer.classes.toolbar_group }, [
                 this.el.btn_hide_findings,
+                this.el.btn_reverse_date_order,
+                this.el.btn_reset,
             ]),
             create_element('div', { classes: ResultsMenuTextRadioRenderer.classes.toolbar_group }, [
                 this.el.btn_copy,
@@ -68,23 +105,15 @@ export class ResultsMenuTextRadioRenderer {
         this.el.dates_container = create_element('div', { classes: ResultsMenuTextRadioRenderer.classes.date_filter_container })
 
         this.el.btn_clear = create_element('button', {
-            classes: `${ResultsMenuTextRadioRenderer.classes.btn_macro} reset`,
+            classes: ResultsMenuTextRadioRenderer.classes.btn_toggle,
             text: 'Hapus Semua Pilihan',
-        })
-
-        this.el.btn_reset = create_element('button', {
-            classes: ResultsMenuTextRadioRenderer.classes.btn_macro,
-            text: 'Reset Filter',
         })
 
         const date_filter_row = create_element('div', { classes: ResultsMenuTextRadioRenderer.classes.date_filter_row }, [
             create_element('div', { classes: ResultsMenuTextRadioRenderer.classes.date_filter_label, text: 'Filter Tanggal:' }),
             create_element('div', { classes: ResultsMenuTextRadioRenderer.classes.date_filter_grid }, [
                 this.el.dates_container,
-                create_element('div', { classes: ResultsMenuTextRadioRenderer.classes.toolbar_group }, [
-                    this.el.btn_clear,
-                    this.el.btn_reset,
-                ]),
+                this.el.btn_clear,
             ]),
         ])
 
@@ -130,13 +159,38 @@ export class ResultsMenuTextRadioRenderer {
             this.update_text()
         })
 
+        this.el.btn_reverse_date_order?.addEventListener('click', () => {
+            this.reverse_date_order = !this.reverse_date_order
+            if (this.reverse_date_order) {
+                this.el.btn_reverse_date_order?.classList.add(ResultsMenuTextRadioRenderer.classes.btn_toggle_active)
+            } else {
+                this.el.btn_reverse_date_order?.classList.remove(ResultsMenuTextRadioRenderer.classes.btn_toggle_active)
+            }
+            this.update_text()
+        })
+
         this.el.btn_clear?.addEventListener('click', () => {
-            this.selected_dates.clear()
+            const data = this.main_renderer.radio_renderer.get_data()
+            const unique_dates = Array.from(new Set(data.map(d => d.date)))
+
+            if (this.selected_dates.size === unique_dates.length && unique_dates.length > 0) {
+                this.selected_dates.clear()
+            } else {
+                unique_dates.forEach(d => this.selected_dates.add(d))
+            }
+
+            this.update_master_date_button_state(unique_dates.length)
             this.render_date_buttons()
             this.update_text()
         })
 
         this.el.btn_reset?.addEventListener('click', () => {
+            this.hide_findings = true
+            this.reverse_date_order = false
+
+            this.el.btn_hide_findings?.classList.add(ResultsMenuTextRadioRenderer.classes.btn_toggle_active)
+            this.el.btn_reverse_date_order?.classList.remove(ResultsMenuTextRadioRenderer.classes.btn_toggle_active)
+
             this.reset_dates_to_default()
             this.render_date_buttons()
             this.update_text()
@@ -145,16 +199,32 @@ export class ResultsMenuTextRadioRenderer {
 
     private reset_dates_to_default() {
         const data = this.main_renderer.radio_renderer.get_data()
+        const unique_dates = Array.from(new Set(data.map(d => d.date)))
+
         this.selected_dates.clear()
-        if (data.length > 0) {
-            this.selected_dates.add(data[0].date)
-        }
+        unique_dates.forEach(date => this.selected_dates.add(date))
+
+        this.update_master_date_button_state(unique_dates.length)
     }
 
     public sync_text_output() {
         this.reset_dates_to_default()
         this.render_date_buttons()
         this.update_text()
+    }
+
+    private update_master_date_button_state(total_available: number) {
+        if (!this.el.btn_clear) return
+
+        const { btn_action, btn_toggle } = ResultsMenuTextRadioRenderer.classes
+
+        if (this.selected_dates.size === total_available && total_available > 0) {
+            this.el.btn_clear.textContent = 'Hapus Semua Pilihan'
+            this.el.btn_clear.className = btn_toggle
+        } else {
+            this.el.btn_clear.textContent = 'Pilih Semua'
+            this.el.btn_clear.className = btn_action
+        }
     }
 
     private render_date_buttons() {
@@ -165,11 +235,7 @@ export class ResultsMenuTextRadioRenderer {
         const unique_dates = Array.from(new Set(data.map(d => d.date)))
 
         unique_dates.forEach(date_str => {
-            const date_obj = new Date(date_str)
-            const formatted_date = !isNaN(date_obj.getTime())
-                ? `${String(date_obj.getDate()).padStart(2, '0')}/${String(date_obj.getMonth() + 1).padStart(2, '0')}/${date_obj.getFullYear()}`
-                : date_str
-
+            const formatted_date = this.format_date_label(date_str)
             const is_selected = this.selected_dates.has(date_str)
             const btn_cls = `${ResultsMenuTextRadioRenderer.classes.btn_toggle} ${is_selected ? ResultsMenuTextRadioRenderer.classes.btn_toggle_active : ''}`
 
@@ -184,19 +250,26 @@ export class ResultsMenuTextRadioRenderer {
                 } else {
                     this.selected_dates.add(date_str)
                 }
+                this.update_master_date_button_state(unique_dates.length)
                 this.render_date_buttons()
                 this.update_text()
             })
 
             this.el.dates_container!.append(btn)
         })
+
+        this.update_master_date_button_state(unique_dates.length)
     }
 
     private update_text() {
         if (!this.el.textarea) return
 
         const all_data = this.main_renderer.radio_renderer.get_data()
-        const filtered = all_data.filter(item => this.selected_dates.has(item.date))
+        let filtered = all_data.filter(item => this.selected_dates.has(item.date))
+
+        if (this.reverse_date_order) {
+            filtered = [...filtered].reverse()
+        }
 
         if (filtered.length === 0) {
             this.el.textarea.value = ''
@@ -205,12 +278,8 @@ export class ResultsMenuTextRadioRenderer {
         }
 
         const blocks = filtered.map(item => {
-            const date_obj = new Date(item.date)
-            const formatted_date = !isNaN(date_obj.getTime())
-                ? `${String(date_obj.getDate()).padStart(2, '0')}/${String(date_obj.getMonth() + 1).padStart(2, '0')}/${date_obj.getFullYear()}`
-                : item.date
-
-            const title = `${item.order.name} ${formatted_date}`
+            const formatted_date = this.format_date_label(item.date)
+            const title = `${item.order.name} (${formatted_date})`
             const impression = item.impression || '-'
 
             if (!this.hide_findings && item.findings) {
