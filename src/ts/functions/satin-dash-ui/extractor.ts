@@ -28,8 +28,6 @@ export class SatinDashUIExtractor extends SatinBaseFunctionExtractor<SatinDashUI
             const lpanel_head = (document.getElementById(`${lpanel?.id ?? ''}_header`) as HTMLDivElement) ?? null
             const lpanel_body = (document.getElementById(`${lpanel?.id ?? ''}-body`) as HTMLDivElement) ?? null
 
-            console.log(lpanel, lpanel_head, lpanel_body)
-
             const extracted_workspace: SatinDashUIWorkspace = {
                 id: wid,
                 els: {
@@ -77,7 +75,8 @@ export class SatinDashUIExtractor extends SatinBaseFunctionExtractor<SatinDashUI
 
             const main_dxtician = raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.DIAGNOSAUTAMA?.REFERENSI?.DIAGNOSA_OLEH?.NAMA
             if (main_dxtician) {
-                diagnosticians.push(main_dxtician)
+                const prefix_title = raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.DIAGNOSAUTAMA?.REFERENSI?.DIAGNOSA_OLEH?.GELAR_DEPAN
+                diagnosticians.push(`${prefix_title ? prefix_title + ' ' : ''}${main_dxtician}`)
             }
 
             const extracted_visit: SatinDashUIVisit = {
@@ -91,7 +90,7 @@ export class SatinDashUIExtractor extends SatinBaseFunctionExtractor<SatinDashUI
                     name: raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.PASIEN?.NAMA ?? '',
                     gender_id: raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.PASIEN?.JENIS_KELAMIN ?? '',
                     birthdate: raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.PASIEN?.TANGGAL_LAHIR ?? '',
-                    birthplace: raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.PASIEN?.TEMPAT_LAHIR ?? '',
+                    birthplace: raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.PASIEN?.REFERENSI?.TEMPATLAHIR?.DESKRIPSI ?? '',
                     address: raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.PASIEN?.ALAMAT ?? '',
                     religion: raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.PASIEN?.REFERENSI?.AGAMA?.DESKRIPSI ?? '',
                     blood_type: raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.PASIEN?.REFERENSI?.GOLONGAN_DARAH?.DESKRIPSI ?? '',
@@ -101,7 +100,7 @@ export class SatinDashUIExtractor extends SatinBaseFunctionExtractor<SatinDashUI
                         class: raw.REFERENSI?.PENDAFTARAN?.PENJAMIN?.REFERENSI?.KELAS?.DESKRIPSI ?? '',
                         membership: {
                             id: raw.REFERENSI?.PENDAFTARAN?.PENJAMIN?.REFERENSI?.KEPESERTAAN?.noKartu ?? '',
-                            provider: raw.REFERENSI?.PENDAFTARAN?.PENJAMIN?.REFERENSI?.KEPESERTAAN?.noKartu ?? '',
+                            provider: raw.REFERENSI?.PENDAFTARAN?.PENJAMIN?.REFERENSI?.KEPESERTAAN?.nmProvider ?? '',
                             prb_desc: raw.REFERENSI?.PENDAFTARAN?.PENJAMIN?.REFERENSI?.KEPESERTAAN?.prolanisPRB ?? '',
                         },
                     },
@@ -112,7 +111,7 @@ export class SatinDashUIExtractor extends SatinBaseFunctionExtractor<SatinDashUI
                 },
                 dpjp: {
                     id: raw.REFERENSI?.DPJP?.ID ?? raw.DPJP ?? '',
-                    name: format_medical_name(raw.REFERENSI?.DPJP?.NAMA ?? ''),
+                    name: raw.REFERENSI?.DPJP?.NAMA ?? '',
                 },
                 room: {
                     id: raw.REFERENSI?.RUANGAN?.ID ?? raw.RUANGAN ?? '',

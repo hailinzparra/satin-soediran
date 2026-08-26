@@ -1,8 +1,9 @@
 import { SatinBaseFunctionInjector, SatinBaseFunctionTargetNode } from '../../types/functions/base'
-import { SatinDashUIConfig, SatinDashUIWorkspace } from '../../types/functions/satin-dash-ui'
+import { SatinDashUIConfig, SatinDashUIVisit, SatinDashUIWorkspace } from '../../types/functions/satin-dash-ui'
 import { create_element } from '../../utils/dom'
 import { Log } from '../../utils/logger'
 import { SatinDashUIFunction } from './parent'
+import { build_patient_card } from './ui'
 
 export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFunction, SatinDashUIConfig> {
     public async on_execute(): Promise<void> {
@@ -20,12 +21,14 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
             }
 
             this.inject_toggle_button(ws)
+            this.toggle_toggle_btn(ws, true)
 
             if (ws.is_mode_enabled) {
                 this.inject_satin_dash_ui(ws)
+                this.toggle_satin_dash_ui(ws, true)
             }
             else {
-                this.hide_satin_dash_ui(ws)
+                this.toggle_satin_dash_ui(ws, false)
             }
         })
     }
@@ -37,14 +40,8 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
     }
 
     hide_workspace(ws: SatinDashUIWorkspace) {
-        // already hidden? do nothing
-        const is_btn_hidden = ws.els.toggle_btn_wrapper?.classList.contains('hidden') ? true : false
-        if (is_btn_hidden) {
-            return
-        }
-
-        // lets hide in the woods
-        ws.els.toggle_btn_wrapper?.classList.add('hidden')
+        this.toggle_toggle_btn(ws, false)
+        this.toggle_satin_dash_ui(ws, false)
     }
 
     hide_all_workspaces() {
@@ -57,10 +54,6 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
     inject_toggle_button(ws: SatinDashUIWorkspace) {
         // already injected? do nothing
         if (ws.is_button_injected) {
-            const is_btn_hidden = ws.els.toggle_btn_wrapper?.classList.contains('hidden') ? true : false
-            if (is_btn_hidden) {
-                ws.els.toggle_btn_wrapper?.classList.remove('hidden')
-            }
             return
         }
 
@@ -85,11 +78,11 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
                 create_element('span', { classes: 'custom-toggle-slider' }),
                 create_element('span', {
                     classes: 'custom-toggle-label lbl-normal',
-                    text: 'NORMAL',
+                    text: 'Standard',
                 }),
                 create_element('span', {
                     classes: 'custom-toggle-label lbl-satin',
-                    text: 'SATIN',
+                    text: 'Satin',
                 }),
             ])
 
@@ -105,10 +98,117 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
     inject_satin_dash_ui(ws: SatinDashUIWorkspace) {
         // already injected? do nothing
 
+        if (!ws.els.lpanel_body) return
+
+        const tableview_div = ws.els.lpanel_body.querySelector<HTMLElement>('[id^="tableview-"]')
+
+        if (tableview_div) {
+            const tables = tableview_div.querySelectorAll<HTMLTableElement>('table.x-grid-item')
+
+            tables.forEach((table) => {
+                const target_td = table.querySelector<HTMLTableCellElement>('td.x-grid-cell-templatecolumn-1352')
+                    || table.querySelectorAll<HTMLTableCellElement>('td')[1]
+
+                if (!target_td) return
+
+                const existing_modern_ui = target_td.querySelector<HTMLElement>('.my-modern-ui-container')
+                if (existing_modern_ui) return
+
+                const text_content = table.innerText || table.textContent || ''
+
+                const id_match = text_content.match(/(\d+)\s*Masuk/i)
+
+                const clean_table_id = id_match ? id_match[1] : text_content.replace(/\D/g, '')
+
+                target_td.style.position = 'relative'
+
+                const modern_ui = document.createElement('div')
+                modern_ui.className = 'my-modern-ui-container'
+
+                modern_ui.dataset.tableId = clean_table_id
+
+                const scale_rect = () => {
+                    const rect = target_td.getBoundingClientRect()
+                    Object.assign(modern_ui.style, {
+                        position: 'absolute',
+                        top: '0px',
+                        left: '0px',
+                        width: `${rect.width}px`,
+                        height: `${rect.height}px`,
+                        // backgroundColor: '#ffffff',
+                        zIndex: '10',
+                        boxSizing: 'border-box',
+                        display: 'flex',
+                        justifyContent: 'space-around',
+                        flexDirection: 'column',
+                    })
+                }
+                scale_rect()
+
+                // window.addEventListener('resize', scale_rect)
+
+                let visit: SatinDashUIVisit | null = null
+                Array.from(this.parent.data.extracted_visits.keys()).forEach(extracted_visit_id => {
+                    if (clean_table_id.includes(extracted_visit_id)) {
+                        visit = this.parent.data.extracted_visits.get(extracted_visit_id) ?? null
+                    }
+                })
+
+                if (visit) {
+                    const card = build_patient_card(visit)
+                    modern_ui.append(card)
+                }
+
+                // modern_ui.innerHTML = `
+                //     <div class="modern-card">
+                //         <span class="table-id-label">${clean_table_id}</span>
+                //     </div>
+                //     `
+
+                // Hide original ExtJS inner cell wrapper
+                const old_inner = target_td.querySelector<HTMLElement>('.x-grid-cell-inner')
+                if (old_inner) {
+                    old_inner.style.opacity = '0'
+                }
+
+                target_td.appendChild(modern_ui)
+            })
+        }
     }
 
-    hide_satin_dash_ui(ws: SatinDashUIWorkspace) {
-        // already hidden? do nothing
+    toggle_toggle_btn(ws: SatinDashUIWorkspace, is_showed: boolean) {
+        const is_btn_hidden = ws.els.toggle_btn_wrapper?.classList.contains('hidden') ? true : false
+        if (is_btn_hidden) {
+            // already hidden and want to be showed?
+            if (is_showed) {
+                ws.els.toggle_btn_wrapper?.classList.remove('hidden')
+            }
+        }
+        // is showed and want to be hidden?
+        else if (!is_showed) {
+            ws.els.toggle_btn_wrapper?.classList.add('hidden')
+        }
+    }
 
+    toggle_satin_dash_ui(ws: SatinDashUIWorkspace, is_showed: boolean) {
+        // already hidden? do nothing
+        const tableview_div = ws.els.lpanel_body?.querySelector<HTMLElement>('[id^="tableview-"]')
+        if (!tableview_div) return
+
+        const modern_containers = tableview_div.querySelectorAll<HTMLElement>('.my-modern-ui-container')
+        modern_containers.forEach((modern_ui) => {
+            const target_td = modern_ui.parentElement
+            if (!target_td) return
+
+            const old_inner = target_td.querySelector<HTMLElement>('.x-grid-cell-inner')
+
+            if (is_showed) {
+                modern_ui.style.display = 'flex'
+                if (old_inner) old_inner.style.opacity = '0'
+            } else {
+                modern_ui.style.display = 'none'
+                if (old_inner) old_inner.style.opacity = '1'
+            }
+        })
     }
 }

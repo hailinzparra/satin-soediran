@@ -1,0 +1,473 @@
+@use "../../base";
+
+$color-slate-50: #f8fafc;
+$color-slate-100: #f1f5f9;
+$color-slate-200: #e2e8f0;
+$color-slate-300: #cbd5e1;
+$color-slate-400: #94a3b8;
+$color-slate-500: #64748b;
+$color-slate-600: #475569;
+$color-slate-800: #1e293b;
+
+$color-blue-50: #eff6ff;
+$color-blue-100: #dbeafe;
+$color-blue-200: #bfdbfe;
+$color-blue-400: #60a5fa;
+$color-blue-500: #3b82f6;
+$color-blue-600: #2563eb;
+$color-blue-700: #1d4ed8;
+
+$color-emerald-50: #ecfdf5;
+$color-emerald-100: #d1fae5;
+$color-emerald-500: #10b981;
+$color-emerald-600: #059669;
+
+$color-amber-50: #fffbeb;
+$color-amber-200: #fde68a;
+$color-amber-700: #b45309;
+
+$color-red-50: #fef2f2;
+$color-red-500: #ef4444;
+$color-rose-500: #f43f5e;
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.patient-card {
+    @include base.satin-font-main;
+    padding: 0.75rem;
+    // background-color: #fff;
+    // border: 1px solid $color-slate-100;
+    // border-radius: 0.75rem;
+    // box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    transition: all 0.2s ease;
+    max-height: 100%;
+
+    // &:hover {
+    //     border-color: $color-blue-200;
+    // }
+
+    .icon {
+        width: 0.875rem;
+        height: 0.875rem;
+    }
+
+    .icon-sm {
+        width: 0.625rem;
+        height: 0.625rem;
+    }
+
+    .icon-xs {
+        width: 0.5rem;
+        height: 0.5rem;
+        opacity: 0.6;
+    }
+
+    &__main {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .bed-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-width: 55px;
+        padding: 0.75rem 0.25rem;
+        border-radius: 0.5rem;
+        border: 1px solid $color-slate-200;
+        background-color: $color-slate-100;
+        transition: background-color 0.5s ease;
+
+        &.is-fresh {
+            background-color: $color-amber-50;
+            border-color: $color-amber-200;
+            .los-text {
+                color: $color-amber-700;
+            }
+        }
+
+        &__label {
+            font-size: 8px;
+            font-weight: 900;
+            color: $color-slate-400;
+            text-transform: uppercase;
+            line-height: 1;
+            margin-bottom: 0.25rem;
+        }
+
+        &__code {
+            font-size: 12px;
+            font-weight: 900;
+            color: $color-blue-700;
+            max-width: 50px;
+            // white-space: nowrap;
+            // overflow: hidden;
+            // text-overflow: ellipsis;
+            word-break: break-all;
+            max-height: 100%;
+            text-align: center;
+        }
+
+        &__divider {
+            margin-top: 0.375rem;
+            padding-top: 0.25rem;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            width: 100%;
+            display: flex;
+            justify-content: center;
+
+            .los-text {
+                font-size: 9px;
+                font-weight: 700;
+                color: $color-slate-500;
+                line-height: 1;
+            }
+        }
+    }
+
+    .patient-info {
+        flex: 1;
+        min-width: 0;
+
+        & > * {
+            margin: 0;
+        }
+
+        &__name {
+            font-size: 14px;
+            font-weight: 900;
+            color: $color-slate-800;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            line-height: 1.25;
+
+            .mrn {
+                color: $color-slate-500;
+            }
+            .gender-male {
+                color: $color-blue-500;
+            }
+            .gender-female {
+                color: $color-rose-500;
+            }
+            .separator {
+                color: $color-slate-400;
+            }
+        }
+
+        &__meta {
+            font-size: 10px;
+            color: $color-slate-500;
+            // font-family: monospace;
+            // margin-bottom: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        &__diagnosis {
+            font-size: 11px;
+            font-weight: 500;
+            color: $color-slate-500;
+            font-style: italic;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        &__doctor {
+            font-size: 11px;
+            font-weight: 700;
+            color: $color-blue-500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
+
+    .patient-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+
+        &__group {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.25rem;
+
+            button {
+                border: none;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+        }
+
+        &__row {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            justify-content: center;
+        }
+
+        .patient-services-btn,
+        .patient-verify-btn {
+            padding: 0.125rem 0.5rem;
+            background-color: $color-blue-50;
+            color: $color-blue-600;
+            font-size: 9px;
+            font-weight: 700;
+            border-radius: 0.5rem;
+
+            &:hover {
+                background-color: $color-blue-600;
+                color: #fff;
+            }
+
+            &.hidden {
+                display: none;
+            }
+        }
+
+        .patient-verify-btn {
+            background-color: $color-emerald-50;
+            color: $color-emerald-600;
+            &:hover {
+                background-color: $color-emerald-600;
+            }
+        }
+
+        .patient-open-details-btn,
+        .patient-notes-btn,
+        .patient-delete-btn {
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .patient-open-details-btn {
+            background-color: $color-slate-50;
+            color: $color-slate-600;
+            &:hover {
+                background-color: $color-slate-600;
+                color: #fff;
+            }
+        }
+
+        .patient-notes-btn {
+            background-color: $color-blue-50;
+            color: $color-blue-600;
+            &:hover {
+                background-color: $color-blue-600;
+                color: #fff;
+            }
+        }
+
+        .patient-delete-btn {
+            background-color: $color-red-50;
+            color: $color-red-500;
+            &:hover {
+                background-color: $color-red-500;
+                color: #fff;
+            }
+        }
+    }
+
+    .patient-reorder {
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+        margin-left: 0.25rem;
+
+        button {
+            padding: 0.25rem;
+            border: none;
+            background: transparent;
+            color: $color-slate-300;
+            cursor: pointer;
+            transition: color 0.2s ease;
+
+            &:hover {
+                color: $color-blue-500;
+            }
+        }
+    }
+
+    &__status {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 0.25rem;
+
+        .pill-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            overflow-x: auto;
+
+            &::-webkit-scrollbar {
+                display: none;
+            }
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            border: 1px solid $color-emerald-100;
+            background-color: $color-emerald-50;
+            padding: 0.125rem 0.5rem;
+            border-radius: 9999px;
+
+            .status-dot {
+                width: 0.375rem;
+                height: 0.375rem;
+                border-radius: 9999px;
+                margin-right: 0.375rem;
+                background-color: $color-emerald-500;
+                animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+
+            .status-label {
+                font-size: 8px;
+                font-weight: 900;
+                letter-spacing: -0.025em;
+                color: $color-emerald-600;
+            }
+        }
+
+        .date-pill {
+            display: flex;
+            align-items: center;
+            padding: 0.125rem 0.5rem;
+            border-radius: 9999px;
+            border: 1px solid;
+
+            .label {
+                font-size: 8px;
+                font-weight: 900;
+                margin-right: 0.25rem;
+                letter-spacing: -0.05em;
+            }
+
+            .value {
+                font-size: 8px;
+                font-weight: 700;
+                white-space: nowrap;
+            }
+
+            &--in {
+                background-color: $color-blue-50;
+                border-color: $color-blue-100;
+                .label {
+                    color: $color-blue-400;
+                }
+                .value {
+                    color: $color-blue-700;
+                }
+            }
+
+            &--out {
+                background-color: $color-slate-50;
+                border-color: $color-slate-100;
+                .label {
+                    color: $color-slate-400;
+                }
+                .value {
+                    color: $color-slate-600;
+                }
+            }
+        }
+
+        .action-buttons {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            flex-shrink: 0;
+
+            button {
+                padding: 0.25rem;
+                color: $color-slate-400;
+                background-color: #fff;
+                border: 1px solid $color-slate-200;
+                border-radius: 9999px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+
+                &:hover {
+                    color: $color-blue-600;
+                    background-color: $color-blue-50;
+                }
+
+                &:active {
+                    transform: scale(0.9);
+                }
+                &:disabled {
+                    opacity: 0.5;
+                    pointer-events: none;
+                }
+            }
+        }
+    }
+
+    &__footer {
+        margin-top: 0.25rem;
+        padding-top: 0.375rem;
+        border-top: 1px solid $color-slate-50;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        .sync-info {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            color: $color-slate-400;
+
+            .sync-text {
+                display: flex;
+                align-items: baseline;
+                gap: 0.25rem;
+
+                .label {
+                    font-size: 6.5px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                }
+
+                .value {
+                    font-size: 8px;
+                    font-family: monospace;
+                    font-weight: 500;
+                    line-height: 1;
+                }
+            }
+        }
+
+        .indicator-dot {
+            display: block;
+            height: 0.375rem;
+            width: 0.375rem;
+            border-radius: 9999px;
+            background-color: $color-slate-200;
+        }
+    }
+}
