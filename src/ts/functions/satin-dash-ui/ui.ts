@@ -134,7 +134,7 @@ export const build_patient_card = (visit: SatinDashUIVisit) => {
         c('p', { classes: 'patient-info__meta', text: `PRB: ${visit.patient.insurance.membership.prb_desc ?? '??'} [${visit.patient.insurance.membership.provider ?? '??'}]` }),
         c('p', { classes: 'patient-info__doctor', text: `DPJP: ${visit.dpjp.name}` }),
         c('p', { classes: 'patient-info__diagnosis', text: 'Dx: ' + (visit.diagnosis.main_dx ?? '??') + ` / Oleh: ${(visit.diagnosis.diagnosticians.join(', ') ?? '??')}` }),
-        c('p', { classes: 'patient-info__meta', text: `Masuk: ${format_date_variants(visit.admission_date ?? '').long} / Keluar: ${format_date_variants(visit.discharge_date ?? '').long}` }),
+        c('p', { classes: 'patient-info__meta', text: `Masuk: ${format_date_variants(visit.admission_date ?? '').longtime} / Keluar: ${format_date_variants(visit.discharge_date ?? '').longtime}` }),
     ])
 
     // Action Buttons Group

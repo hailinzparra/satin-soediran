@@ -76,7 +76,8 @@ export class SatinDashUIExtractor extends SatinBaseFunctionExtractor<SatinDashUI
             const main_dxtician = raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.DIAGNOSAUTAMA?.REFERENSI?.DIAGNOSA_OLEH?.NAMA
             if (main_dxtician) {
                 const prefix_title = raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.DIAGNOSAUTAMA?.REFERENSI?.DIAGNOSA_OLEH?.GELAR_DEPAN
-                diagnosticians.push(`${prefix_title ? prefix_title + ' ' : ''}${main_dxtician}`)
+                const postfix_title = raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.DIAGNOSAUTAMA?.REFERENSI?.DIAGNOSA_OLEH?.GELAR_BELAKANG
+                diagnosticians.push(`${prefix_title ? prefix_title + '. ' : ''}${main_dxtician}${postfix_title ? ', ' + postfix_title : ''}`)
             }
 
             const extracted_visit: SatinDashUIVisit = {
