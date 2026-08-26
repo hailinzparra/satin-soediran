@@ -1,3 +1,5 @@
+import { BaseApiResponse } from '../api/base'
+import { SoediranDataKunjungan } from '../api/soediran/data'
 import { SatinDriver } from '../driver'
 import { SatinBaseFunctionConfig, SatinBaseFunctionConfigData, SatinBaseFunctionConfigSelectors } from './base'
 
@@ -5,21 +7,14 @@ import { SatinBaseFunctionConfig, SatinBaseFunctionConfigData, SatinBaseFunction
 export interface SatinDashUIConfigSelectors extends SatinBaseFunctionConfigSelectors {
     queries: {
         panel_kunjungan_workspace: string
+        panel_kunjungan_list: string
     }
 }
 
 export interface SatinDashUIConfigData extends SatinBaseFunctionConfigData {
-    extracted_data: {
-        active_panel_id: string
-        active_panel_kunjungan_workspace_ids: string[]
-    }
-    values_to_render: {
-        active_panel_id: string
-    }
-    new_data: {
-        active_panel_id: string
-        active_panel_kunjungan_workspace_ids: string[]
-    }
+    extracted_data: {}
+    values_to_render: {}
+    new_data: {}
 }
 
 export interface SatinDashUIConfig extends SatinBaseFunctionConfig {
@@ -30,35 +25,58 @@ export interface SatinDashUIConfig extends SatinBaseFunctionConfig {
 
 export const DEFAULT_SATIN_DASH_UI_CONFIG: SatinDashUIConfig = {
     primary_settings_key: 'dash_enable_satin_dash_ui',
-    primary_driver_key: SatinDriver.Session,
+    primary_driver_key: SatinDriver.Temp,
     selectors: {
         queries: {
             panel_kunjungan_workspace: '.x-panel[id*="kunjungan-workspace"]',
+            panel_kunjungan_list: '.x-panel[id*="kunjungan-list"]',
         },
     },
     data: {
-        extracted_data: {
-            active_panel_id: '',
-            active_panel_kunjungan_workspace_ids: [],
-        },
-        values_to_render: {
-            active_panel_id: '',
-        },
-        new_data: {
-            active_panel_id: '',
-            active_panel_kunjungan_workspace_ids: [],
-        }
+        extracted_data: {},
+        values_to_render: {},
+        new_data: {},
     },
 }
 
 // helper interface
-export interface SatinDashUISession {
-    visits: SatinDashUISessionVisit[]
+export type SatinDashUIVisitResponse = BaseApiResponse<Array<SoediranDataKunjungan>>
+
+export interface SatinDashUIData {
+    extracted_visits: Map<string, SatinDashUIVisit>
+    extracted_workspaces: Map<string, SatinDashUIWorkspace>
 }
 
-export interface SatinDashUISessionVisit {
+export interface SatinDashUIVisit {
     id: string
-    reg_id: string
+    registration: {
+        id: string
+        date: string | null
+    }
+    patient: {
+        mrn: string
+        name: string
+        gender_id: string
+        birthdate: string
+        birthplace: string
+        address: string
+        religion: string
+        blood_type: string
+        insurance: {
+            sep_id: string
+            type: string
+            class: string
+            membership: {
+                id: string
+                provider: string
+                prb_desc: string
+            }
+        }
+    }
+    diagnosis: {
+        main_dx: string | null
+        diagnosticians: string[]
+    }
     dpjp: {
         id: string
         name: string
@@ -71,4 +89,18 @@ export interface SatinDashUISessionVisit {
     admission_date: string | null
     discharge_date: string | null
     is_active: boolean
+}
+
+export interface SatinDashUIWorkspace {
+    id: string
+    els: {
+        wpanel: HTMLDivElement | null
+        lpanel: HTMLDivElement | null
+        lpanel_head: HTMLDivElement | null
+        lpanel_body: HTMLDivElement | null
+        toggle_btn_wrapper: HTMLDivElement | null
+    }
+    visit_ids: string[]
+    is_mode_enabled: boolean
+    is_button_injected: boolean
 }

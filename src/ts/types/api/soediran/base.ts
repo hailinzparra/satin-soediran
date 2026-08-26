@@ -1,5 +1,6 @@
 export enum SoediranEvent {
     SessionRefreshed = 'SessionRefreshed',
+    KunjunganFetched = 'KunjunganFetched',
     HistoryOrderResepFetched = 'HistoryOrderResepFetched',
 }
 
@@ -7,6 +8,9 @@ export const SoediranUrlRouteFilters: Record<SoediranEvent, string[][]> = {
     [SoediranEvent.SessionRefreshed]: [
         // ['/isAuthenticate'],
         ['/isLockApp'],
+    ],
+    [SoediranEvent.KunjunganFetched]: [
+        ['/kunjungan', 'REFERENSI=%7B%22Ruangan%22'],
     ],
     [SoediranEvent.HistoryOrderResepFetched]: [
         ['/kunjungan', 'JENIS_KUNJUNGAN=11'],

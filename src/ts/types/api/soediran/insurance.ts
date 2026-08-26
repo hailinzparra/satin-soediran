@@ -18,6 +18,41 @@ interface RawDataKap {
     }
 }
 
+interface RawDataKepesertaan {
+    noKartu?: string //"0002900407871",
+    nik?: string //"3312210801540003",
+    norm?: string //"648793",
+    nama?: string //"PAIDI ",
+    pisa?: string //"1",
+    sex?: string //"L",
+    tglLahir?: string //"1954-01-08 00:00:00",
+    tglCetakKartu?: string //"2022-07-08 00:00:00",
+    kdProvider?: string //"0152B020",
+    nmProvider?: string //"KLINIK DR IDA",
+    kdCabang?: string | null //null,
+    nmCabang?: string | null //null,
+    kdJenisPeserta?: string //"14",
+    nmJenisPeserta?: string //"PEKERJA MANDIRI",
+    kdKelas?: string //"1",
+    nmKelas?: string //"KELAS I",
+    tglTAT?: string //"2050-01-01",
+    tglTMT?: string //"2019-10-21",
+    umurSaatPelayanan?: string //"72 tahun, 7 bulan, 18 hari",
+    umurSekarang?: string //"72 tahun, 7 bulan, 18 hari",
+    dinsos?: string | null //null,
+    iuran?: string | null //null,
+    noSKTM?: string | null //null,
+    prolanisPRB?: string //"Potensi PRB",
+    kdStatusPeserta?: string //"0",
+    ketStatusPeserta?: string //"AKTIF",
+    noTelepon?: string | null //null,
+    noAsuransi?: string | null //null,
+    nmAsuransi?: string | null //null,
+    cobTglTAT?: string | null //null,
+    cobTglTMT?: string | null //null,
+    tanggal?: string //"2026-08-26 18:03:05"
+}
+
 interface RawDataPPK {
     ID?: string //"17923",
     KODE?: string //"11280301",
@@ -75,6 +110,7 @@ export interface RawDataPenjamin {
         KELAS?: RawDictKelas
         TARIF_FARMASI?: RawDataTarifFarmasi
         KAP?: RawDataKap
+        KEPESERTAAN?: RawDataKepesertaan,
         JENIS_PENJAMIN?: RawDictJenisPenjamin
         PEGAWAI_JENIS?: RawDictPegawai
         KENAKAN_TARIF?: RawDictKenakanTarif

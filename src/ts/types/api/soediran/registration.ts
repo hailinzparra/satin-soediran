@@ -8,6 +8,12 @@ interface RawDataDiagnosaMasuk {
     ID?: string //"6",
     ICD?: string //"",
     DIAGNOSA?: string //"0"
+    REFERENSI?: {
+        DIAGNOSA?: {
+            CODE?: string //"R63.0",
+            STR?: string //"Anorexia"
+        }
+    }
 }
 
 interface RawDataRujukan {
