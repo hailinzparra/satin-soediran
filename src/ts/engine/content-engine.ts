@@ -3,6 +3,7 @@ import { DrugPriceFunction } from '../functions/drug-price/parent'
 import { EMRManagerFunction } from '../functions/emr-manager/parent'
 import { PrescriberNameFunction } from '../functions/prescriber-name/parent'
 import { ResultsMenuFunction } from '../functions/results-menu/parent'
+import { SatinDashUIFunction } from '../functions/satin-dash-ui/parent'
 import { SatinDriver, SatinDriversContainer } from '../types/driver'
 import { SatinCoreFunction } from '../types/functions/core'
 import { inject_css, inject_script } from '../utils/injector'
@@ -17,6 +18,7 @@ export class SatinContentEngine extends SatinEngine {
     ]
 
     dash_functions: SatinCoreFunction[] = [
+        new SatinDashUIFunction(this),
         // new OpenInNewTabFunction(this),
     ]
 

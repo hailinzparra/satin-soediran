@@ -78,15 +78,26 @@ export class PopupSettingsContent extends PopupContent {
                 key: 'global_allow_copy',
                 title: '<span class="text-slate-500">Bisa</span> (Salin Teks)',
                 sub: 'Bebas blok dan copy teks di halaman dengan mudah.',
-            }
+            },
         ]
 
         const dash_configs: ToggleConfig[] = [
             {
-                key: 'dash_show_openinnewtab_button',
-                title: '<span class="text-slate-500">Tampilkan</span> (Tombol Tab Baru)',
-                sub: 'Munculkan tombol untuk buka detil kunjungan di tab baru browser.',
-            }
+                key: 'dash_enable_satin_dash_ui',
+                title: '<span class="text-slate-500">Mode</span> (Satin Dash UI)',
+                sub: 'Mengaktifkan mode tampilan Satin Dash UI pada panel kunjungan.',
+            },
+            {
+                key: 'dash_enable_satin_dash_ui_on_by_default',
+                title: '<span class="text-slate-500">(Satin Dash UI)</span>: Aktifkan Otomatis',
+                sub: 'Langsung menggunakan mode Satin Dash UI setiap kali panel dibuka.',
+                ind: 1,
+            },
+            // {
+            //     key: 'dash_show_openinnewtab_button',
+            //     title: '<span class="text-slate-500">Tampilkan</span> (Tombol Tab Baru)',
+            //     sub: 'Munculkan tombol untuk buka detil kunjungan di tab baru browser.',
+            // },
         ]
 
         const emr_configs: ToggleConfig[] = [
@@ -216,8 +227,8 @@ export class PopupSettingsContent extends PopupContent {
             global_header,
             ...global_toggles,
 
-            // dash_header,
-            // ...dash_toggles,
+            dash_header,
+            ...dash_toggles,
 
             emr_header,
             ...emr_toggles,

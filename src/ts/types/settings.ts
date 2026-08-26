@@ -1,6 +1,8 @@
 export interface SatinSettingsData {
     global_allow_copy: boolean
 
+    dash_enable_satin_dash_ui: boolean
+    dash_enable_satin_dash_ui_on_by_default: boolean
     dash_show_openinnewtab_button: boolean
 
     emr_enable_manager: boolean
