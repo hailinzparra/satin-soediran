@@ -133,14 +133,11 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
                         position: 'absolute',
                         top: '0px',
                         left: '0px',
-                        width: `${rect.width}px`,
-                        height: `${rect.height}px`,
-                        // backgroundColor: '#ffffff',
+                        width: '100%',     // Use percentage instead of fixed px to adapt dynamically
+                        height: '100%',    // Match full TD cell height
                         zIndex: '10',
                         boxSizing: 'border-box',
-                        display: 'flex',
-                        justifyContent: 'space-around',
-                        flexDirection: 'column',
+                        overflow: 'hidden' // Prevent container overflow
                     })
                 }
                 scale_rect()
@@ -155,7 +152,12 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
                 })
 
                 if (visit) {
-                    const card = build_patient_card(visit)
+                    const card = build_patient_card(this.parent.engine, visit)
+                    // Force strict 100% bounds on the generated card element directly
+                    card.style.height = '100%'
+                    card.style.width = '100%'
+                    card.style.boxSizing = 'border-box'
+
                     modern_ui.append(card)
                 }
 
@@ -171,6 +173,10 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
                     old_inner.style.opacity = '0'
                 }
 
+                target_td.style.position = 'relative'
+                target_td.style.height = '100%'
+                target_td.style.padding = '0'
+                target_td.style.boxSizing = 'border-box'
                 target_td.appendChild(modern_ui)
             })
         }

@@ -10,3 +10,44 @@ $font-main-stack: $font-main, $font-default;
         font-family: $font-main-stack;
     }
 }
+
+// Tailwind slate colors
+$color-slate-50: #f8fafc;
+$color-slate-100: #f1f5f9;
+$color-slate-200: #e2e8f0;
+$color-slate-400: #94a3b8;
+$color-slate-500: #64748b;
+$color-slate-600: #475569;
+$color-slate-700: #334155;
+$color-slate-900: #0f172a;
+
+// Tailwind blue colors (Replacing Purple)
+$color-blue-50: #eff6ff;
+$color-blue-100: #dbeafe;
+$color-blue-600: #2563eb;
+$color-blue-700: #1d4ed8;
+$color-blue-900: #1e3a8a;
+
+// Gender colors
+$color-female-50: #fff1f2;
+$color-female-600: #e11d48;
+$color-female-800: #9f1239;
+
+$color-male-50: #eff6ff;
+$color-male-600: #2563eb;
+$color-male-800: #1e40af;
+
+// Fresh status (Amber/Yellow)
+$color-amber-50: #fffbeb;
+$color-amber-100: #fef3c7;
+$color-amber-200: #fde68a;
+$color-amber-600: #d97706;
+$color-amber-800: #92400e;
+$color-amber-900: #78350f;
+
+// Badges
+$color-emerald-200: #a7f3d0;
+$color-emerald-900: #064e3b;
+
+$color-sky-200: #bae6fd;
+$color-sky-900: #0c4a6e;

@@ -62,7 +62,7 @@ export class SatinDashUIExtractor extends SatinBaseFunctionExtractor<SatinDashUI
             const is_active = !discharge_str || isNaN(Date.parse(discharge_str))
             const queue_num = raw.REFERENSI?.PENDAFTARAN?.TUJUAN?.REFERENSI?.ANTRIAN?.NOMOR ?? ''
             const queue_pos = raw.REFERENSI?.PENDAFTARAN?.TUJUAN?.REFERENSI?.ANTRIAN?.POS ?? ''
-            const queue_str = queue_num ? `(${queue_pos ? `${queue_pos}-` : ''}${queue_num})` : ''
+            const queue_str = queue_num ? `${queue_pos ? `${queue_pos}-` : ''}${queue_num}` : ''
 
             const raw_dx = raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.DIAGNOSAUTAMA?.DIAGNOSA ?
                 raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.DIAGNOSAUTAMA?.DIAGNOSA

@@ -1,9 +1,11 @@
+import { SatinEngine } from '../../engine/base'
 import { SatinDashUIVisit } from '../../types/functions/satin-dash-ui'
 import { create_element } from '../../utils/dom'
+import { RecipesTabController } from './ui/recipes'
 
 const c = create_element
 
-const create_svg_icon = (path_d: string, view_box = '0 0 24 24', stroke_width = '2.5') => {
+const create_svg_icon = (path_d: string, view_box = '0 0 24 24', stroke_width = '2') => {
     return c('svg', {
         classes: 'icon',
         attrs: { fill: 'none', stroke: 'currentColor', viewBox: view_box }
@@ -56,14 +58,13 @@ export const get_los_metrics = (adm_date?: string | null, dis_date?: string | nu
         if (isNaN(start.getTime()) || isNaN(end.getTime())) return null
 
         const total_milliseconds = end.getTime() - start.getTime()
-
-        if (total_milliseconds < 0) return { d: 0, h: 0, is_discharged }
+        if (total_milliseconds < 0) return { d: 0, h: 0, total_hours: 0, is_discharged }
 
         const total_hours = Math.floor(total_milliseconds / (1000 * 60 * 60))
         const days = Math.floor(total_hours / 24)
         const hours = total_hours % 24
 
-        return { d: days, h: hours, is_discharged }
+        return { d: days, h: hours, total_hours, is_discharged }
     } catch (e) {
         return null
     }
@@ -77,8 +78,8 @@ export const format_date_variants = (date_input: Date | string) => {
     if (isNaN(date.getTime())) {
         return { short: '--', long: '--', time: '--', longtime: '--' }
     }
-    const long = date.toLocaleDateString('en-GB', {
-        weekday: 'short',
+    const long = date.toLocaleDateString('id-ID', {
+        weekday: 'long',
         day: 'numeric',
         month: 'short',
         year: 'numeric'
@@ -94,135 +95,222 @@ export const format_date_variants = (date_input: Date | string) => {
     return { short, long, time, longtime }
 }
 
-export const build_patient_card = (visit: SatinDashUIVisit) => {
+const get_patient_initials = (name: string): string => {
+    if (!name) return '??'
+    const parts = name.trim().split(/\s+/).filter(Boolean)
+    if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase()
+    }
+    if (parts.length === 1 && parts[0].length >= 2) {
+        return parts[0].substring(0, 2).toUpperCase()
+    }
+    return parts[0] ? parts[0][0].toUpperCase() : '??'
+}
+
+export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit) => {
+    const TAB_FETCH_HANDLERS: Record<string, () => Promise<void>> = {
+        'recipes': async () => {
+            // const data = await fetchProfileData()
+            // renderProfilePane(data)
+        },
+    }
+
+    // Age calculations
     let age = '??y'
     const age_obj = get_age_metrics(visit.patient.birthdate)
     if (age_obj) {
-        age = `${age_obj.y}y, ${age_obj.m}m, ${age_obj.d}d`
+        if (age_obj.y < 18) {
+            age = `${age_obj.y}th, ${age_obj.m}bl, ${age_obj.d}hr`
+        }
+        else {
+            age = `${age_obj.y}th`
+        }
     }
 
-    let los = { text: '??', is_fresh: false }
+    // Length Of Stay (LOS) metrics & Fresh status calculation
+    let los_text = 'LOS: --'
+    let is_fresh = false
     const los_obj = get_los_metrics(visit.admission_date, visit.discharge_date)
     if (los_obj) {
-        const text = `${los_obj.d}d ${los_obj.h}h`
-        const hours_total = (los_obj.d * 24) + los_obj.h
-        const is_fresh = hours_total < 24 && !los_obj.is_discharged
-        los = { text, is_fresh }
+        los_text = `${los_obj.d}h ${los_obj.h}j`
+        if (los_obj.total_hours < 24 && !los_obj.is_discharged) {
+            is_fresh = true
+        }
     }
 
-    // Bed Info Box
-    const bed_info = c('div', { classes: `bed-info${los.is_fresh ? ' is-fresh' : ''}` }, [
-        c('span', { classes: 'bed-info__label', text: 'Bed' }),
-        c('span', { classes: 'bed-info__code', text: visit.room.bed_name }),
-        c('div', { classes: 'bed-info__divider' }, [
-            c('span', { classes: 'los-text', text: los.text })
-        ])
-    ])
+    const is_female = visit.patient.gender_id === '2'
+    const genderText = is_female ? 'P' : 'L'
+    const genderClass = is_female ? 'gender-female' : 'gender-male'
+    const initials = get_patient_initials(visit.patient.name)
 
-    // Patient Info Box
-    const patient_info = c('div', { classes: 'patient-info' }, [
-        c('h5', { classes: 'patient-info__name' }, [
-            c('span', { classes: 'mrn', text: `${visit.patient.mrn ? `${visit.patient.mrn} / ` : ''}` }),
-            c('span', { classes: visit.patient.gender_id === '2' ? 'gender-female' : 'gender-male', text: `(${visit.patient.gender_id === '2' ? 'P' : 'L'}) ` }),
-            // c('span', { classes: 'separator', text: ' | ' }),
-            visit.patient.name,
-            c('span', { classes: 'mrn', text: ` / ${age}` }),
-        ]),
-        c('p', { classes: 'patient-info__meta', text: `Ruangan: ${visit.room.name} / Bed: ${visit.room.bed_name} / NOREG: ${visit.registration.id} / NOPEN: ${visit.id}` }),
-        c('p', { classes: 'patient-info__meta', text: `Alamat: ${visit.patient.address ?? '??'} / TTL: ${visit.patient.birthplace}, ${format_date_variants(visit.patient.birthdate).long} / ABO: ${visit.patient.blood_type}` }),
-        c('p', { classes: 'patient-info__meta', text: `Penjamin: ${visit.patient.insurance.type ?? '??'} / ${visit.patient.insurance.membership.id ?? '??'} [Kls. ${visit.patient.insurance.class ?? '??'} - SEP. ${visit.patient.insurance.sep_id ?? '??'}]` }),
-        c('p', { classes: 'patient-info__meta', text: `PRB: ${visit.patient.insurance.membership.prb_desc ?? '??'} [${visit.patient.insurance.membership.provider ?? '??'}]` }),
-        c('p', { classes: 'patient-info__doctor', text: `DPJP: ${visit.dpjp.name}` }),
-        c('p', { classes: 'patient-info__diagnosis', text: 'Dx: ' + (visit.diagnosis.main_dx ?? '??') + ` / Oleh: ${(visit.diagnosis.diagnosticians.join(', ') ?? '??')}` }),
-        c('p', { classes: 'patient-info__meta', text: `Masuk: ${format_date_variants(visit.admission_date ?? '').longtime} / Keluar: ${format_date_variants(visit.discharge_date ?? '').longtime}` }),
-    ])
-
-    // Action Buttons Group
-    const patient_actions = c('div', { classes: 'patient-actions' }, [
-        c('div', { classes: 'patient-actions__group' }, [
-            c('button', { classes: 'patient-services-btn' }, [
-                c('span', { text: 'Visite' })
+    // 1. Patient Key Details Sidebar
+    const patient_details_sidebar = c('div', {
+        classes: `patient-card__details ${is_fresh ? 'is-fresh' : ''}`
+    }, [
+        c('div', {}, [
+            c('div', { classes: 'patient-card__header-row' }, [
+                c('span', { classes: 'badge-bed', text: `${visit.room.name}/${visit.room.bed_name}` }),
+                c('div', { classes: 'header-tags' }, [
+                    // ...(is_fresh ? [c('span', { classes: 'badge-fresh-tag', text: 'FRESH' })] : []),
+                    c('span', { classes: 'los-tag', text: los_text })
+                ])
             ]),
-            c('div', { classes: 'patient-actions__row' }, [
-                c('button', { classes: 'patient-open-details-btn' }, [
-                    create_svg_icon('M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14')
+            c('div', { classes: 'patient-card__identity' }, [
+                c('div', { classes: `patient-avatar ${genderClass}`, text: initials }),
+                c('div', { classes: 'patient-meta' }, [
+                    c('h3', { classes: 'patient-card__name', text: visit.patient.name }),
+                    c('div', { classes: `patient-card__demographics ${genderClass}` }, [
+                        c('span', { text: `${age} • ${visit.patient.religion || '??'}` })
+                        // c('span', { text: `${age} • ${genderText} • ${visit.patient.religion || '??'}` })
+                    ]),
+                    c('div', { classes: 'patient-card__mrn', text: `${visit.patient.mrn || '??'}` })
+                ])
+            ])
+        ]),
+        c('div', { classes: 'patient-card__insurance', text: `${visit.patient.insurance.type || '??'} (Kls. ${visit.patient.insurance.class || '??'})` })
+    ])
+
+    // State for Tab Management
+    let active_tab = 'overview'
+
+    const update_tab_visibility = (targetTab: string, tab_buttons: Record<string, HTMLElement>, tab_panes: Record<string, HTMLElement>) => {
+        Object.keys(tab_panes).forEach((key) => {
+            if (key === targetTab) {
+                tab_panes[key].classList.remove('hidden')
+                if (tab_buttons[key]) tab_buttons[key].classList.add('active')
+
+                // Trigger fetch only when active
+                if (key === 'recipes') {
+                    recipeController.activate()
+                }
+            } else {
+                tab_panes[key].classList.add('hidden')
+                if (tab_buttons[key]) tab_buttons[key].classList.remove('active')
+            }
+        })
+    }
+
+    // 2. Vertical Navigation Bar
+    const tab_buttons: Record<string, HTMLElement> = {}
+
+    const create_tab_btn = (key: string, label: string, badgeCount?: number, badgeClass?: string) => {
+        const children: Element[] = [c('span', { text: label })]
+
+        if (badgeCount !== undefined) {
+            children.push(c('span', { classes: `tab-badge ${badgeClass ?? ''}`, text: `${badgeCount}` }))
+        } else {
+            children.push(create_svg_icon('M9 5l7 7-7 7', '0 0 24 24', '2'))
+        }
+
+        const btn = c('button', {
+            classes: `tab-btn ${key === active_tab ? 'active' : ''}`
+        }, children)
+
+        btn.addEventListener('click', () => {
+            active_tab = key
+            update_tab_visibility(active_tab, tab_buttons, tab_panes)
+        })
+
+        tab_buttons[key] = btn
+        return btn
+    }
+
+    const navigation_sidebar = c('div', { classes: 'patient-card__nav' }, [
+        create_tab_btn('overview', 'Ringkasan'),
+        create_tab_btn('details', 'Detail Pasien'),
+        // createTabBtn('labs', 'Hasil', (visit as any).labs_count ?? 3, 'badge-amber'),
+        create_tab_btn('recipes', 'Resep'),
+        // createTabBtn('notes', 'Catatan', (visit as any).notes_count ?? 8, 'badge-sky')
+    ])
+
+    const recipeController = new RecipesTabController(visit.id, engine.api)
+
+    // 3. Tab Display Pane (Content)
+    const tab_panes: Record<string, HTMLElement> = {
+        overview: c('div', { classes: 'tab-pane' }, [
+            c('div', { classes: 'mb-2' }, [
+                c('span', { classes: 'pane-label', text: 'Diagnosis Utama' }),
+                c('p', { classes: 'diagnosis-title', text: visit.diagnosis.main_dx || '??' })
+            ]),
+            c('div', { /* classes: 'info-grid' */ }, [
+                c('div', {}, [c('strong', { text: 'DPJP: ' }), c('span', { text: visit.dpjp.name })]),
+                c('div', {}, [c('strong', { text: 'Co: ' }), c('span', { text: visit.diagnosis.diagnosticians.join(', ') || '-' })]),
+                c('div', {}, [c('strong', { text: 'Masuk: ' }), c('span', { text: format_date_variants(visit.admission_date ?? '').longtime })]),
+                c('div', {}, [c('strong', { text: 'Keluar: ' }), c('span', { text: format_date_variants(visit.discharge_date ?? '').longtime })]),
+            ]),
+            // c('button', {
+            //     classes: 'btn-more-details',
+            //     // events: {
+            //     //     click: () => {
+            //     //         activeTab = 'details'
+            //     //         updateTabVisibility(activeTab, tabButtons, tabPanes)
+            //     //     }
+            //     // }
+            // }, [
+            //     c('span', { text: 'View Full Patient Details' }),
+            //     create_svg_icon('M14 5l7 7-7 7M5 12h16', '0 0 24 24', '2')
+            // ])
+        ]),
+
+        details: c('div', { classes: 'tab-pane hidden' }, [
+            c('span', { classes: 'pane-label text-blue', text: 'Detail Pasien' }),
+            c('div', { classes: 'details-sections' }, [
+                c('div', { classes: 'details-block' }, [
+                    c('h4', { text: 'Demografi' }),
+                    c('div', { /* classes: 'details-grid' */ }, [
+                        c('div', {}, [c('span', { text: 'TTL: ' }), c('strong', { classes: 'capitalize', text: `${visit.patient.birthplace.toLowerCase() || '??'}, ${format_date_variants(visit.patient.birthdate).long.split(', ')[1] || '??'}` })]),
+                        // c('div', {}, [c('span', { text: 'ABO: ' }), c('strong', { text: visit.patient.blood_type || '??' })]),
+                        c('div', {}, [c('span', { text: 'Alamat: ' }), c('strong', { classes: 'capitalize', text: visit.patient.address.toLowerCase() || '??' })])
+                    ])
                 ]),
-                c('button', { classes: 'patient-notes-btn' }, [
-                    create_svg_icon('M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z')
+                c('div', { classes: 'details-block' }, [
+                    c('h4', { text: 'Penjamin' }),
+                    c('div', { /* classes: 'details-grid' */ }, [
+                        c('div', {}, [c('span', { text: 'SEP: ' }), c('strong', { text: visit.patient.insurance.sep_id || '??' })]),
+                        c('div', {}, [c('span', { text: 'Kelas: ' }), c('strong', { text: visit.patient.insurance.class || '??' })]),
+                        c('div', {}, [c('span', { text: 'Provider: ' }), c('strong', { text: visit.patient.insurance.membership.provider || '??' })]),
+                        c('div', {}, [c('span', { text: 'Status PRB: ' }), c('strong', { text: visit.patient.insurance.membership.prb_desc || '??' })]),
+                    ])
                 ]),
-                c('button', { classes: 'patient-delete-btn' }, [
-                    create_svg_icon('M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16')
-                ])
-            ]),
-            c('button', { classes: 'patient-verify-btn hidden' }, [
-                c('span', { text: 'Verify' })
-            ])
-        ]),
-        c('div', { classes: 'patient-reorder' }, [
-            c('button', { classes: 'move-p-up' }, [
-                c('svg', { classes: 'icon-sm', attrs: { fill: 'currentColor', viewBox: '0 0 20 20' } }, [
-                    c('path', { attrs: { d: 'M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z' } })
-                ])
-            ]),
-            c('button', { classes: 'move-p-down' }, [
-            ])
-        ])
-    ])
-
-    // Card Main Body
-    const main_content = c('div', { classes: 'patient-card__main' }, [
-        bed_info,
-        patient_info,
-        // patient_actions
-    ])
-
-    // Status Section
-    const card_status = c('div', { classes: 'patient-card__status' }, [
-        c('div', { classes: 'pill-container' }, [
-            c('div', { classes: 'status-pill status-pill--active js-status-pill' }, [
-                c('div', { classes: 'status-dot js-status-dot' }),
-                c('span', { classes: 'status-label js-status-label', text: 'Active' })
-            ]),
-            c('div', { classes: 'date-pill date-pill--in' }, [
-                c('span', { classes: 'label', text: 'In:' }),
-                c('span', { classes: 'value js-adm-date', text: 'Tue, 25 Aug' })
-            ]),
-            c('div', { classes: 'date-pill date-pill--out' }, [
-                c('span', { classes: 'label', text: 'Out:' }),
-                c('span', { classes: 'value js-dis-date', text: '--' })
-            ])
-        ]),
-        c('div', { classes: 'action-buttons' }, [
-            c('button', { classes: 'btn-refresh-patient' }, [
-                create_svg_icon('M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15')
-            ]),
-            c('button', { classes: 'btn-copy-patient' }, [
-                c('svg', { classes: 'icon', attrs: { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' } }, [
-                    c('path', { attrs: { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2.5', d: 'M8 7v1a3 3 0 01-3 3H4a2 2 0 00-2 2v7a2 2 0 002 2h7a2 2 0 002-2v-1M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M8 7h8' } }),
-                    c('path', { attrs: { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2.5', d: 'M16 7a2 2 0 012 2v7a2 2 0 01-2 2H9a2 2 0 01-2-2V9a2 2 0 012-2h7z' } })
+                c('div', { classes: 'details-block' }, [
+                    c('h4', { text: 'Pendaftaran' }),
+                    c('div', { /* classes: 'details-grid' */ }, [
+                        c('div', {}, [c('span', { text: 'No. Reg: ' }), c('strong', { text: visit.registration.id || '??' })]),
+                        c('div', {}, [c('span', { text: 'No. Pen: ' }), c('strong', { text: visit.id || '??' })]),
+                    ])
                 ])
             ])
-        ])
-    ])
-
-    // Footer Section
-    const card_footer = c('div', { classes: 'patient-card__footer' }, [
-        c('div', { classes: 'sync-info' }, [
-            c('svg', { classes: 'icon-xs', attrs: { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' } }, [
-                c('path', { attrs: { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2.5', d: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' } })
-            ]),
-            c('div', { classes: 'sync-text' }, [
-                c('span', { classes: 'label', text: 'Last Sync' }),
-                c('span', { classes: 'value js-last-sync', text: '27/08/2026 02:17:15.813' })
-            ])
         ]),
-        c('span', { classes: 'indicator-dot' })
+
+        // labs: c('div', { classes: 'tab-pane hidden' }, [
+        //     c('span', { classes: 'pane-subheading text-amber', text: `${(visit as any).labs_count ?? 3} Active Lab Orders` }),
+        //     c('ul', { classes: 'pane-list' }, [
+        //         c('li', { text: 'BNP Level (Pending Stat)' }),
+        //         c('li', { text: 'Serum Electrolytes (Routine)' }),
+        //         c('li', { text: 'Renal Panel (In Progress)' })
+        //     ])
+        // ]),
+
+        recipes: recipeController.pane_el,
+
+        // notes: c('div', { classes: 'tab-pane hidden' }, [
+        //     c('span', { classes: 'pane-subheading text-sky', text: `${(visit as any).notes_count ?? 8} Shift Notes Logged` }),
+        //     c('p', { classes: 'pane-text', text: 'Handover summary: Patient resting comfortably, morning rounds complete.' })
+        // ])
+    }
+
+    const content_pane = c('div', { classes: 'patient-card__content' }, [
+        tab_panes.overview,
+        tab_panes.details,
+        // tab_panes.labs,
+        tab_panes.recipes,
+        // tab_panes.notes
     ])
 
-    // Root Card Assembly
+    // Container Assembly
     return c('div', { classes: 'patient-card' }, [
-        main_content,
-        // card_status,
-        // card_footer
+        patient_details_sidebar,
+        navigation_sidebar,
+        content_pane
     ])
 }

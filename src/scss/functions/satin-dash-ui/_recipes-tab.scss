@@ -1,0 +1,222 @@
+@use "../../base" as *;
+
+// Inherited palette variables matching patient-card
+$color-slate-50: #f8fafc;
+$color-slate-100: #f1f5f9;
+$color-slate-200: #e2e8f0;
+$color-slate-300: #cbd5e1;
+$color-slate-400: #94a3b8;
+$color-slate-500: #64748b;
+$color-slate-600: #475569;
+$color-slate-700: #334155;
+$color-slate-900: #0f172a;
+
+$color-blue-50: #eff6ff;
+$color-blue-100: #dbeafe;
+$color-blue-600: #2563eb;
+$color-blue-700: #1d4ed8;
+
+$color-emerald-50: #ecfdf5;
+$color-emerald-100: #d1fae5;
+$color-emerald-600: #059669;
+$color-emerald-700: #047857;
+$color-emerald-900: #064e3b;
+
+// Top action header
+.pane-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+
+    .pane-subheading {
+        font-weight: 700;
+        font-size: 0.875rem;
+    }
+
+    .btn-refresh-pane {
+        @include satin-font-main;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        background-color: #fff;
+        color: $color-slate-700;
+        border: 1px solid $color-slate-200;
+        padding: 0.25rem 0.625rem;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        transition: all 0.15s ease-in-out;
+
+        &:hover {
+            background-color: $color-slate-50;
+            border-color: $color-slate-300;
+            color: $color-slate-900;
+        }
+
+        &:active {
+            transform: translateY(1px);
+        }
+    }
+}
+
+// Container for separated recipe cards
+.recipe-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem; // Separates each card explicitly
+    width: 100%;
+}
+
+// Interactive button-like card container
+.recipe-card {
+    background-color: #fff;
+    border: 1px solid $color-slate-200;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    overflow: hidden;
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+
+    &:hover {
+        border-color: $color-blue-600;
+        box-shadow: 0 2px 4px 0 rgba(37, 99, 235, 0.08);
+    }
+
+    // Header functioning as a clickable button
+    &-header {
+        padding: 0.625rem 0.75rem;
+        cursor: pointer;
+        user-select: none;
+        background-color: #fff;
+        transition: background-color 0.15s ease;
+
+        &:hover {
+            background-color: rgba($color-blue-50, 0.5);
+        }
+
+        .recipe-title {
+            font-size: 0.8125rem;
+            font-weight: 700;
+            color: $color-blue-700;
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .recipe-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.375rem;
+            font-size: 0.75rem;
+            color: $color-slate-600;
+
+            div {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            strong {
+                color: $color-slate-700;
+            }
+        }
+
+        // Full-width Copy Action Button
+        .btn-copy-recipe {
+            @include satin-font-main;
+            display: block;
+            width: 100%;
+            margin-top: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            letter-spacing: 0.025em;
+            text-align: center;
+            color: $color-slate-700;
+            background-color: $color-slate-100;
+            border: 1px solid $color-slate-200;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+
+            &:hover:not(:disabled) {
+                background-color: $color-blue-50;
+                border-color: $color-blue-600;
+                color: $color-blue-700;
+            }
+
+            &:active:not(:disabled) {
+                transform: translateY(1px);
+            }
+
+            &:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            // Success state feedback
+            &.is-copied {
+                background-color: $color-emerald-50;
+                border-color: $color-emerald-600;
+                color: $color-emerald-700;
+            }
+        }
+    }
+
+    // Expandable details container
+    &-details {
+        background-color: $color-slate-50;
+        border-top: 1px solid $color-slate-200;
+        padding: 0.625rem;
+
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+            text-align: left;
+
+            thead {
+                font-size: smaller;
+            }
+
+            tbody {
+                font-size: smaller;
+            }
+
+            th {
+                background-color: $color-slate-100;
+                color: $color-slate-700;
+                font-weight: 700;
+                padding: 0.375rem 0.5rem;
+                border-bottom: 1px solid $color-slate-200;
+            }
+
+            td {
+                padding: 0.375rem 0.5rem;
+                border-bottom: 1px solid $color-slate-200;
+                color: $color-slate-700;
+
+                &.drug-name {
+                    font-weight: 600;
+                    color: $color-slate-900;
+                }
+            }
+
+            tr:last-child td {
+                border-bottom: none;
+            }
+        }
+
+        .details-state {
+            font-size: 0.75rem;
+            color: $color-slate-500;
+            padding: 0.375rem 0.5rem;
+            text-align: center;
+        }
+    }
+}

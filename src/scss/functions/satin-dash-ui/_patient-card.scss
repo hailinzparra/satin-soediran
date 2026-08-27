@@ -1,473 +1,428 @@
-@use "../../base";
-
-$color-slate-50: #f8fafc;
-$color-slate-100: #f1f5f9;
-$color-slate-200: #e2e8f0;
-$color-slate-300: #cbd5e1;
-$color-slate-400: #94a3b8;
-$color-slate-500: #64748b;
-$color-slate-600: #475569;
-$color-slate-800: #1e293b;
-
-$color-blue-50: #eff6ff;
-$color-blue-100: #dbeafe;
-$color-blue-200: #bfdbfe;
-$color-blue-400: #60a5fa;
-$color-blue-500: #3b82f6;
-$color-blue-600: #2563eb;
-$color-blue-700: #1d4ed8;
-
-$color-emerald-50: #ecfdf5;
-$color-emerald-100: #d1fae5;
-$color-emerald-500: #10b981;
-$color-emerald-600: #059669;
-
-$color-amber-50: #fffbeb;
-$color-amber-200: #fde68a;
-$color-amber-700: #b45309;
-
-$color-red-50: #fef2f2;
-$color-red-500: #ef4444;
-$color-rose-500: #f43f5e;
-
-@keyframes pulse {
-    0%,
-    100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.5;
-    }
-}
+@use "../../base" as *;
 
 .patient-card {
-    @include base.satin-font-main;
-    padding: 0.75rem;
+    @include satin-font-main;
+    display: flex;
+    flex-direction: column;
     // background-color: #fff;
-    // border: 1px solid $color-slate-100;
+    // border: 1px solid $color-slate-200;
     // border-radius: 0.75rem;
     // box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     overflow: hidden;
-    transition: all 0.2s ease;
-    max-height: 100%;
 
-    // &:hover {
-    //     border-color: $color-blue-200;
-    // }
+    /* Strict 100% sizing rules */
+    width: 100%;
+    height: 100%;
+    min-height: 0; // Crucial for flex child vertical overflow handling
+    box-sizing: border-box;
 
-    .icon {
-        width: 0.875rem;
-        height: 0.875rem;
+    @media (min-width: 768px) {
+        flex-direction: row;
     }
 
-    .icon-sm {
-        width: 0.625rem;
-        height: 0.625rem;
+    .capitalize {
+        text-transform: capitalize !important;
     }
 
-    .icon-xs {
-        width: 0.5rem;
-        height: 0.5rem;
-        opacity: 0.6;
+    // Ensure children don't push beyond 100% card height
+    &__details,
+    &__nav,
+    &__content {
+        min-height: 0;
+        box-sizing: border-box;
     }
 
-    &__main {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .bed-info {
+    // 1. Patient Details Sidebar
+    &__details {
+        width: 100%;
+        padding: 0.75rem;
+        // background-color: $color-slate-50;
+        background-color: rgba(248, 250, 252, 0.5);
+        border-bottom: 1px solid $color-slate-200;
         display: flex;
         flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-width: 55px;
-        padding: 0.75rem 0.25rem;
-        border-radius: 0.5rem;
-        border: 1px solid $color-slate-200;
-        background-color: $color-slate-100;
-        transition: background-color 0.5s ease;
+        justify-content: space-between;
+        flex-shrink: 0;
+        transition:
+            background-color 0.2s ease,
+            border-color 0.2s ease;
 
+        @media (min-width: 768px) {
+            width: 19rem;
+            border-bottom: none;
+            border-right: 1px solid $color-slate-200;
+        }
+
+        // Fresh (<24h) Highlight Styling
         &.is-fresh {
-            background-color: $color-amber-50;
-            border-color: $color-amber-200;
-            .los-text {
-                color: $color-amber-700;
+            // background-color: $color-amber-50;
+            background-color: rgba(255, 251, 235, 0.5);
+
+            @media (min-width: 768px) {
+                border-right-color: $color-amber-200;
             }
-        }
 
-        &__label {
-            font-size: 8px;
-            font-weight: 900;
-            color: $color-slate-400;
-            text-transform: uppercase;
-            line-height: 1;
-            margin-bottom: 0.25rem;
-        }
-
-        &__code {
-            font-size: 12px;
-            font-weight: 900;
-            color: $color-blue-700;
-            max-width: 50px;
-            // white-space: nowrap;
-            // overflow: hidden;
-            // text-overflow: ellipsis;
-            word-break: break-all;
-            max-height: 100%;
-            text-align: center;
-        }
-
-        &__divider {
-            margin-top: 0.375rem;
-            padding-top: 0.25rem;
-            border-top: 1px solid rgba(0, 0, 0, 0.05);
-            width: 100%;
-            display: flex;
-            justify-content: center;
-
-            .los-text {
-                font-size: 9px;
-                font-weight: 700;
-                color: $color-slate-500;
-                line-height: 1;
+            .badge-bed {
+                background-color: $color-amber-800;
             }
         }
     }
 
-    .patient-info {
-        flex: 1;
-        min-width: 0;
-
-        & > * {
-            margin: 0;
-        }
-
-        &__name {
-            font-size: 14px;
-            font-weight: 900;
-            color: $color-slate-800;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            text-transform: uppercase;
-            line-height: 1.25;
-
-            .mrn {
-                color: $color-slate-500;
-            }
-            .gender-male {
-                color: $color-blue-500;
-            }
-            .gender-female {
-                color: $color-rose-500;
-            }
-            .separator {
-                color: $color-slate-400;
-            }
-        }
-
-        &__meta {
-            font-size: 10px;
-            color: $color-slate-500;
-            // font-family: monospace;
-            // margin-bottom: 0.25rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        &__diagnosis {
-            font-size: 11px;
-            font-weight: 500;
-            color: $color-slate-500;
-            font-style: italic;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        &__doctor {
-            font-size: 11px;
-            font-weight: 700;
-            color: $color-blue-500;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-    }
-
-    .patient-actions {
+    &__header-row {
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        gap: 0.25rem;
+        margin-bottom: 0.5rem;
 
-        &__group {
-            display: flex;
-            flex-direction: column;
-            align-items: stretch;
-            gap: 0.25rem;
-
-            button {
-                border: none;
-                cursor: pointer;
-                transition: all 0.2s ease;
-            }
+        .badge-bed {
+            background-color: $color-blue-700;
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.75rem;
+            padding: 0.125rem 0.5rem;
+            border-radius: 0.25rem;
         }
 
-        &__row {
+        .header-tags {
             display: flex;
             align-items: center;
-            gap: 0.25rem;
-            justify-content: center;
+            gap: 0.375rem;
         }
 
-        .patient-services-btn,
-        .patient-verify-btn {
-            padding: 0.125rem 0.5rem;
-            background-color: $color-blue-50;
-            color: $color-blue-600;
-            font-size: 9px;
+        .badge-fresh-tag {
+            background-color: $color-amber-600;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 0.05rem 0.375rem;
+            border-radius: 0.25rem;
+            letter-spacing: 0.05em;
+        }
+
+        .los-tag {
+            font-size: 0.75rem;
+            color: $color-blue-900;
             font-weight: 700;
-            border-radius: 0.5rem;
+        }
+    }
+
+    // Avatar + Patient Name Info Setup
+    &__identity {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+    }
+
+    .patient-avatar {
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 9999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.875rem;
+        flex-shrink: 0;
+
+        &.gender-female {
+            background-color: $color-female-50;
+            color: $color-female-600;
+            border: 1px solid rgba($color-female-600, 0.2);
+        }
+
+        &.gender-male {
+            background-color: $color-male-50;
+            color: $color-male-600;
+            border: 1px solid rgba($color-male-600, 0.2);
+        }
+    }
+
+    .patient-meta {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .icon {
+        width: 0.875rem !important; // Fixed width (14px)
+        height: 0.875rem !important; // Fixed height (14px)
+        min-width: 0.875rem;
+        min-height: 0.875rem;
+        flex-shrink: 0; // Prevents flexbox from stretching/distorting icon
+        display: inline-block;
+        vertical-align: middle;
+    }
+
+    &__name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: $color-slate-900;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    &__demographics {
+        font-size: 0.75rem;
+        font-weight: 600;
+
+        &.gender-female {
+            color: $color-female-800;
+        }
+
+        &.gender-male {
+            color: $color-male-800;
+        }
+    }
+
+    &__mrn {
+        font-size: 11px;
+        font-family: monospace;
+        color: $color-slate-400;
+    }
+
+    &__insurance {
+        font-size: 11px;
+        color: $color-slate-600;
+        padding-top: 0.375rem;
+        border-top: 1px solid $color-slate-200;
+        margin-top: 0.5rem;
+    }
+
+    // 2. Navigation Sidebar with Centering & Scroll Support
+    &__nav {
+        width: 100%;
+        background-color: rgba($color-slate-100, 0.8);
+        border-bottom: 1px solid $color-slate-200;
+        padding: 0.5rem;
+        display: flex;
+        flex-direction: column;
+
+        /* FIX: Prevent top buttons from being pushed off-screen */
+        justify-content: safe center;
+        gap: 0.25rem;
+        flex-shrink: 0;
+        overflow-y: auto;
+        min-height: 0;
+
+        @supports not (justify-content: safe center) {
+            justify-content: flex-start;
+        }
+
+        @media (min-width: 768px) {
+            width: 11rem;
+            border-bottom: none;
+            border-right: 1px solid $color-slate-200;
+        }
+
+        .tab-btn {
+            @include satin-font-main; // Force button to use satin base font
+            font-family: inherit; // Fallback to inherit parent container font
+            width: 100%;
+            text-align: left;
+            padding: 0.375rem 0.625rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: $color-slate-600;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.15s ease;
+
+            > span {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .icon {
+                margin-left: 0.5rem;
+            }
 
             &:hover {
-                background-color: $color-blue-600;
-                color: #fff;
+                background-color: #fff;
             }
+
+            &.active {
+                font-weight: 700;
+                background-color: #fff;
+                color: $color-blue-900;
+                box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+
+                .icon {
+                    color: $color-blue-600;
+                }
+            }
+
+            .tab-badge {
+                font-weight: 700;
+                padding: 0.05rem 0.375rem;
+                border-radius: 9999px;
+                font-size: 10px;
+
+                &.badge-amber {
+                    background-color: $color-amber-200;
+                    color: $color-amber-900;
+                }
+                &.badge-emerald {
+                    background-color: $color-emerald-200;
+                    color: $color-emerald-900;
+                }
+                &.badge-sky {
+                    background-color: $color-sky-200;
+                    color: $color-sky-900;
+                }
+            }
+        }
+    }
+
+    // 3. Main Content Pane with Centering & Dynamic Scroll
+    &__content {
+        flex: 1;
+        padding: 0.875rem;
+        display: flex;
+        flex-direction: column;
+
+        /* FIX: Replaced 'justify-content: center' to prevent top overflow clipping */
+        justify-content: safe center;
+        align-items: stretch;
+
+        overflow-y: auto; // Vertical scroll activates cleanly when content exceeds height
+        font-size: 0.75rem;
+        min-height: 0; // Prevents flex child from exceeding container bounds
+
+        /* Fallback for browsers that don't support 'safe center' */
+        @supports not (justify-content: safe center) {
+            justify-content: flex-start;
+        }
+
+        .tab-pane {
+            width: 100%;
+            margin: auto 0; // Centers content when there is free space, but doesn't clip on overflow
 
             &.hidden {
                 display: none;
             }
         }
 
-        .patient-verify-btn {
-            background-color: $color-emerald-50;
-            color: $color-emerald-600;
-            &:hover {
-                background-color: $color-emerald-600;
+        .pane-label {
+            color: $color-slate-400;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 10px;
+
+            &.text-blue {
+                color: $color-blue-700;
             }
         }
 
-        .patient-open-details-btn,
-        .patient-notes-btn,
-        .patient-delete-btn {
-            padding: 0.5rem;
-            border-radius: 0.5rem;
+        .diagnosis-title {
+            font-weight: 700;
+            color: $color-slate-900;
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.375rem 0.5rem;
+            font-size: 11px;
+            color: $color-slate-600;
+            margin-top: 0.375rem;
+        }
+
+        .btn-more-details {
+            margin-top: 0.625rem;
             display: inline-flex;
             align-items: center;
-            justify-content: center;
-        }
-
-        .patient-open-details-btn {
-            background-color: $color-slate-50;
-            color: $color-slate-600;
-            &:hover {
-                background-color: $color-slate-600;
-                color: #fff;
-            }
-        }
-
-        .patient-notes-btn {
-            background-color: $color-blue-50;
-            color: $color-blue-600;
-            &:hover {
-                background-color: $color-blue-600;
-                color: #fff;
-            }
-        }
-
-        .patient-delete-btn {
-            background-color: $color-red-50;
-            color: $color-red-500;
-            &:hover {
-                background-color: $color-red-500;
-                color: #fff;
-            }
-        }
-    }
-
-    .patient-reorder {
-        display: flex;
-        flex-direction: column;
-        gap: 0.125rem;
-        margin-left: 0.25rem;
-
-        button {
-            padding: 0.25rem;
-            border: none;
-            background: transparent;
-            color: $color-slate-300;
-            cursor: pointer;
-            transition: color 0.2s ease;
-
-            &:hover {
-                color: $color-blue-500;
-            }
-        }
-    }
-
-    &__status {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-top: 0.25rem;
-
-        .pill-container {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            overflow-x: auto;
-
-            &::-webkit-scrollbar {
-                display: none;
-            }
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        .status-pill {
-            display: flex;
-            align-items: center;
-            border: 1px solid $color-emerald-100;
-            background-color: $color-emerald-50;
-            padding: 0.125rem 0.5rem;
-            border-radius: 9999px;
-
-            .status-dot {
-                width: 0.375rem;
-                height: 0.375rem;
-                border-radius: 9999px;
-                margin-right: 0.375rem;
-                background-color: $color-emerald-500;
-                animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-            }
-
-            .status-label {
-                font-size: 8px;
-                font-weight: 900;
-                letter-spacing: -0.025em;
-                color: $color-emerald-600;
-            }
-        }
-
-        .date-pill {
-            display: flex;
-            align-items: center;
-            padding: 0.125rem 0.5rem;
-            border-radius: 9999px;
-            border: 1px solid;
-
-            .label {
-                font-size: 8px;
-                font-weight: 900;
-                margin-right: 0.25rem;
-                letter-spacing: -0.05em;
-            }
-
-            .value {
-                font-size: 8px;
-                font-weight: 700;
-                white-space: nowrap;
-            }
-
-            &--in {
-                background-color: $color-blue-50;
-                border-color: $color-blue-100;
-                .label {
-                    color: $color-blue-400;
-                }
-                .value {
-                    color: $color-blue-700;
-                }
-            }
-
-            &--out {
-                background-color: $color-slate-50;
-                border-color: $color-slate-100;
-                .label {
-                    color: $color-slate-400;
-                }
-                .value {
-                    color: $color-slate-600;
-                }
-            }
-        }
-
-        .action-buttons {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-            flex-shrink: 0;
-
-            button {
-                padding: 0.25rem;
-                color: $color-slate-400;
-                background-color: #fff;
-                border: 1px solid $color-slate-200;
-                border-radius: 9999px;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-
-                &:hover {
-                    color: $color-blue-600;
-                    background-color: $color-blue-50;
-                }
-
-                &:active {
-                    transform: scale(0.9);
-                }
-                &:disabled {
-                    opacity: 0.5;
-                    pointer-events: none;
-                }
-            }
-        }
-    }
-
-    &__footer {
-        margin-top: 0.25rem;
-        padding-top: 0.375rem;
-        border-top: 1px solid $color-slate-50;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-
-        .sync-info {
-            display: flex;
-            align-items: center;
             gap: 0.375rem;
-            color: $color-slate-400;
+            background-color: $color-blue-50;
+            color: $color-blue-700;
+            border: 1px solid $color-blue-100;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
 
-            .sync-text {
-                display: flex;
-                align-items: baseline;
-                gap: 0.25rem;
+            &:hover {
+                background-color: $color-blue-100;
+                color: $color-blue-900;
+            }
 
-                .label {
-                    font-size: 6.5px;
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                }
-
-                .value {
-                    font-size: 8px;
-                    font-family: monospace;
-                    font-weight: 500;
-                    line-height: 1;
-                }
+            .icon {
+                width: 0.75rem;
+                height: 0.75rem;
             }
         }
 
-        .indicator-dot {
+        // Full Details Styling
+        .details-sections {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 0.375rem;
+        }
+
+        .details-block {
+            background-color: $color-slate-50;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            border: 1px solid $color-slate-200;
+
+            h4 {
+                margin: 0 0 0.25rem 0;
+                font-size: 11px;
+                color: $color-slate-700;
+                font-weight: 700;
+            }
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.25rem 0.5rem;
+            font-size: 11px;
+            color: $color-slate-600;
+        }
+
+        .pane-subheading {
+            font-weight: 700;
             display: block;
-            height: 0.375rem;
-            width: 0.375rem;
-            border-radius: 9999px;
-            background-color: $color-slate-200;
+            margin-bottom: 0.25rem;
+
+            &.text-amber {
+                color: $color-amber-900;
+            }
+            &.text-emerald {
+                color: $color-emerald-900;
+            }
+            &.text-sky {
+                color: $color-sky-900;
+            }
+        }
+
+        .pane-list {
+            list-style-type: disc;
+            padding-left: 1rem;
+            margin: 0;
+            color: $color-slate-700;
+
+            li + li {
+                margin-top: 0.25rem;
+            }
+        }
+
+        .pane-text {
+            color: $color-slate-700;
+            margin: 0;
         }
     }
 }
