@@ -107,25 +107,57 @@ const get_patient_initials = (name: string): string => {
     return parts[0] ? parts[0][0].toUpperCase() : '??'
 }
 
-export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit) => {
-    const TAB_FETCH_HANDLERS: Record<string, () => Promise<void>> = {
-        'recipes': async () => {
-            // const data = await fetchProfileData()
-            // renderProfilePane(data)
-        },
+/**
+ * Calculates appropriate honorific prefix based on age, marital status, and gender.
+ */
+const get_patient_prefix = (
+    age_obj: { y: number; m: number; d: number } | null,
+    gender_id: string,
+    marriage_status: string
+): string => {
+    const is_female = gender_id === '2'
+
+    // Age < 1 year
+    if (age_obj && age_obj.y === 0) {
+        return 'By.'
     }
 
+    // Age 1 - 17 years
+    if (age_obj && age_obj.y < 18) {
+        return 'An.'
+    }
+
+    // Age >= 18 years
+    const status_clean = (marriage_status || '').trim().toLowerCase()
+    const is_unmarried = status_clean === 'belum kawin'
+
+    if (is_unmarried) {
+        return is_female ? 'Nn.' : 'Sdr.'
+    }
+
+    // Married, widowed, or default fallback
+    return is_female ? 'Ny.' : 'Tn.'
+}
+
+export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit) => {
     // Age calculations
     let age = '??y'
     const age_obj = get_age_metrics(visit.patient.demographic.birthdate)
     if (age_obj) {
         if (age_obj.y < 18) {
             age = `${age_obj.y}th, ${age_obj.m}bl, ${age_obj.d}hr`
-        }
-        else {
+        } else {
             age = `${age_obj.y}th`
         }
     }
+
+    // Patient Prefix logic
+    const prefix = get_patient_prefix(
+        age_obj,
+        visit.patient.demographic.gender_id,
+        visit.patient.demographic.marriage_status
+    )
+    const formatted_patient_name = `${prefix} ${visit.patient.name}`
 
     // Length Of Stay (LOS) metrics & Fresh status calculation
     let los_text = 'LOS: --'
@@ -139,7 +171,6 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
     }
 
     const is_female = visit.patient.demographic.gender_id === '2'
-    const genderText = is_female ? 'P' : 'L'
     const genderClass = is_female ? 'gender-female' : 'gender-male'
     const initials = get_patient_initials(visit.patient.name)
 
@@ -152,17 +183,15 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
             c('div', { classes: 'patient-card__header-row' }, [
                 c('span', { classes: 'badge-bed', text: `${room_name}/${visit.room.bed_name}` }),
                 c('div', { classes: 'header-tags' }, [
-                    // ...(is_fresh ? [c('span', { classes: 'badge-fresh-tag', text: 'FRESH' })] : []),
                     c('span', { classes: 'los-tag', text: los_text })
                 ])
             ]),
             c('div', { classes: 'patient-card__identity' }, [
                 c('div', { classes: `patient-avatar ${genderClass}`, text: initials }),
                 c('div', { classes: 'patient-meta' }, [
-                    c('h3', { classes: 'patient-card__name', text: visit.patient.name }),
+                    c('h3', { classes: 'patient-card__name', text: formatted_patient_name }),
                     c('div', { classes: `patient-card__demographics ${genderClass}` }, [
                         c('span', { text: `${age} • ${visit.patient.demographic.religion || '??'}` })
-                        // c('span', { text: `${age} • ${genderText} • ${visit.patient.religion || '??'}` })
                     ]),
                     c('div', { classes: 'patient-card__mrn', text: `${visit.patient.mrn || '??'}` })
                 ])
@@ -193,12 +222,15 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
 
     // 2. Vertical Navigation Bar
     const tab_buttons: Record<string, HTMLElement> = {}
+    const tab_badges: Record<string, HTMLElement> = {}
 
-    const create_tab_btn = (key: string, label: string, badgeCount?: number, badgeClass?: string) => {
+    const create_tab_btn = (key: string, label: string, initialBadge?: string, badgeClass?: string) => {
         const children: Element[] = [c('span', { text: label })]
 
-        if (badgeCount !== undefined) {
-            children.push(c('span', { classes: `tab-badge ${badgeClass ?? ''}`, text: `${badgeCount}` }))
+        if (initialBadge !== undefined) {
+            const badge_el = c('span', { classes: `tab-badge ${badgeClass ?? ''}`, text: initialBadge })
+            tab_badges[key] = badge_el
+            children.push(badge_el)
         } else {
             children.push(create_svg_icon('M9 5l7 7-7 7', '0 0 24 24', '2'))
         }
@@ -216,15 +248,18 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
         return btn
     }
 
+    // Initialize Recipe Controller with a callback to update tab badge count dynamically
+    const recipeController = new RecipesTabController(visit.id, engine.api, (count: number) => {
+        if (tab_badges['recipes']) {
+            tab_badges['recipes'].innerText = `${count}`
+        }
+    })
+
     const navigation_sidebar = c('div', { classes: 'patient-card__nav' }, [
         create_tab_btn('overview', 'Ringkasan'),
         create_tab_btn('details', 'Detail Pasien'),
-        // createTabBtn('labs', 'Hasil', (visit as any).labs_count ?? 3, 'badge-amber'),
-        create_tab_btn('recipes', 'Resep'),
-        // createTabBtn('notes', 'Catatan', (visit as any).notes_count ?? 8, 'badge-sky')
+        create_tab_btn('recipes', 'Resep', '*', 'badge-emerald'),
     ])
-
-    const recipeController = new RecipesTabController(visit.id, engine.api)
 
     // 3. Tab Display Pane (Content)
     const tab_panes: Record<string, HTMLElement> = {
@@ -233,32 +268,18 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
                 c('span', { classes: 'pane-label', text: 'Diagnosis Utama' }),
                 c('p', { classes: 'diagnosis-title', text: visit.diagnosis.main_dx || '??' })
             ]),
-            c('div', { /* classes: 'info-grid' */ }, [
+            c('div', {}, [
                 c('div', {}, [c('strong', { text: 'DPJP: ' }), c('span', { text: visit.dpjp.name })]),
-                // c('div', {}, [c('strong', { text: 'Co: ' }), c('span', { text: visit.diagnosis.diagnosticians.join(', ') || '-' })]),
                 c('div', {}, [c('strong', { text: 'Masuk: ' }), c('span', { text: format_date_variants(visit.admission_date ?? '').longtime })]),
                 c('div', {}, [c('strong', { text: 'Keluar: ' }), c('span', { text: format_date_variants(visit.discharge_date ?? '').longtime })]),
             ]),
-            // c('button', {
-            //     classes: 'btn-more-details',
-            //     // events: {
-            //     //     click: () => {
-            //     //         activeTab = 'details'
-            //     //         updateTabVisibility(activeTab, tabButtons, tabPanes)
-            //     //     }
-            //     // }
-            // }, [
-            //     c('span', { text: 'View Full Patient Details' }),
-            //     create_svg_icon('M14 5l7 7-7 7M5 12h16', '0 0 24 24', '2')
-            // ])
         ]),
 
         details: c('div', { classes: 'tab-pane hidden' }, [
-            // c('span', { classes: 'pane-label text-blue', text: 'Detail Pasien' }),
             c('div', { classes: 'details-sections' }, [
                 c('div', { classes: 'details-block' }, [
                     c('h4', { text: 'Demografi' }),
-                    c('div', { /* classes: 'details-grid' */ }, [
+                    c('div', {}, [
                         c('div', {}, [c('span', { text: 'TTL: ' }), c('strong', { classes: 'capitalize', text: `${visit.patient.demographic.birthplace.toLowerCase() || '??'}, ${format_date_variants(visit.patient.demographic.birthdate).long.split(', ')[1] || '??'}` })]),
                         c('div', {}, [c('span', { text: 'Alamat: ' }), c('strong', { classes: 'capitalize', text: visit.patient.demographic.address.toLowerCase() || '??' })]),
                         c('div', {}, [c('span', { text: 'Pekerjaan: ' }), c('strong', { classes: 'capitalize', text: visit.patient.demographic.occupation.toLowerCase() || '??' })]),
@@ -270,7 +291,7 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
                 ]),
                 c('div', { classes: 'details-block' }, [
                     c('h4', { text: 'Penjamin' }),
-                    c('div', { /* classes: 'details-grid' */ }, [
+                    c('div', {}, [
                         c('div', {}, [c('span', { text: 'No. Peserta: ' }), c('strong', { text: visit.patient.insurance.membership.id || '??' })]),
                         c('div', {}, [c('span', { text: 'SEP: ' }), c('strong', { text: visit.patient.insurance.sep_id || '??' })]),
                         c('div', {}, [c('span', { text: 'Kelas: ' }), c('strong', { text: visit.patient.insurance.class || '??' })]),
@@ -283,7 +304,7 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
                 ]),
                 c('div', { classes: 'details-block' }, [
                     c('h4', { text: 'Nomor' }),
-                    c('div', { /* classes: 'details-grid' */ }, [
+                    c('div', {}, [
                         c('div', {}, [c('span', { text: 'No. RM: ' }), c('strong', { text: visit.patient.mrn || '??' })]),
                         c('div', {}, [c('span', { text: 'No. Pasien: ' }), c('strong', { text: visit.patient.id || '??' })]),
                         c('div', {}, [c('span', { text: 'No. Kunjungan: ' }), c('strong', { text: visit.id || '??' })]),
@@ -293,29 +314,13 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
             ])
         ]),
 
-        // labs: c('div', { classes: 'tab-pane hidden' }, [
-        //     c('span', { classes: 'pane-subheading text-amber', text: `${(visit as any).labs_count ?? 3} Active Lab Orders` }),
-        //     c('ul', { classes: 'pane-list' }, [
-        //         c('li', { text: 'BNP Level (Pending Stat)' }),
-        //         c('li', { text: 'Serum Electrolytes (Routine)' }),
-        //         c('li', { text: 'Renal Panel (In Progress)' })
-        //     ])
-        // ]),
-
         recipes: recipeController.pane_el,
-
-        // notes: c('div', { classes: 'tab-pane hidden' }, [
-        //     c('span', { classes: 'pane-subheading text-sky', text: `${(visit as any).notes_count ?? 8} Shift Notes Logged` }),
-        //     c('p', { classes: 'pane-text', text: 'Handover summary: Patient resting comfortably, morning rounds complete.' })
-        // ])
     }
 
     const content_pane = c('div', { classes: 'patient-card__content' }, [
         tab_panes.overview,
         tab_panes.details,
-        // tab_panes.labs,
         tab_panes.recipes,
-        // tab_panes.notes
     ])
 
     // Container Assembly

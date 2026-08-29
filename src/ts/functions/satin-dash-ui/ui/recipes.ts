@@ -40,6 +40,7 @@ export class RecipesTabController {
     constructor(
         private visit_id: string,
         private api_client: SatinApiContext,
+        private on_loaded?: (count: number) => void // <-- Added callback optional parameter
     ) {
         this.pane_el = c('div', { classes: 'tab-pane hidden' })
         this.render_skeleton()
@@ -97,6 +98,7 @@ export class RecipesTabController {
                 this.orders_lowercase.clear()
                 this.is_loaded = true
                 this.render_ui()
+                this.on_loaded?.(0) // Notify callback with 0
                 return
             }
 
@@ -121,6 +123,7 @@ export class RecipesTabController {
 
             this.is_loaded = true
             this.render_ui()
+            this.on_loaded?.(this.orders.length) // Notify callback with exact count
         } catch (err) {
             Log.error('Failed to load recipe orders:', err)
             if (body_container) {
