@@ -15,6 +15,7 @@ interface RawDataKap {
     NOMOR?: string //"0000089530277",
     REFERENSI?: {
         PENJAMIN?: RawDictJenisPenjamin
+        PPK?: RawDataPPK
     }
 }
 

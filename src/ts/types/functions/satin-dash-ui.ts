@@ -54,22 +54,36 @@ export interface SatinDashUIVisit {
         date: string | null
     }
     patient: {
+        id: string
         mrn: string
         name: string
-        gender_id: string
-        birthdate: string
-        birthplace: string
-        address: string
-        religion: string
-        blood_type: string
+        demographic: {
+            living_status: string
+            gender_id: string
+            birthdate: string
+            birthplace: string
+            address: string
+            religion: string
+            education: string
+            occupation: string
+            marriage_status: string
+            blood_type: string
+            contact_num: string
+        }
         insurance: {
             sep_id: string
             type: string
             class: string
             membership: {
                 id: string
-                provider: string
+                type: string
+                provider_name: string
                 prb_desc: string
+                ppk: {
+                    name: string
+                    address: string
+                }
+                issuance_date: string
             }
         }
     }

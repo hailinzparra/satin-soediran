@@ -117,7 +117,7 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
 
     // Age calculations
     let age = '??y'
-    const age_obj = get_age_metrics(visit.patient.birthdate)
+    const age_obj = get_age_metrics(visit.patient.demographic.birthdate)
     if (age_obj) {
         if (age_obj.y < 18) {
             age = `${age_obj.y}th, ${age_obj.m}bl, ${age_obj.d}hr`
@@ -138,18 +138,19 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
         }
     }
 
-    const is_female = visit.patient.gender_id === '2'
+    const is_female = visit.patient.demographic.gender_id === '2'
     const genderText = is_female ? 'P' : 'L'
     const genderClass = is_female ? 'gender-female' : 'gender-male'
     const initials = get_patient_initials(visit.patient.name)
 
     // 1. Patient Key Details Sidebar
+    const room_name = visit.room.name.replace('Bangsal ', '')
     const patient_details_sidebar = c('div', {
         classes: `patient-card__details ${is_fresh ? 'is-fresh' : ''}`
     }, [
         c('div', {}, [
             c('div', { classes: 'patient-card__header-row' }, [
-                c('span', { classes: 'badge-bed', text: `${visit.room.name}/${visit.room.bed_name}` }),
+                c('span', { classes: 'badge-bed', text: `${room_name}/${visit.room.bed_name}` }),
                 c('div', { classes: 'header-tags' }, [
                     // ...(is_fresh ? [c('span', { classes: 'badge-fresh-tag', text: 'FRESH' })] : []),
                     c('span', { classes: 'los-tag', text: los_text })
@@ -160,7 +161,7 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
                 c('div', { classes: 'patient-meta' }, [
                     c('h3', { classes: 'patient-card__name', text: visit.patient.name }),
                     c('div', { classes: `patient-card__demographics ${genderClass}` }, [
-                        c('span', { text: `${age} • ${visit.patient.religion || '??'}` })
+                        c('span', { text: `${age} • ${visit.patient.demographic.religion || '??'}` })
                         // c('span', { text: `${age} • ${genderText} • ${visit.patient.religion || '??'}` })
                     ]),
                     c('div', { classes: 'patient-card__mrn', text: `${visit.patient.mrn || '??'}` })
@@ -234,7 +235,7 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
             ]),
             c('div', { /* classes: 'info-grid' */ }, [
                 c('div', {}, [c('strong', { text: 'DPJP: ' }), c('span', { text: visit.dpjp.name })]),
-                c('div', {}, [c('strong', { text: 'Co: ' }), c('span', { text: visit.diagnosis.diagnosticians.join(', ') || '-' })]),
+                // c('div', {}, [c('strong', { text: 'Co: ' }), c('span', { text: visit.diagnosis.diagnosticians.join(', ') || '-' })]),
                 c('div', {}, [c('strong', { text: 'Masuk: ' }), c('span', { text: format_date_variants(visit.admission_date ?? '').longtime })]),
                 c('div', {}, [c('strong', { text: 'Keluar: ' }), c('span', { text: format_date_variants(visit.discharge_date ?? '').longtime })]),
             ]),
@@ -253,30 +254,40 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
         ]),
 
         details: c('div', { classes: 'tab-pane hidden' }, [
-            c('span', { classes: 'pane-label text-blue', text: 'Detail Pasien' }),
+            // c('span', { classes: 'pane-label text-blue', text: 'Detail Pasien' }),
             c('div', { classes: 'details-sections' }, [
                 c('div', { classes: 'details-block' }, [
                     c('h4', { text: 'Demografi' }),
                     c('div', { /* classes: 'details-grid' */ }, [
-                        c('div', {}, [c('span', { text: 'TTL: ' }), c('strong', { classes: 'capitalize', text: `${visit.patient.birthplace.toLowerCase() || '??'}, ${format_date_variants(visit.patient.birthdate).long.split(', ')[1] || '??'}` })]),
-                        // c('div', {}, [c('span', { text: 'ABO: ' }), c('strong', { text: visit.patient.blood_type || '??' })]),
-                        c('div', {}, [c('span', { text: 'Alamat: ' }), c('strong', { classes: 'capitalize', text: visit.patient.address.toLowerCase() || '??' })])
+                        c('div', {}, [c('span', { text: 'TTL: ' }), c('strong', { classes: 'capitalize', text: `${visit.patient.demographic.birthplace.toLowerCase() || '??'}, ${format_date_variants(visit.patient.demographic.birthdate).long.split(', ')[1] || '??'}` })]),
+                        c('div', {}, [c('span', { text: 'Alamat: ' }), c('strong', { classes: 'capitalize', text: visit.patient.demographic.address.toLowerCase() || '??' })]),
+                        c('div', {}, [c('span', { text: 'Pekerjaan: ' }), c('strong', { classes: 'capitalize', text: visit.patient.demographic.occupation.toLowerCase() || '??' })]),
+                        c('div', {}, [c('span', { text: 'Pendidikan: ' }), c('strong', { classes: 'capitalize', text: visit.patient.demographic.education.toLowerCase() || '??' })]),
+                        c('div', {}, [c('span', { text: 'Status Perkawinan: ' }), c('strong', { classes: 'capitalize', text: visit.patient.demographic.marriage_status.toLowerCase() || '??' })]),
+                        c('div', {}, [c('span', { text: 'Golongan Darah: ' }), c('strong', { text: visit.patient.demographic.blood_type || '??' })]),
+                        c('div', {}, [c('span', { text: 'Kontak: ' }), c('strong', { text: visit.patient.demographic.contact_num || '??' })]),
                     ])
                 ]),
                 c('div', { classes: 'details-block' }, [
                     c('h4', { text: 'Penjamin' }),
                     c('div', { /* classes: 'details-grid' */ }, [
+                        c('div', {}, [c('span', { text: 'No. Peserta: ' }), c('strong', { text: visit.patient.insurance.membership.id || '??' })]),
                         c('div', {}, [c('span', { text: 'SEP: ' }), c('strong', { text: visit.patient.insurance.sep_id || '??' })]),
                         c('div', {}, [c('span', { text: 'Kelas: ' }), c('strong', { text: visit.patient.insurance.class || '??' })]),
-                        c('div', {}, [c('span', { text: 'Provider: ' }), c('strong', { text: visit.patient.insurance.membership.provider || '??' })]),
+                        c('div', {}, [c('span', { text: 'Jenis: ' }), c('strong', { text: visit.patient.insurance.membership.type || '??' })]),
+                        c('div', {}, [c('span', { text: 'Provider: ' }), c('strong', { text: visit.patient.insurance.membership.provider_name || '??' })]),
                         c('div', {}, [c('span', { text: 'Status PRB: ' }), c('strong', { text: visit.patient.insurance.membership.prb_desc || '??' })]),
+                        c('div', {}, [c('span', { text: 'PPK (Alamat): ' }), c('strong', { text: `${visit.patient.insurance.membership.ppk.name || '??'} (${visit.patient.insurance.membership.ppk.address || '??'})` })]),
+                        c('div', {}, [c('span', { text: 'Tanggal Cetak Kartu: ' }), c('strong', { text: format_date_variants(visit.patient.insurance.membership.issuance_date).long.split(', ')[1] || '??' })]),
                     ])
                 ]),
                 c('div', { classes: 'details-block' }, [
-                    c('h4', { text: 'Pendaftaran' }),
+                    c('h4', { text: 'Nomor' }),
                     c('div', { /* classes: 'details-grid' */ }, [
-                        c('div', {}, [c('span', { text: 'No. Reg: ' }), c('strong', { text: visit.registration.id || '??' })]),
-                        c('div', {}, [c('span', { text: 'No. Pen: ' }), c('strong', { text: visit.id || '??' })]),
+                        c('div', {}, [c('span', { text: 'No. RM: ' }), c('strong', { text: visit.patient.mrn || '??' })]),
+                        c('div', {}, [c('span', { text: 'No. Pasien: ' }), c('strong', { text: visit.patient.id || '??' })]),
+                        c('div', {}, [c('span', { text: 'No. Kunjungan: ' }), c('strong', { text: visit.id || '??' })]),
+                        c('div', {}, [c('span', { text: 'No. Pendaftaran: ' }), c('strong', { text: visit.registration.id || '??' })]),
                     ])
                 ])
             ])
