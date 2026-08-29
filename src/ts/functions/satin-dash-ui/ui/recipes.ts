@@ -1,6 +1,7 @@
 import { SatinApiContext } from '../../../api/context'
 import { RequestPayloadBuilder } from '../../../utils/api'
 import { create_element } from '../../../utils/dom'
+import { format_medical_name } from '../../../utils/formatter'
 import { Log } from '../../../utils/logger'
 
 // State interface for Recipe tab management
@@ -17,6 +18,7 @@ interface RecipeDetail {
     frequency: string
     dose: string
     route: string
+    additional_info: string
 }
 
 const c = create_element
@@ -28,6 +30,10 @@ export class RecipesTabController {
     private details_cache: Map<string, RecipeDetail[]> = new Map()
     private loading_details: Set<string> = new Set()
     private copy_timers: Map<string, number> = new Map()
+
+    // Per-order toggle states
+    private orders_with_amount: Set<string> = new Set()
+    private orders_lowercase: Set<string> = new Set()
 
     public pane_el: HTMLElement
 
@@ -87,6 +93,8 @@ export class RecipesTabController {
 
             if (!result?.data?.length) {
                 this.orders = []
+                this.orders_with_amount.clear()
+                this.orders_lowercase.clear()
                 this.is_loaded = true
                 this.render_ui()
                 return
@@ -98,6 +106,18 @@ export class RecipesTabController {
                 depo: raw.REFERENSI?.TUJUAN?.DESKRIPSI || '-',
                 ward: raw.REFERENSI?.KUNJUNGAN?.REFERENSI?.RUANGAN?.DESKRIPSI || '-'
             }))
+
+            this.orders_with_amount.clear()
+            this.orders_lowercase.clear()
+
+            this.orders.forEach(order => {
+                // "Jumlah" active by default for outpatient ("jalan")
+                if (order.depo.toLowerCase().includes('jalan')) {
+                    this.orders_with_amount.add(order.nomor)
+                }
+                // "Huruf Kecil" active by default for all depos
+                this.orders_lowercase.add(order.nomor)
+            })
 
             this.is_loaded = true
             this.render_ui()
@@ -113,7 +133,7 @@ export class RecipesTabController {
         if (this.details_cache.has(order_id)) return
 
         this.loading_details.add(order_id)
-        this.render_ui() // show spinner / loading state on item
+        this.render_ui()
 
         try {
             const result = await this.api_client.api_request<any>({
@@ -132,7 +152,8 @@ export class RecipesTabController {
                 amount: raw.JUMLAH ?? 0,
                 frequency: raw.REFERENSI?.FREKUENSI?.FREKUENSI || '-',
                 dose: raw.DOSIS || '-',
-                route: raw.REFERENSI?.RUTE_PEMBERIAN?.DESKRIPSI || '-'
+                route: raw.REFERENSI?.RUTE_PEMBERIAN?.DESKRIPSI || '-',
+                additional_info: raw.KETERANGAN || ''
             }))
 
             this.details_cache.set(order_id, details)
@@ -148,38 +169,34 @@ export class RecipesTabController {
         const details = this.details_cache.get(order.nomor)
         if (!details || details.length === 0) return
 
-        // 1. Map raw route description to short code
         const map_route = (raw_route: string): string => {
             const cleaned = raw_route.trim().toLowerCase()
             switch (cleaned) {
                 case 'oral': return 'PO'
-                case 'parenteral': return 'PAR'
-                case 'topikal': return 'TOP'
+                case 'parenteral': return 'Inf'
+                case 'topikal': return 'UE'
                 case 'supositoria (rektal)':
-                case 'supositoria': return 'SUPP'
-                case 'alkes': return 'AL'
-                case 'intravena': return 'IV'
-                case 'subkutan': return 'SC'
-                case 'intramuskular': return 'IM'
+                case 'supositoria': return 'Supp'
+                case 'alkes': return ''
+                case 'intravena': return 'Inj'
+                case 'subkutan': return 'Inj (SC)'
+                case 'intramuskular': return 'Inj (IM)'
                 case '-':
                 default: return ''
             }
         }
 
-        // 2. Define priority order for sorting
         const route_priority: Record<string, number> = {
-            'PAR': 1,
-            'IV': 2,
-            'IM': 3,
-            'SC': 4,
+            'Inf': 1,
+            'Inj': 2,
+            'Inj (IM)': 3,
+            'Inj (SC)': 4,
             'PO': 5,
-            'TOP': 6,
-            'SUPP': 7,
-            'AL': 8,
-            '': 9
+            'UE': 6,
+            'Supp': 7,
+            '': 8,
         }
 
-        // 3. Clone and sort details by priority index
         const sorted_details = [...details].sort((a, b) => {
             const code_a = map_route(a.route)
             const code_b = map_route(b.route)
@@ -189,11 +206,21 @@ export class RecipesTabController {
             return priority_a - priority_b
         })
 
-        // 4. Format line items with conditional route prefix
+        const include_amount = this.orders_with_amount.has(order.nomor)
+        const is_lowercase = this.orders_lowercase.has(order.nomor)
+
         const lines = sorted_details.map(item => {
             const route_code = map_route(item.route)
-            const route_prefix = route_code ? `${route_code}. ` : ''
-            return `${route_prefix}${item.drug_name}: ${item.frequency} | ${item.dose}`
+            const route_prefix = route_code ? `${route_code} ` : ''
+            const additional_info = item.additional_info ? ` ${item.additional_info}` : ''
+
+            const amount = (include_amount && item.amount !== undefined && item.amount !== '')
+                ? ` (${item.amount})`
+                : ''
+
+            const raw_line = `${route_prefix}${item.drug_name} ${item.frequency} ${item.dose}${additional_info}${amount}`
+
+            return is_lowercase ? raw_line.toLowerCase() : raw_line
         })
 
         const formatted_text = `Terapi ${order.ward}:\n` + lines.join('\n')
@@ -202,7 +229,6 @@ export class RecipesTabController {
             button_el.innerText = 'COPIED!'
             button_el.classList.add('is-copied')
 
-            // Reset 2-second timer if user clicks repeatedly
             if (this.copy_timers.has(order.nomor)) {
                 window.clearTimeout(this.copy_timers.get(order.nomor))
             }
@@ -259,6 +285,13 @@ export class RecipesTabController {
         const has_details = details !== undefined && details.length > 0
         const is_copied = this.copy_timers.has(order.nomor)
 
+        const include_amount = this.orders_with_amount.has(order.nomor)
+        const is_lowercase = this.orders_lowercase.has(order.nomor)
+
+        // Helper to format string values based on lowercasing toggle
+        const fmt = (text: string): string => is_lowercase ? text.toLowerCase() : text
+
+        // 1. Copy button
         const copy_btn = c('button', {
             classes: `btn-copy-recipe ${is_copied ? 'is-copied' : ''}`,
             attrs: has_details ? {} : { disabled: 'true' },
@@ -266,9 +299,54 @@ export class RecipesTabController {
         })
 
         copy_btn.addEventListener('click', (e: Event) => {
-            e.stopPropagation() // Prevents header click toggle
+            e.stopPropagation()
             this.handle_copy(order, e.currentTarget as HTMLButtonElement)
         })
+
+        // 2. Toggle button for 'Jumlah'
+        const toggle_amount_btn = c('button', {
+            classes: `btn-toggle-option ${include_amount ? 'is-active' : ''}`,
+            text: 'Jumlah',
+            attrs: {
+                title: 'Sertakan jumlah obat'
+            }
+        })
+
+        toggle_amount_btn.addEventListener('click', (e: Event) => {
+            e.stopPropagation()
+            if (this.orders_with_amount.has(order.nomor)) {
+                this.orders_with_amount.delete(order.nomor)
+            } else {
+                this.orders_with_amount.add(order.nomor)
+            }
+            this.render_ui()
+        })
+
+        // 3. Toggle button for 'Huruf Kecil'
+        const toggle_lowercase_btn = c('button', {
+            classes: `btn-toggle-option ${is_lowercase ? 'is-active' : ''}`,
+            text: 'Huruf Kecil',
+            attrs: {
+                title: 'Ubah seluruh teks menjadi huruf kecil'
+            }
+        })
+
+        toggle_lowercase_btn.addEventListener('click', (e: Event) => {
+            e.stopPropagation()
+            if (this.orders_lowercase.has(order.nomor)) {
+                this.orders_lowercase.delete(order.nomor)
+            } else {
+                this.orders_lowercase.add(order.nomor)
+            }
+            this.render_ui()
+        })
+
+        // Wrapper for buttons: COPY, Jumlah, Huruf Kecil
+        const recipe_actions = c('div', { classes: 'recipe-actions' }, [
+            copy_btn,
+            toggle_amount_btn,
+            toggle_lowercase_btn
+        ])
 
         const header_el = c('div', {
             classes: 'recipe-card-header',
@@ -278,11 +356,11 @@ export class RecipesTabController {
                 c('span', { classes: 'text-xs text-slate-400', text: is_expanded ? '▲' : '▼' })
             ]),
             c('div', { /* classes: 'recipe-grid' */ }, [
-                c('div', {}, [c('strong', { text: 'Oleh: ' }), c('span', { text: order.prescriber })]),
+                c('div', {}, [c('strong', { text: 'Oleh: ' }), c('span', { text: format_medical_name(order.prescriber) })]),
                 c('div', {}, [c('strong', { text: 'Depo: ' }), c('span', { text: order.depo })]),
                 c('div', {}, [c('strong', { text: 'Ruangan: ' }), c('span', { text: order.ward })])
             ]),
-            copy_btn
+            recipe_actions
         ])
 
         header_el.addEventListener('click', () => this.toggle_expand(order.nomor))
@@ -295,25 +373,32 @@ export class RecipesTabController {
             if (is_loading) {
                 details_content = c('div', { classes: 'details-state' }, [c('span', { text: 'Memuat rincian obat...' })])
             } else if (details && details.length > 0) {
+                const table_headers = [c('th', { text: 'Nama Obat' })]
+                if (include_amount) {
+                    table_headers.push(c('th', { text: 'Jumlah' }))
+                }
+                table_headers.push(
+                    c('th', { text: 'Dosis' }),
+                    c('th', { text: 'Freq.' }),
+                    c('th', { text: 'Rute' }),
+                    c('th', { text: 'Ket.' })
+                )
+
                 details_content = c('table', { classes: 'details-table' }, [
-                    c('thead', {}, [
-                        c('tr', {}, [
-                            c('th', { text: 'Nama Obat' }),
-                            c('th', { text: 'Jumlah' }),
-                            c('th', { text: 'Dosis' }),
-                            c('th', { text: 'Frekuensi' }),
-                            c('th', { text: 'Rute' })
-                        ])
-                    ]),
-                    c('tbody', {}, details.map(item =>
-                        c('tr', {}, [
-                            c('td', { classes: 'drug-name', text: item.drug_name }),
-                            c('td', { text: `${item.amount}` }),
-                            c('td', { text: item.dose }),
-                            c('td', { text: item.frequency }),
-                            c('td', { text: item.route })
-                        ])
-                    ))
+                    c('thead', {}, [c('tr', {}, table_headers)]),
+                    c('tbody', {}, details.map(item => {
+                        const row_cells = [c('td', { classes: 'drug-name', text: fmt(item.drug_name) })]
+                        if (include_amount) {
+                            row_cells.push(c('td', { text: `${item.amount}` }))
+                        }
+                        row_cells.push(
+                            c('td', { text: fmt(item.dose) }),
+                            c('td', { text: fmt(item.frequency) }),
+                            c('td', { text: fmt(item.route) }),
+                            c('td', { text: item.additional_info ? fmt(item.additional_info) : '-' })
+                        )
+                        return c('tr', {}, row_cells)
+                    }))
                 ])
             } else {
                 details_content = c('div', { classes: 'details-state' }, [c('span', { text: 'Rincian obat kosong.' })])
