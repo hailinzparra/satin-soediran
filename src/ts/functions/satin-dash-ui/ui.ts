@@ -126,7 +126,7 @@ export const get_patient_prefix = (
 
     // Age <= 28 years and unmarried
     if (is_unmarried && age_y <= 28) {
-        return is_female ? 'Nn.' : 'Sdr.'
+        return is_female ? 'Sdri.' : 'Sdr.'
     }
 
     // Married, widowed, or default fallback

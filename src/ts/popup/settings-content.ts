@@ -94,9 +94,9 @@ export class PopupSettingsContent extends PopupContent {
                 ind: 1,
             },
             {
-                key: 'dash_enable_satin_dash_ui_show_consult_button',
-                title: '<span class="text-slate-500">(Satin Dash UI)</span>: Menu "Konsul"',
-                sub: 'Munculkan tombol menu "Konsul" untuk membuat draft konsul dengan mudah.',
+                key: 'dash_enable_satin_dash_ui_show_actions_button',
+                title: '<span class="text-slate-500">(Satin Dash UI)</span>: Menu "Aksi"',
+                sub: 'Munculkan tombol menu "Aksi" untuk draft konsul, batch operation, dll.',
                 ind: 1,
             },
             // {

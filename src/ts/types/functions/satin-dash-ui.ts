@@ -1,3 +1,4 @@
+import { ActionsModalController } from '../../functions/satin-dash-ui/actions'
 import { BaseApiResponse } from '../api/base'
 import { SoediranDataKunjungan } from '../api/soediran/data'
 import { SatinDriver } from '../driver'
@@ -113,7 +114,7 @@ export interface SatinDashUIWorkspace {
         lpanel_head: HTMLDivElement | null
         lpanel_body: HTMLDivElement | null
         toggle_btn_wrapper: HTMLDivElement | null
-        consult_btn: HTMLButtonElement | null
+        actions_controller: ActionsModalController | null
     }
     visit_ids: string[]
     is_mode_enabled: boolean

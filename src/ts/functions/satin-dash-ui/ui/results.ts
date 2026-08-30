@@ -86,9 +86,10 @@ function build_date_cell(raw_date: string): HTMLElement {
     }
 
     const { long, time } = format_date_variants(raw_date)
+    const fuzzy = get_fuzzy_time_yll(raw_date)
 
     // Combine with \n to split into two lines
-    const formatted_date_str = `${long}\n${time}`
+    const formatted_date_str = `${long}\n${time}${fuzzy.text ? `\n(${fuzzy.text})` : ''}`
 
     return c('td', {
         classes: 'col-date',
@@ -672,7 +673,10 @@ export class ResultsTabController {
                 header_right
             ]),
             c('div', { classes: 'recipe-grid' }, [
-                c('div', {}, [c('strong', { text: 'Tanggal: ' }), c('span', { text: date_text })]),
+                c('div', {}, [
+                    // c('strong', { text: 'Tanggal: ' }),
+                    c('span', { text: date_text }),
+                ]),
             ])
         ])
 
@@ -805,7 +809,10 @@ export class ResultsTabController {
                 header_right
             ]),
             c('div', { classes: 'recipe-grid' }, [
-                c('div', {}, [c('strong', { text: 'Tanggal: ' }), c('span', { text: date_text })]),
+                c('div', {}, [
+                    // c('strong', { text: 'Tanggal: ' }), 
+                    c('span', { text: date_text }),
+                ]),
             ])
         ])
 

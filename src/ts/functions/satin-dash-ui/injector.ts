@@ -2,6 +2,7 @@ import { SatinBaseFunctionInjector, SatinBaseFunctionTargetNode } from '../../ty
 import { SatinDashUIConfig, SatinDashUIVisit, SatinDashUIWorkspace } from '../../types/functions/satin-dash-ui'
 import { create_element } from '../../utils/dom'
 import { Log } from '../../utils/logger'
+import { ActionsModalController } from './actions'
 import { SatinDashUIFunction } from './parent'
 import { build_patient_card } from './ui'
 
@@ -24,10 +25,13 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
             this.toggle_toggle_btn(ws, true)
 
             if (ws.is_mode_enabled) {
+                const show_actions = Boolean(this.parent.engine.get_settings().dash_enable_satin_dash_ui_show_actions_button)
+                this.actions_btn(ws, show_actions)
                 this.inject_satin_dash_ui(ws)
                 this.toggle_satin_dash_ui(ws, true)
             }
             else {
+                this.actions_btn(ws, false)
                 this.toggle_satin_dash_ui(ws, false)
             }
         })
@@ -41,6 +45,7 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
 
     hide_workspace(ws: SatinDashUIWorkspace) {
         this.toggle_toggle_btn(ws, false)
+        this.actions_btn(ws, false)
         this.toggle_satin_dash_ui(ws, false)
     }
 
@@ -62,24 +67,14 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
 
             const wrapper = create_element('div', { classes: 'custom-toggle-wrapper' })
 
-            // 1. Create Consult Button
-            const consult_btn: HTMLButtonElement = create_element('button', {
-                classes: 'btn-consult',
-                text: 'Konsul',
-            })
-
-            consult_btn.addEventListener('click', (e: Event) => {
-                e.stopPropagation()
-                alert('opened')
-            })
+            const actions_controller = new ActionsModalController()
 
             // Check settings visibility condition
-            const show_consult = Boolean(this.parent.engine.get_settings().dash_enable_satin_dash_ui_show_consult_button)
-            if (!show_consult) {
-                consult_btn.classList.add('hidden')
+            const show_actions = Boolean(this.parent.engine.get_settings().dash_enable_satin_dash_ui_show_actions_button)
+            if (!show_actions) {
+                actions_controller.btn_el.classList.add('hidden')
             }
 
-            // 2. Create Custom Toggle
             const toggle_input: HTMLInputElement = create_element('input', {
                 classes: 'custom-toggle-input',
                 attrs: { type: 'checkbox' }
@@ -105,14 +100,13 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
                 }),
             ])
 
-            // Append consult button first (left side), then toggle input group
-            wrapper.append(consult_btn, input_group)
+            wrapper.append(actions_controller.btn_el, input_group)
             ws.els.lpanel_head.append(wrapper)
 
             // button injected!
             ws.is_button_injected = true
             ws.els.toggle_btn_wrapper = wrapper
-            ws.els.consult_btn = consult_btn
+            ws.els.actions_controller = actions_controller
         }
     }
 
@@ -127,8 +121,7 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
             const tables = tableview_div.querySelectorAll<HTMLTableElement>('table.x-grid-item')
 
             tables.forEach((table) => {
-                const target_td = table.querySelector<HTMLTableCellElement>('td.x-grid-cell-templatecolumn-1352')
-                    || table.querySelectorAll<HTMLTableCellElement>('td')[1]
+                const target_td = table.querySelectorAll<HTMLTableCellElement>('td')[1]
 
                 if (!target_td) return
 
@@ -136,29 +129,26 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
                 if (existing_modern_ui) return
 
                 const text_content = table.innerText || table.textContent || ''
-
                 const id_match = text_content.match(/(\d+)\s*Masuk/i)
-
                 const clean_table_id = id_match ? id_match[1] : text_content.replace(/\D/g, '')
 
                 target_td.style.position = 'relative'
 
                 const modern_ui = document.createElement('div')
                 modern_ui.className = 'my-modern-ui-container'
-
                 modern_ui.dataset.tableId = clean_table_id
 
                 const scale_rect = () => {
-                    const rect = target_td.getBoundingClientRect()
+                    // const rect = target_td.getBoundingClientRect()
                     Object.assign(modern_ui.style, {
                         position: 'absolute',
                         top: '0px',
                         left: '0px',
-                        width: '100%',     // Use percentage instead of fixed px to adapt dynamically
-                        height: '100%',    // Match full TD cell height
+                        width: '100%',
+                        height: '100%',
                         zIndex: '10',
                         boxSizing: 'border-box',
-                        overflow: 'hidden' // Prevent container overflow
+                        overflow: 'hidden'
                     })
                 }
                 scale_rect()
@@ -174,7 +164,6 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
 
                 if (visit) {
                     const card = build_patient_card(this.parent.engine, visit)
-                    // Force strict 100% bounds on the generated card element directly
                     card.style.height = '100%'
                     card.style.width = '100%'
                     card.style.boxSizing = 'border-box'
@@ -182,13 +171,6 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
                     modern_ui.append(card)
                 }
 
-                // modern_ui.innerHTML = `
-                //     <div class="modern-card">
-                //         <span class="table-id-label">${clean_table_id}</span>
-                //     </div>
-                //     `
-
-                // Hide original ExtJS inner cell wrapper
                 const old_inner = target_td.querySelector<HTMLElement>('.x-grid-cell-inner')
                 if (old_inner) {
                     old_inner.style.opacity = '0'
@@ -214,6 +196,20 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
         // is showed and want to be hidden?
         else if (!is_showed) {
             ws.els.toggle_btn_wrapper?.classList.add('hidden')
+        }
+    }
+
+    actions_btn(ws: SatinDashUIWorkspace, is_showed: boolean) {
+        const is_btn_hidden = ws.els.actions_controller?.btn_el.classList.contains('hidden') ? true : false
+        if (is_btn_hidden) {
+            // already hidden and want to be showed?
+            if (is_showed) {
+                ws.els.actions_controller?.btn_el.classList.remove('hidden')
+            }
+        }
+        // is showed and want to be hidden?
+        else if (!is_showed) {
+            ws.els.actions_controller?.btn_el.classList.add('hidden')
         }
     }
 
