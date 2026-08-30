@@ -245,11 +245,13 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
     }
 
     // Initialize Controllers with dynamic badge update callbacks
-    const hasilController = new ResultsTabController(visit.patient.mrn, engine.api, (total: number) => {
-        if (tab_badges['hasil']) {
-            tab_badges['hasil'].innerText = `${total}`
-        }
-    })
+    const hasilController = new ResultsTabController(
+        visit.patient.mrn, visit.id, visit.registration.id,
+        engine.api, (total: number) => {
+            if (tab_badges['hasil']) {
+                tab_badges['hasil'].innerText = `${total}`
+            }
+        })
 
     const recipeController = new RecipesTabController(visit.id, engine.api, (count: number) => {
         if (tab_badges['recipes']) {

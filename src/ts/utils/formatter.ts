@@ -109,3 +109,50 @@ export const format_pt_age = (birth_str: string, target_str?: string): string =>
     }
     return `${years}th, ${months}bl, ${days}hr`
 }
+
+export const get_fuzzy_time_yll = (date_str: string): { text: string; is_fresh: boolean } => {
+    if (!date_str) return { text: '', is_fresh: false }
+
+    const target_date = new Date(date_str)
+    const now = new Date()
+    const diff_ms = now.getTime() - target_date.getTime()
+
+    // Fallback if date is invalid or in the future
+    if (isNaN(target_date.getTime()) || diff_ms < 0) {
+        return { text: '', is_fresh: false }
+    }
+
+    const diff_sec = Math.floor(diff_ms / 1000)
+    const diff_min = Math.floor(diff_sec / 60)
+    const diff_hrs = Math.floor(diff_min / 60)
+    const diff_days = Math.floor(diff_hrs / 24)
+
+    // Check if entry is less than 24 hours old
+    const is_fresh = diff_hrs < 24
+
+    // Calculate largest unit above 0
+    if (diff_days >= 365) {
+        const years = Math.floor(diff_days / 365)
+        return { text: `${years} tahun yll`, is_fresh }
+    }
+
+    if (diff_days >= 30) {
+        const months = Math.floor(diff_days / 30)
+        return { text: `${months} bulan yll`, is_fresh }
+    }
+
+    if (diff_days >= 1) {
+        return { text: `${diff_days} hari yll`, is_fresh }
+    }
+
+    if (diff_hrs >= 1) {
+        return { text: `${diff_hrs} jam yll`, is_fresh }
+    }
+
+    if (diff_min >= 1) {
+        return { text: `${diff_min} menit yll`, is_fresh }
+    }
+
+    const sec = Math.max(1, diff_sec)
+    return { text: `${sec} detik yll`, is_fresh }
+}

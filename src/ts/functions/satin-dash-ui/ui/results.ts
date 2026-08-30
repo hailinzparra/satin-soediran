@@ -1,17 +1,40 @@
 import { SatinApiContext } from '../../../api/context'
 import { RequestPayloadBuilder } from '../../../utils/api'
 import { create_element } from '../../../utils/dom'
+import { get_fuzzy_time_yll } from '../../../utils/formatter'
 import { Log } from '../../../utils/logger'
 import { format_date_variants } from '../ui'
 
 const c = create_element
 
-export interface RadioResultItem {
-    id?: string
-    findings: string
-    impression: string
+// ================= INTERFACES =================
+
+export interface PxUmumItem {
+    id: string
     date: string
-    order_name: string
+    ku: string       // Keadaan Umum
+    loc: string      // Tingkat Kesadaran
+    gcs: {
+        eye: string
+        verbal: string
+        motor: string
+    }
+    vital_sign: {
+        bp: {
+            sys: string
+            dia: string
+        }
+        pr: string   // Frekuensi Nadi
+        rr: string   // Frekuensi Nafas
+        temp: string // Suhu
+        spo2: string // Saturasi O2
+    }
+}
+
+export interface PxFisikItem {
+    id: string
+    date: string
+    desc: string     // HTML description string
 }
 
 export interface LabOrderItem {
@@ -32,6 +55,32 @@ export interface LabDetailItem {
     normal_value: string
 }
 
+export interface RadioResultItem {
+    id?: string
+    findings: string
+    impression: string
+    date: string
+    order_name: string
+}
+
+// ================= HELPER FUNCTIONS =================
+
+function format_num_val(val: any): string {
+    if (val === null || val === undefined || val === '') return ''
+    const num = Number(val)
+    return isNaN(num) ? String(val) : String(num)
+}
+
+// Converts "36.50" -> "36.5", "37.75" -> "37.75", "36.00" -> "36"
+function format_temp_val(val: any): string {
+    if (val === null || val === undefined || val === '') return ''
+    const num = Number(val)
+    if (isNaN(num)) return String(val)
+    return String(Number(num.toFixed(2))) // Drops unnecessary trailing zeros automatically
+}
+
+// ================= CONTROLLER CLASS =================
+
 export class ResultsTabController {
     public pane_el: HTMLElement
     private is_loaded = false
@@ -41,11 +90,13 @@ export class ResultsTabController {
     private lab_count = 0
     private radio_count = 0
 
-    private radio_data: RadioResultItem[] = []
+    private px_umum_list: PxUmumItem[] = []
+    private px_fisik_list: PxFisikItem[] = []
     private lab_orders: LabOrderItem[] = []
-    private expanded_card_id: string | null = null
+    private radio_data: RadioResultItem[] = []
 
-    private active_sub_tab = 'radio' // Default tab
+    private expanded_card_id: string | null = null
+    private active_sub_tab = 'radio' // Default active sub-tab
 
     private el: {
         total_title: HTMLElement | null
@@ -63,6 +114,8 @@ export class ResultsTabController {
 
     constructor(
         private mrn: string,
+        private visit_id: string,
+        private registration_id: string,
         private api_client: SatinApiContext,
         private on_total_loaded?: (total: number) => void
     ) {
@@ -71,7 +124,7 @@ export class ResultsTabController {
     }
 
     private build_base_ui() {
-        // 1. Header
+        // 1. Header (No horizontal break, no button icon)
         this.el.total_title = c('span', { classes: 'pane-subheading text-sky', text: '0 Hasil' })
 
         this.el.refresh_btn = c('button', { classes: 'btn-refresh-pane' }, [
@@ -87,7 +140,7 @@ export class ResultsTabController {
             this.el.refresh_btn
         ])
 
-        // 2. Equal 33% Sub Tab Navigation Buttons
+        // 2. Equal 33% Sub Tab Navigation (Px, Lab, Radio)
         const sub_tab_configs = [
             { key: 'px', label: 'Px' },
             { key: 'lab', label: 'Lab' },
@@ -183,14 +236,274 @@ export class ResultsTabController {
         this.on_total_loaded?.(total)
     }
 
+    // ================= 1. PX METHODS (UMUM & FISIK) =================
+
     private async fetch_px_data() {
-        this.px_count = 0
         const pane = this.el.sub_panes.px
         pane.innerHTML = ''
-        pane.append(c('div', { classes: 'details-state', text: 'Tidak ada data pemeriksaan (Px).' }))
+
+        if (!this.visit_id) {
+            this.px_count = 0
+            pane.append(c('div', { classes: 'details-state', text: 'Visit ID tidak ditemukan.' }))
+            return
+        }
+
+        try {
+            await Promise.all([
+                this.fetch_px_umum(),
+                this.fetch_px_fisik()
+            ])
+
+            this.px_count = this.px_umum_list.length + this.px_fisik_list.length
+            this.render_px_list()
+        } catch (err) {
+            Log.error('Failed to load Px data:', err)
+            this.px_count = 0
+            pane.append(c('div', { classes: 'details-state', text: 'Gagal memuat data pemeriksaan.' }))
+        }
     }
 
-    // ================= LAB METHODS =================
+    private async fetch_px_umum() {
+        try {
+            const result = await this.api_client.api_request<any[]>({
+                base_path: 'medicalrecord/pemeriksaan/umum/tandavital',
+                payload: new RequestPayloadBuilder({
+                    KUNJUNGAN: this.visit_id,
+                    page: 1,
+                    start: 0,
+                    limit: 25,
+                }),
+            })
+
+            if (!result || !result.data || result.data.length === 0) {
+                this.px_umum_list = []
+                return
+            }
+
+            this.px_umum_list = result.data.map((raw: any) => ({
+                id: String(raw.ID || ''),
+                date: raw.TANGGAL || '',
+                ku: raw.KEADAAN_UMUM || '',
+                loc: raw.REFERENSI?.TINGKAT_KESADARAN?.DESKRIPSI || '',
+                gcs: {
+                    eye: format_num_val(raw.EYE),
+                    verbal: format_num_val(raw.VERBAL),
+                    motor: format_num_val(raw.MOTORIK),
+                },
+                vital_sign: {
+                    bp: {
+                        sys: format_num_val(raw.SISTOLIK),
+                        dia: format_num_val(raw.DISTOLIK),
+                    },
+                    pr: format_num_val(raw.FREKUENSI_NADI),
+                    rr: format_num_val(raw.FREKUENSI_NAFAS),
+                    temp: format_temp_val(raw.SUHU),
+                    spo2: format_num_val(raw.SATURASI_O2),
+                },
+            }))
+
+            this.px_umum_list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        } catch (err) {
+            Log.error('Failed to fetch Px Umum:', err)
+            this.px_umum_list = []
+        }
+    }
+
+    private async fetch_px_fisik() {
+        if (!this.registration_id) {
+            this.px_fisik_list = []
+            return
+        }
+
+        try {
+            const result = await this.api_client.api_request<any[]>({
+                base_path: 'medicalrecord/pemeriksaan/fisik',
+                payload: new RequestPayloadBuilder({
+                    KUNJUNGAN: this.visit_id,
+                    PENDAFTARAN: this.registration_id,
+                    page: 1,
+                    start: 0,
+                    limit: 25,
+                }),
+            })
+
+            if (!result || !result.data || result.data.length === 0) {
+                this.px_fisik_list = []
+                return
+            }
+
+            this.px_fisik_list = result.data.map((raw: any) => ({
+                id: String(raw.ID || ''),
+                date: raw.TANGGAL || '',
+                desc: raw.DESKRIPSI || '',
+            }))
+
+            this.px_fisik_list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        } catch (err) {
+            Log.error('Failed to fetch Px Fisik:', err)
+            this.px_fisik_list = []
+        }
+    }
+
+    private render_px_list() {
+        const pane = this.el.sub_panes.px
+        pane.innerHTML = ''
+
+        const list_container = c('div', { classes: 'recipe-list' })
+
+        // Card 1: Umum
+        list_container.append(this.render_px_umum_card('px-umum-card'))
+
+        // Card 2: Fisik
+        list_container.append(this.render_px_fisik_card('px-fisik-card'))
+
+        pane.append(list_container)
+    }
+
+    private render_px_umum_card(card_id: string): HTMLElement {
+        const is_expanded = this.expanded_card_id === card_id
+        const count_label = `${this.px_umum_list.length} Hasil Px Umum`
+
+        const header_el = c('div', { classes: 'recipe-card-header' }, [
+            c('div', { classes: 'recipe-title' }, [
+                c('span', { text: 'Umum' }),
+                c('span', { classes: 'text-xs text-slate-400', text: is_expanded ? '▲' : '▼' })
+            ]),
+            c('div', { classes: 'recipe-grid' }, [
+                c('div', {}, [c('span', { text: count_label })]),
+            ])
+        ])
+
+        header_el.addEventListener('click', () => {
+            this.expanded_card_id = this.expanded_card_id === card_id ? null : card_id
+            this.render_px_list()
+        })
+
+        const children: HTMLElement[] = [header_el]
+
+        if (is_expanded) {
+            let details_content: HTMLElement
+
+            if (this.px_umum_list.length === 0) {
+                details_content = c('div', { classes: 'details-state', text: 'Tidak ada data pemeriksaan umum.' })
+            } else {
+                const rows = this.px_umum_list.map((item) => {
+                    const date_text = item.date ? format_date_variants(item.date).longtime : '--'
+                    const formatted_text = this.format_px_umum_cell(item)
+                    const copy_btn = this.create_copy_button(formatted_text)
+
+                    return c('tr', {}, [
+                        c('td', { classes: 'col-date', text: date_text }),
+                        c('td', { classes: 'col-content', text: formatted_text }),
+                        c('td', { classes: 'col-action' }, [copy_btn])
+                    ])
+                })
+
+                details_content = c('table', { classes: 'details-table px-table' }, [
+                    c('thead', {}, [
+                        c('tr', {}, [
+                            c('th', { classes: 'col-date', text: 'Tanggal' }),
+                            c('th', { classes: 'col-content', text: 'Px Umum' }),
+                            c('th', { classes: 'col-action', text: 'Aksi' })
+                        ])
+                    ]),
+                    c('tbody', {}, rows)
+                ])
+            }
+
+            children.push(c('div', { classes: 'recipe-card-details' }, [details_content]))
+        }
+
+        return c('div', { classes: 'recipe-card' }, children)
+    }
+
+    private format_px_umum_cell(item: PxUmumItem): string {
+        const lines: string[] = []
+
+        if (item.ku) lines.push(`KU ${item.ku}`)
+        if (item.loc) lines.push(`Kesadaran ${item.loc}`)
+
+        const { eye, verbal, motor } = item.gcs
+        if (eye || verbal || motor) {
+            lines.push(`GCS E${eye}V${verbal}M${motor}`)
+        }
+
+        const { sys, dia } = item.vital_sign.bp
+        if (sys || dia) {
+            lines.push(`TD ${sys}/${dia} mmHg`)
+        }
+
+        if (item.vital_sign.pr) lines.push(`N ${item.vital_sign.pr} x/menit`)
+        if (item.vital_sign.temp) lines.push(`S ${item.vital_sign.temp} °C`)
+        if (item.vital_sign.rr) lines.push(`RR ${item.vital_sign.rr} x/menit`)
+        if (item.vital_sign.spo2) lines.push(`SpO2 ${item.vital_sign.spo2}%`)
+
+        return lines.join('\n')
+    }
+
+    private render_px_fisik_card(card_id: string): HTMLElement {
+        const is_expanded = this.expanded_card_id === card_id
+        const count_label = `${this.px_fisik_list.length} Hasil Px Fisik`
+
+        const header_el = c('div', { classes: 'recipe-card-header' }, [
+            c('div', { classes: 'recipe-title' }, [
+                c('span', { text: 'Fisik' }),
+                c('span', { classes: 'text-xs text-slate-400', text: is_expanded ? '▲' : '▼' })
+            ]),
+            c('div', { classes: 'recipe-grid' }, [
+                c('div', {}, [c('span', { text: count_label })]),
+            ])
+        ])
+
+        header_el.addEventListener('click', () => {
+            this.expanded_card_id = this.expanded_card_id === card_id ? null : card_id
+            this.render_px_list()
+        })
+
+        const children: HTMLElement[] = [header_el]
+
+        if (is_expanded) {
+            let details_content: HTMLElement
+
+            if (this.px_fisik_list.length === 0) {
+                details_content = c('div', { classes: 'details-state', text: 'Tidak ada data pemeriksaan fisik.' })
+            } else {
+                const rows = this.px_fisik_list.map((item) => {
+                    const date_text = item.date ? format_date_variants(item.date).longtime : '--'
+                    const desc_cell = c('td', { classes: 'col-content' })
+                    desc_cell.innerHTML = item.desc || '--'
+
+                    // Strip HTML tags for clean text copying
+                    const plain_text = this.strip_html(item.desc)
+                    const copy_btn = this.create_copy_button(plain_text)
+
+                    return c('tr', {}, [
+                        c('td', { classes: 'col-date', text: date_text }),
+                        desc_cell,
+                        c('td', { classes: 'col-action' }, [copy_btn])
+                    ])
+                })
+
+                details_content = c('table', { classes: 'details-table px-table' }, [
+                    c('thead', {}, [
+                        c('tr', {}, [
+                            c('th', { classes: 'col-date', text: 'Tanggal' }),
+                            c('th', { classes: 'col-content', text: 'Px Fisik' }),
+                            c('th', { classes: 'col-action', text: 'Aksi' })
+                        ])
+                    ]),
+                    c('tbody', {}, rows)
+                ])
+            }
+
+            children.push(c('div', { classes: 'recipe-card-details' }, [details_content]))
+        }
+
+        return c('div', { classes: 'recipe-card' }, children)
+    }
+
+    // ================= 2. LAB METHODS =================
+
     private async fetch_lab_data() {
         const pane = this.el.sub_panes.lab
         pane.innerHTML = ''
@@ -232,8 +545,19 @@ export class ResultsTabController {
                 results: []
             }))
 
-            // Sort orders descending by date (most recent on top)
-            this.lab_orders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            // Sort primary by Date (most recent on top), secondary by Procedure Name (alphabetical A-Z)
+            this.lab_orders.sort((a, b) => {
+                const time_a = new Date(a.date).getTime()
+                const time_b = new Date(b.date).getTime()
+
+                // Primary criterion: Date descending
+                if (time_b !== time_a) {
+                    return time_b - time_a
+                }
+
+                // Secondary criterion: Procedure name ascending (A-Z) for identical dates
+                return a.procedure_name.localeCompare(b.procedure_name)
+            })
             this.lab_count = this.lab_orders.length
 
             this.render_lab_list()
@@ -276,7 +600,6 @@ export class ResultsTabController {
                 normal_value: raw.NILAI_NORMAL || ''
             }))
 
-            // Split into filled and empty result lists
             const filled: LabDetailItem[] = []
             const empty: LabDetailItem[] = []
 
@@ -288,12 +611,10 @@ export class ResultsTabController {
                 }
             })
 
-            // Sort each array alphabetically by param_name
             const sort_alpha = (a: LabDetailItem, b: LabDetailItem) => a.param_name.localeCompare(b.param_name)
             filled.sort(sort_alpha)
             empty.sort(sort_alpha)
 
-            // Merge back: non-empty results on top, empty results at the bottom
             order.results = [...filled, ...empty]
             order.is_loaded = true
         } catch (err) {
@@ -320,12 +641,19 @@ export class ResultsTabController {
     private render_lab_card(order: LabOrderItem, card_id: string): HTMLElement {
         const is_expanded = this.expanded_card_id === card_id
         const date_text = order.date ? format_date_variants(order.date).longtime : '--'
+        const fuzzy = get_fuzzy_time_yll(order.date)
+
+        // Header Right Side (Fuzzy Time + Chevron)
+        const header_right = c('div', { classes: 'header-controls' }, [
+            fuzzy.text ? c('span', { classes: 'fuzzy-time-text', text: fuzzy.text }) : null,
+            c('span', { classes: 'chevron-icon', text: is_expanded ? '▲' : '▼' })
+        ].filter(Boolean) as HTMLElement[])
 
         // Card Header
         const header_el = c('div', { classes: 'recipe-card-header' }, [
-            c('div', { classes: 'recipe-title' }, [
+            c('div', { classes: 'recipe-title flex justify-between items-center' }, [
                 c('span', { text: order.procedure_name }),
-                c('span', { classes: 'text-xs text-slate-400', text: is_expanded ? '▲' : '▼' })
+                header_right
             ]),
             c('div', { classes: 'recipe-grid' }, [
                 c('div', {}, [c('strong', { text: 'Tanggal: ' }), c('span', { text: date_text })]),
@@ -345,7 +673,6 @@ export class ResultsTabController {
 
         const children: HTMLElement[] = [header_el]
 
-        // Expandable Detail Section
         if (is_expanded) {
             let details_content: HTMLElement
 
@@ -379,10 +706,12 @@ export class ResultsTabController {
             children.push(c('div', { classes: 'recipe-card-details' }, [details_content]))
         }
 
-        return c('div', { classes: 'recipe-card' }, children)
+        const card_classes = `recipe-card ${fuzzy.is_fresh ? 'is-fresh' : ''}`
+        return c('div', { classes: card_classes }, children)
     }
 
-    // ================= RADIOLOGY METHODS =================
+    // ================= 3. RADIOLOGY METHODS =================
+
     private async fetch_radio_data() {
         const pane = this.el.sub_panes.radio
         pane.innerHTML = ''
@@ -446,11 +775,18 @@ export class ResultsTabController {
     private render_radio_card(item: RadioResultItem, card_id: string): HTMLElement {
         const is_expanded = this.expanded_card_id === card_id
         const date_text = item.date ? format_date_variants(item.date).longtime : '--'
+        const fuzzy = get_fuzzy_time_yll(item.date)
+
+        // Header Right Side (Fuzzy Time + Chevron)
+        const header_right = c('div', { classes: 'header-controls' }, [
+            fuzzy.text ? c('span', { classes: 'fuzzy-time-text', text: fuzzy.text }) : null,
+            c('span', { classes: 'chevron-icon', text: is_expanded ? '▲' : '▼' })
+        ].filter(Boolean) as HTMLElement[])
 
         const header_el = c('div', { classes: 'recipe-card-header' }, [
-            c('div', { classes: 'recipe-title' }, [
+            c('div', { classes: 'recipe-title flex justify-between items-center' }, [
                 c('span', { text: item.order_name }),
-                c('span', { classes: 'text-xs text-slate-400', text: is_expanded ? '▲' : '▼' })
+                header_right
             ]),
             c('div', { classes: 'recipe-grid' }, [
                 c('div', {}, [c('strong', { text: 'Tanggal: ' }), c('span', { text: date_text })]),
@@ -483,7 +819,8 @@ export class ResultsTabController {
             children.push(c('div', { classes: 'recipe-card-details' }, [table_el]))
         }
 
-        return c('div', { classes: 'recipe-card' }, children)
+        const card_classes = `recipe-card ${fuzzy.is_fresh ? 'is-fresh' : ''}`
+        return c('div', { classes: card_classes }, children)
     }
 
     private clean_text(str: string): string {
@@ -493,5 +830,48 @@ export class ResultsTabController {
             .replace(/\n\s*\n+/g, '\n')
             .replace(/[ \t]+/g, ' ')
             .trim()
+    }
+
+    // Helper method inside ResultsTabController class
+    private create_copy_button(text_to_copy: string): HTMLElement {
+        let copy_timeout: number | null = null
+
+        const copy_btn = c('button', {
+            classes: 'btn-copy-action',
+            text: 'COPY'
+        })
+
+        copy_btn.addEventListener('click', async (e) => {
+            e.stopPropagation()
+
+            try {
+                await navigator.clipboard.writeText(text_to_copy)
+
+                // Reset existing timer if clicked repeatedly before 2 seconds expire
+                if (copy_timeout !== null) {
+                    clearTimeout(copy_timeout)
+                }
+
+                copy_btn.innerText = 'COPIED!'
+                copy_btn.classList.add('copied')
+
+                copy_timeout = window.setTimeout(() => {
+                    copy_btn.innerText = 'COPY'
+                    copy_btn.classList.remove('copied')
+                    copy_timeout = null
+                }, 2000)
+            } catch (err) {
+                Log.error('Failed to copy text:', err)
+            }
+        })
+
+        return copy_btn
+    }
+
+    // Utility method to strip HTML tags for Px Fisik copy buffer
+    private strip_html(html_str: string): string {
+        const tmp = document.createElement('div')
+        tmp.innerHTML = html_str
+        return tmp.textContent || tmp.innerText || ''
     }
 }
