@@ -61,6 +61,25 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
             ws.els.lpanel_head.style.position = 'relative'
 
             const wrapper = create_element('div', { classes: 'custom-toggle-wrapper' })
+
+            // 1. Create Consult Button
+            const consult_btn: HTMLButtonElement = create_element('button', {
+                classes: 'btn-consult',
+                text: 'Konsul',
+            })
+
+            consult_btn.addEventListener('click', (e: Event) => {
+                e.stopPropagation()
+                alert('opened')
+            })
+
+            // Check settings visibility condition
+            const show_consult = Boolean(this.parent.engine.get_settings().dash_enable_satin_dash_ui_show_consult_button)
+            if (!show_consult) {
+                consult_btn.classList.add('hidden')
+            }
+
+            // 2. Create Custom Toggle
             const toggle_input: HTMLInputElement = create_element('input', {
                 classes: 'custom-toggle-input',
                 attrs: { type: 'checkbox' }
@@ -86,12 +105,14 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
                 }),
             ])
 
-            wrapper.append(input_group)
+            // Append consult button first (left side), then toggle input group
+            wrapper.append(consult_btn, input_group)
             ws.els.lpanel_head.append(wrapper)
 
             // button injected!
             ws.is_button_injected = true
             ws.els.toggle_btn_wrapper = wrapper
+            ws.els.consult_btn = consult_btn
         }
     }
 

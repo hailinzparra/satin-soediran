@@ -113,6 +113,7 @@ export interface SatinDashUIWorkspace {
         lpanel_head: HTMLDivElement | null
         lpanel_body: HTMLDivElement | null
         toggle_btn_wrapper: HTMLDivElement | null
+        consult_btn: HTMLButtonElement | null
     }
     visit_ids: string[]
     is_mode_enabled: boolean

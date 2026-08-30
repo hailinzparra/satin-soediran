@@ -93,6 +93,12 @@ export class PopupSettingsContent extends PopupContent {
                 sub: 'Langsung menggunakan mode Satin Dash UI setiap kali panel dibuka.',
                 ind: 1,
             },
+            {
+                key: 'dash_enable_satin_dash_ui_show_consult_button',
+                title: '<span class="text-slate-500">(Satin Dash UI)</span>: Menu "Konsul"',
+                sub: 'Munculkan tombol menu "Konsul" untuk membuat draft konsul dengan mudah.',
+                ind: 1,
+            },
             // {
             //     key: 'dash_show_openinnewtab_button',
             //     title: '<span class="text-slate-500">Tampilkan</span> (Tombol Tab Baru)',

@@ -1,8 +1,10 @@
 import { SatinApiContext } from '../../../api/context'
+import { SoediranDataOrderResep } from '../../../types/api/soediran/data'
 import { RequestPayloadBuilder } from '../../../utils/api'
 import { create_element } from '../../../utils/dom'
 import { format_medical_name } from '../../../utils/formatter'
 import { Log } from '../../../utils/logger'
+import { format_date_variants } from '../ui'
 
 // State interface for Recipe tab management
 interface RecipeOrder {
@@ -10,6 +12,8 @@ interface RecipeOrder {
     prescriber: string
     depo: string
     ward: string
+    date: string
+    status: string
 }
 
 interface RecipeDetail {
@@ -81,7 +85,7 @@ export class RecipesTabController {
         }
 
         try {
-            const result = await this.api_client.api_request<any>({
+            const result = await this.api_client.api_request<SoediranDataOrderResep[] | null>({
                 base_path: 'layanan/orderresep',
                 payload: new RequestPayloadBuilder({
                     KUNJUNGAN: this.visit_id,
@@ -102,12 +106,16 @@ export class RecipesTabController {
                 return
             }
 
-            this.orders = result.data.map((raw: any) => ({
+            this.orders = result.data.map(raw => ({
                 nomor: raw.NOMOR || '',
                 prescriber: raw.PEMBERI_RESEP || '-',
                 depo: raw.REFERENSI?.TUJUAN?.DESKRIPSI || '-',
-                ward: raw.REFERENSI?.KUNJUNGAN?.REFERENSI?.RUANGAN?.DESKRIPSI || '-'
+                ward: raw.REFERENSI?.KUNJUNGAN?.REFERENSI?.RUANGAN?.DESKRIPSI || '-',
+                date: raw.TANGGAL || '-',
+                status: raw.REFERENSI?.STATUS?.DESKRIPSI || '-',
             }))
+
+            this.orders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
             this.orders_with_amount.clear()
             this.orders_lowercase.clear()
@@ -351,19 +359,23 @@ export class RecipesTabController {
             toggle_lowercase_btn
         ])
 
+        const formatted_date = order.date ? format_date_variants(order.date).longtime : '--'
         const header_el = c('div', {
             classes: 'recipe-card-header',
         }, [
             c('div', { classes: 'recipe-title' }, [
-                c('span', { text: `No. Order: ${order.nomor}` }),
+                c('span', { text: `${formatted_date} (${order.status})` }),
                 c('span', { classes: 'text-xs text-slate-400', text: is_expanded ? '▲' : '▼' })
             ]),
             c('div', { /* classes: 'recipe-grid' */ }, [
-                c('div', {}, [c('strong', { text: 'Oleh: ' }), c('span', { text: format_medical_name(order.prescriber) })]),
-                c('div', {}, [c('strong', { text: 'Depo: ' }), c('span', { text: order.depo })]),
-                c('div', {}, [c('strong', { text: 'Ruangan: ' }), c('span', { text: order.ward })])
+                // c('div', {}, [c('strong', { text: 'Status: ' }), c('span', { text: order.status })]),
+                // c('div', {}, [c('strong', { text: 'Tanggal: ' }), c('span', { text: formatted_date })]),
+                // c('div', {}, [c('strong', { text: 'No. Order: ' }), c('span', { text: order.nomor })]),
+                c('div', {}, [c('strong', { text: 'Oleh (No. Order): ' }), c('span', { text: `${format_medical_name(order.prescriber)} (${order.nomor})` })]),
+                // c('div', {}, [c('strong', { text: 'Depo: ' }), c('span', { text: order.depo })]),
+                c('div', {}, [c('strong', { text: 'Depo (Ruangan): ' }), c('span', { text: `${order.depo} (${order.ward.replace('Bangsal ', '')})` })]),
             ]),
-            recipe_actions
+            recipe_actions,
         ])
 
         header_el.addEventListener('click', () => this.toggle_expand(order.nomor))

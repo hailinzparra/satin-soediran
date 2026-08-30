@@ -36,6 +36,7 @@ export class SatinDashUIExtractor extends SatinBaseFunctionExtractor<SatinDashUI
                     lpanel_head,
                     lpanel_body,
                     toggle_btn_wrapper: null,
+                    consult_btn: null,
                 },
                 visit_ids: [],
                 is_mode_enabled: this.parent.engine.get_settings().dash_enable_satin_dash_ui_on_by_default,

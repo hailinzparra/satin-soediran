@@ -3,6 +3,7 @@ export interface SatinSettingsData {
 
     dash_enable_satin_dash_ui: boolean
     dash_enable_satin_dash_ui_on_by_default: boolean
+    dash_enable_satin_dash_ui_show_consult_button: boolean
     dash_show_openinnewtab_button: boolean
 
     emr_enable_manager: boolean

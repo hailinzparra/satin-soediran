@@ -1,6 +1,7 @@
 import { SatinEngine } from '../../engine/base'
 import { SatinDashUIVisit } from '../../types/functions/satin-dash-ui'
 import { create_element } from '../../utils/dom'
+import { ResultsTabController } from './ui/results'
 import { RecipesTabController } from './ui/recipes'
 
 const c = create_element
@@ -110,28 +111,21 @@ const get_patient_initials = (name: string): string => {
 /**
  * Calculates appropriate honorific prefix based on age, marital status, and gender.
  */
-const get_patient_prefix = (
-    age_obj: { y: number; m: number; d: number } | null,
+export const get_patient_prefix = (
+    age_y: number,
     gender_id: string,
     marriage_status: string
 ): string => {
     const is_female = gender_id === '2'
-
-    // Age < 1 year
-    if (age_obj && age_obj.y === 0) {
-        return 'By.'
-    }
-
-    // Age 1 - 17 years
-    if (age_obj && age_obj.y < 18) {
-        return 'An.'
-    }
+    if (age_y === 0) return 'By.'
+    if (age_y < 18) return 'An.'
 
     // Age >= 18 years
     const status_clean = (marriage_status || '').trim().toLowerCase()
     const is_unmarried = status_clean === 'belum kawin'
 
-    if (is_unmarried) {
+    // Age <= 28 years and unmarried
+    if (is_unmarried && age_y <= 28) {
         return is_female ? 'Nn.' : 'Sdr.'
     }
 
@@ -153,9 +147,9 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
 
     // Patient Prefix logic
     const prefix = get_patient_prefix(
-        age_obj,
+        age_obj?.y ?? 100,
         visit.patient.demographic.gender_id,
-        visit.patient.demographic.marriage_status
+        visit.patient.demographic.marriage_status,
     )
     const formatted_patient_name = `${prefix} ${visit.patient.name}`
 
@@ -203,14 +197,16 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
     // State for Tab Management
     let active_tab = 'overview'
 
-    const update_tab_visibility = (targetTab: string, tab_buttons: Record<string, HTMLElement>, tab_panes: Record<string, HTMLElement>) => {
+    const update_tab_visibility = (target_tab: string, tab_buttons: Record<string, HTMLElement>, tab_panes: Record<string, HTMLElement>) => {
         Object.keys(tab_panes).forEach((key) => {
-            if (key === targetTab) {
+            if (key === target_tab) {
                 tab_panes[key].classList.remove('hidden')
                 if (tab_buttons[key]) tab_buttons[key].classList.add('active')
 
-                // Trigger fetch only when active
-                if (key === 'recipes') {
+                // Trigger tab controller activation on tab click
+                if (key === 'hasil') {
+                    hasilController.activate()
+                } else if (key === 'recipes') {
                     recipeController.activate()
                 }
             } else {
@@ -220,15 +216,15 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
         })
     }
 
-    // 2. Vertical Navigation Bar
+    // 2. Vertical Navigation Bar setup
     const tab_buttons: Record<string, HTMLElement> = {}
     const tab_badges: Record<string, HTMLElement> = {}
 
-    const create_tab_btn = (key: string, label: string, initialBadge?: string, badgeClass?: string) => {
+    const create_tab_btn = (key: string, label: string, initial_badge?: string, badge_class?: string) => {
         const children: Element[] = [c('span', { text: label })]
 
-        if (initialBadge !== undefined) {
-            const badge_el = c('span', { classes: `tab-badge ${badgeClass ?? ''}`, text: initialBadge })
+        if (initial_badge !== undefined) {
+            const badge_el = c('span', { classes: `tab-badge ${badge_class ?? ''}`, text: initial_badge })
             tab_badges[key] = badge_el
             children.push(badge_el)
         } else {
@@ -248,17 +244,25 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
         return btn
     }
 
-    // Initialize Recipe Controller with a callback to update tab badge count dynamically
+    // Initialize Controllers with dynamic badge update callbacks
+    const hasilController = new ResultsTabController(visit.patient.mrn, engine.api, (total: number) => {
+        if (tab_badges['hasil']) {
+            tab_badges['hasil'].innerText = `${total}`
+        }
+    })
+
     const recipeController = new RecipesTabController(visit.id, engine.api, (count: number) => {
         if (tab_badges['recipes']) {
             tab_badges['recipes'].innerText = `${count}`
         }
     })
 
+    // Nav Bar: "Hasil" is placed directly above "Resep" with a distinct badge color (e.g. badge-blue or badge-amber)
     const navigation_sidebar = c('div', { classes: 'patient-card__nav' }, [
         create_tab_btn('overview', 'Ringkasan'),
         create_tab_btn('details', 'Detail Pasien'),
-        create_tab_btn('recipes', 'Resep', '*', 'badge-emerald'),
+        create_tab_btn('hasil', 'Hasil', '*', 'badge-sky'),      // Dynamic badge for Hasil
+        create_tab_btn('recipes', 'Resep', '*', 'badge-emerald'), // Dynamic badge for Resep
     ])
 
     // 3. Tab Display Pane (Content)
@@ -314,16 +318,17 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
             ])
         ]),
 
+        hasil: hasilController.pane_el,
         recipes: recipeController.pane_el,
     }
 
     const content_pane = c('div', { classes: 'patient-card__content' }, [
         tab_panes.overview,
         tab_panes.details,
+        tab_panes.hasil,
         tab_panes.recipes,
     ])
 
-    // Container Assembly
     return c('div', { classes: 'patient-card' }, [
         patient_details_sidebar,
         navigation_sidebar,
