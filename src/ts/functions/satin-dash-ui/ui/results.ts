@@ -14,6 +14,24 @@ export interface RadioResultItem {
     order_name: string
 }
 
+export interface LabOrderItem {
+    id: string
+    date: string
+    procedure_name: string
+    is_loaded?: boolean
+    is_loading?: boolean
+    error?: string | null
+    results?: LabDetailItem[]
+}
+
+export interface LabDetailItem {
+    id: string
+    param_name: string
+    result: string
+    unit: string
+    normal_value: string
+}
+
 export class ResultsTabController {
     public pane_el: HTMLElement
     private is_loaded = false
@@ -24,9 +42,10 @@ export class ResultsTabController {
     private radio_count = 0
 
     private radio_data: RadioResultItem[] = []
+    private lab_orders: LabOrderItem[] = []
     private expanded_card_id: string | null = null
 
-    private active_sub_tab = 'radio' // Default to radio
+    private active_sub_tab = 'radio' // Default tab
 
     private el: {
         total_title: HTMLElement | null
@@ -52,7 +71,7 @@ export class ResultsTabController {
     }
 
     private build_base_ui() {
-        // 1. Header (No horizontal break, no button icon)
+        // 1. Header
         this.el.total_title = c('span', { classes: 'pane-subheading text-sky', text: '0 Hasil' })
 
         this.el.refresh_btn = c('button', { classes: 'btn-refresh-pane' }, [
@@ -68,7 +87,7 @@ export class ResultsTabController {
             this.el.refresh_btn
         ])
 
-        // 2. Sub Tabs Nav (Px, Lab, Radio spanning equally 33% each)
+        // 2. Equal 33% Sub Tab Navigation Buttons
         const sub_tab_configs = [
             { key: 'px', label: 'Px' },
             { key: 'lab', label: 'Lab' },
@@ -171,13 +190,199 @@ export class ResultsTabController {
         pane.append(c('div', { classes: 'details-state', text: 'Tidak ada data pemeriksaan (Px).' }))
     }
 
+    // ================= LAB METHODS =================
     private async fetch_lab_data() {
-        this.lab_count = 0
         const pane = this.el.sub_panes.lab
         pane.innerHTML = ''
-        pane.append(c('div', { classes: 'details-state', text: 'Tidak ada data laboratorium.' }))
+
+        if (!this.mrn) {
+            this.lab_count = 0
+            pane.append(c('div', { classes: 'details-state', text: 'MRN pasien tidak ditemukan.' }))
+            return
+        }
+
+        try {
+            const result = await this.api_client.api_request<any[]>({
+                base_path: 'layanan/tindakanmedis',
+                payload: new RequestPayloadBuilder({
+                    NORM: this.mrn,
+                    JENIS_TINDAKAN: 8,
+                    STATUS: 1,
+                    REFERENSI: JSON.stringify({ Kunjungan: false }),
+                    page: 1,
+                    start: 0,
+                    limit: 100,
+                }),
+            })
+
+            if (!result || !result.data || result.total === 0 || result.data.length === 0) {
+                this.lab_orders = []
+                this.lab_count = 0
+                pane.append(c('div', { classes: 'details-state', text: 'Tidak ada data laboratorium.' }))
+                return
+            }
+
+            this.lab_orders = result.data.map((raw: any) => ({
+                id: String(raw.ID || ''),
+                date: raw.TANGGAL || '',
+                procedure_name: raw.TINDAKAN_DESKRIPSI || 'Pemeriksaan Laboratorium',
+                is_loaded: false,
+                is_loading: false,
+                error: null,
+                results: []
+            }))
+
+            // Sort orders descending by date (most recent on top)
+            this.lab_orders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            this.lab_count = this.lab_orders.length
+
+            this.render_lab_list()
+        } catch (err) {
+            Log.error('Failed to load lab orders:', err)
+            this.lab_count = 0
+            pane.append(c('div', { classes: 'details-state', text: 'Gagal memuat data laboratorium.' }))
+        }
     }
 
+    private async fetch_lab_detail(order: LabOrderItem) {
+        order.is_loading = true
+        order.error = null
+        this.render_lab_list()
+
+        try {
+            const result = await this.api_client.api_request<any[]>({
+                base_path: 'layanan/hasillab',
+                payload: new RequestPayloadBuilder({
+                    NORM: this.mrn,
+                    STATUS: 1,
+                    TINDAKAN_MEDIS: order.id,
+                    REFERENSI: JSON.stringify({
+                        Kunjungan: {
+                            COLUMNS: ['REF'],
+                            REFERENSI: false
+                        }
+                    }),
+                    page: 1,
+                    start: 0,
+                    limit: 25,
+                }),
+            })
+
+            const raw_details: LabDetailItem[] = (result?.data || []).map((raw: any) => ({
+                id: String(raw.ID || ''),
+                param_name: raw.REFERENSI?.PARAMETER_TINDAKAN?.PARAMETER || '',
+                result: raw.HASIL !== null && raw.HASIL !== undefined ? String(raw.HASIL).trim() : '',
+                unit: raw.SATUAN || '',
+                normal_value: raw.NILAI_NORMAL || ''
+            }))
+
+            // Split into filled and empty result lists
+            const filled: LabDetailItem[] = []
+            const empty: LabDetailItem[] = []
+
+            raw_details.forEach(item => {
+                if (item.result !== '') {
+                    filled.push(item)
+                } else {
+                    empty.push(item)
+                }
+            })
+
+            // Sort each array alphabetically by param_name
+            const sort_alpha = (a: LabDetailItem, b: LabDetailItem) => a.param_name.localeCompare(b.param_name)
+            filled.sort(sort_alpha)
+            empty.sort(sort_alpha)
+
+            // Merge back: non-empty results on top, empty results at the bottom
+            order.results = [...filled, ...empty]
+            order.is_loaded = true
+        } catch (err) {
+            Log.error(`Failed to load lab detail for action ${order.id}:`, err)
+            order.error = 'Gagal memuat rincian hasil laboratorium.'
+        } finally {
+            order.is_loading = false
+            this.render_lab_list()
+        }
+    }
+
+    private render_lab_list() {
+        const pane = this.el.sub_panes.lab
+        pane.innerHTML = ''
+
+        const list_container = c('div', { classes: 'recipe-list' })
+        this.lab_orders.forEach((order) => {
+            const card_id = `lab-${order.id}`
+            list_container.append(this.render_lab_card(order, card_id))
+        })
+        pane.append(list_container)
+    }
+
+    private render_lab_card(order: LabOrderItem, card_id: string): HTMLElement {
+        const is_expanded = this.expanded_card_id === card_id
+        const date_text = order.date ? format_date_variants(order.date).longtime : '--'
+
+        // Card Header
+        const header_el = c('div', { classes: 'recipe-card-header' }, [
+            c('div', { classes: 'recipe-title' }, [
+                c('span', { text: order.procedure_name }),
+                c('span', { classes: 'text-xs text-slate-400', text: is_expanded ? '▲' : '▼' })
+            ]),
+            c('div', { classes: 'recipe-grid' }, [
+                c('div', {}, [c('strong', { text: 'Tanggal: ' }), c('span', { text: date_text })]),
+            ])
+        ])
+
+        header_el.addEventListener('click', () => {
+            const is_opening = this.expanded_card_id !== card_id
+            this.expanded_card_id = is_opening ? card_id : null
+
+            if (is_opening && !order.is_loaded && !order.is_loading) {
+                this.fetch_lab_detail(order)
+            } else {
+                this.render_lab_list()
+            }
+        })
+
+        const children: HTMLElement[] = [header_el]
+
+        // Expandable Detail Section
+        if (is_expanded) {
+            let details_content: HTMLElement
+
+            if (order.is_loading) {
+                details_content = c('div', { classes: 'details-state', text: 'Memuat detail hasil...' })
+            } else if (order.error) {
+                details_content = c('div', { classes: 'details-state text-red-500', text: order.error })
+            } else if (!order.results || order.results.length === 0) {
+                details_content = c('div', { classes: 'details-state', text: 'Belum ada hasil lab yang diinput.' })
+            } else {
+                const rows = order.results.map(res => c('tr', {}, [
+                    c('td', { classes: 'drug-name', text: res.param_name }),
+                    c('td', { text: res.result }),
+                    c('td', { text: res.unit }),
+                    c('td', { text: res.normal_value })
+                ]))
+
+                details_content = c('table', { classes: 'details-table' }, [
+                    c('thead', {}, [
+                        c('tr', {}, [
+                            c('th', { text: 'Parameter' }),
+                            c('th', { text: 'Hasil' }),
+                            c('th', { text: 'Satuan' }),
+                            c('th', { text: 'Nilai Normal' })
+                        ])
+                    ]),
+                    c('tbody', {}, rows)
+                ])
+            }
+
+            children.push(c('div', { classes: 'recipe-card-details' }, [details_content]))
+        }
+
+        return c('div', { classes: 'recipe-card' }, children)
+    }
+
+    // ================= RADIOLOGY METHODS =================
     private async fetch_radio_data() {
         const pane = this.el.sub_panes.radio
         pane.innerHTML = ''
@@ -208,14 +413,13 @@ export class ResultsTabController {
             }
 
             this.radio_data = result.data.map((raw: any) => ({
-                id: raw.ID,
-                findings: this.clean_text(raw.HASIL || '-'),
-                impression: this.clean_text(raw.KESAN || '-'),
+                id: String(raw.ID || ''),
+                findings: this.clean_text(raw.HASIL || ''),
+                impression: this.clean_text(raw.KESAN || ''),
                 date: raw.TANGGAL || '',
                 order_name: raw.REFERENSI?.TINDAKAN_MEDIS?.TINDAKAN_DESKRIPSI || 'Prosedur Radiologi',
             }))
 
-            // Sort by most recent date on top
             this.radio_data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
             this.radio_count = this.radio_data.length
 
@@ -233,7 +437,7 @@ export class ResultsTabController {
 
         const list_container = c('div', { classes: 'recipe-list' })
         this.radio_data.forEach((item, index) => {
-            const card_id = item.id || `rad-${index}`
+            const card_id = `rad-${item.id || index}`
             list_container.append(this.render_radio_card(item, card_id))
         })
         pane.append(list_container)
@@ -243,7 +447,6 @@ export class ResultsTabController {
         const is_expanded = this.expanded_card_id === card_id
         const date_text = item.date ? format_date_variants(item.date).longtime : '--'
 
-        // Card Header (Matches Recipe card structure & styling)
         const header_el = c('div', { classes: 'recipe-card-header' }, [
             c('div', { classes: 'recipe-title' }, [
                 c('span', { text: item.order_name }),
@@ -261,7 +464,6 @@ export class ResultsTabController {
 
         const children: HTMLElement[] = [header_el]
 
-        // Expandable Table Content (Impression and Findings)
         if (is_expanded) {
             const table_el = c('table', { classes: 'details-table' }, [
                 c('thead', {}, [
