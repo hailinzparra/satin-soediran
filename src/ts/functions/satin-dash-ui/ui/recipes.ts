@@ -30,6 +30,7 @@ const c = create_element
 export class RecipesTabController {
     private is_loaded = false
     private orders: RecipeOrder[] = []
+    private total_orders_count = 0
     private expanded_order_id: string | null = null
     private details_cache: Map<string, RecipeDetail[]> = new Map()
     private loading_details: Set<string> = new Set()
@@ -95,6 +96,9 @@ export class RecipesTabController {
                     limit: 25
                 })
             })
+
+            const loaded_count = result?.data?.length || 0
+            this.total_orders_count = typeof result?.total === 'number' ? result.total : loaded_count
 
             if (!result?.data?.length) {
                 this.orders = []
@@ -266,6 +270,7 @@ export class RecipesTabController {
         this.render_ui()
     }
 
+
     private render_ui(): void {
         const body = c('div', { classes: 'recipe-list flex flex-col gap-3' },
             this.orders.length === 0
@@ -281,8 +286,18 @@ export class RecipesTabController {
 
         refresh_btn.addEventListener('click', () => this.activate(true))
 
+        // Conditional label logic:
+        // Only show X/Y if total > loaded count (e.g. 25/40)
+        // Otherwise just show count (e.g. 7 Order Resep, 0 Order Resep, 9 Order Resep)
+        const loaded_count = this.orders.length
+        const count_str = this.total_orders_count > loaded_count
+            ? `${loaded_count}/${this.total_orders_count}`
+            : `${loaded_count}`
+
+        const count_title = `${count_str} Order Resep`
+
         const header = c('div', { classes: 'pane-header flex justify-between items-center mb-4' }, [
-            c('span', { classes: 'pane-subheading text-emerald', text: `${this.orders.length} Order Resep` }),
+            c('span', { classes: 'pane-subheading text-emerald', text: count_title }),
             refresh_btn,
         ])
 
@@ -364,7 +379,8 @@ export class RecipesTabController {
             classes: 'recipe-card-header',
         }, [
             c('div', { classes: 'recipe-title' }, [
-                c('span', { text: `${formatted_date} (${order.status})` }),
+                c('span', { text: formatted_date }),
+                // c('span', { text: `${formatted_date} (${order.status})` }),
                 c('span', { classes: 'text-xs text-slate-400', text: is_expanded ? '▲' : '▼' })
             ]),
             c('div', { /* classes: 'recipe-grid' */ }, [

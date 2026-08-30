@@ -79,6 +79,23 @@ function format_temp_val(val: any): string {
     return String(Number(num.toFixed(2))) // Drops unnecessary trailing zeros automatically
 }
 
+// Helper to build the 2-line date element
+function build_date_cell(raw_date: string): HTMLElement {
+    if (!raw_date) {
+        return c('td', { classes: 'col-date', text: '--' })
+    }
+
+    const { long, time } = format_date_variants(raw_date)
+
+    // Combine with \n to split into two lines
+    const formatted_date_str = `${long}\n${time}`
+
+    return c('td', {
+        classes: 'col-date',
+        text: formatted_date_str
+    })
+}
+
 // ================= CONTROLLER CLASS =================
 
 export class ResultsTabController {
@@ -96,7 +113,7 @@ export class ResultsTabController {
     private radio_data: RadioResultItem[] = []
 
     private expanded_card_id: string | null = null
-    private active_sub_tab = 'radio' // Default active sub-tab
+    private active_sub_tab = 'lab' // Default active sub-tab
 
     private el: {
         total_title: HTMLElement | null
@@ -388,12 +405,12 @@ export class ResultsTabController {
                 details_content = c('div', { classes: 'details-state', text: 'Tidak ada data pemeriksaan umum.' })
             } else {
                 const rows = this.px_umum_list.map((item) => {
-                    const date_text = item.date ? format_date_variants(item.date).longtime : '--'
+                    const date_cell = build_date_cell(item.date)
                     const formatted_text = this.format_px_umum_cell(item)
                     const copy_btn = this.create_copy_button(formatted_text)
 
                     return c('tr', {}, [
-                        c('td', { classes: 'col-date', text: date_text }),
+                        date_cell,
                         c('td', { classes: 'col-content', text: formatted_text }),
                         c('td', { classes: 'col-action' }, [copy_btn])
                     ])
@@ -469,16 +486,15 @@ export class ResultsTabController {
                 details_content = c('div', { classes: 'details-state', text: 'Tidak ada data pemeriksaan fisik.' })
             } else {
                 const rows = this.px_fisik_list.map((item) => {
-                    const date_text = item.date ? format_date_variants(item.date).longtime : '--'
+                    const date_cell = build_date_cell(item.date)
                     const desc_cell = c('td', { classes: 'col-content' })
                     desc_cell.innerHTML = item.desc || '--'
 
-                    // Strip HTML tags for clean text copying
                     const plain_text = this.strip_html(item.desc)
                     const copy_btn = this.create_copy_button(plain_text)
 
                     return c('tr', {}, [
-                        c('td', { classes: 'col-date', text: date_text }),
+                        date_cell,
                         desc_cell,
                         c('td', { classes: 'col-action' }, [copy_btn])
                     ])

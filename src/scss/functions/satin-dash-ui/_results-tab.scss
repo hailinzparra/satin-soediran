@@ -112,13 +112,19 @@
         td {
             &.col-date {
                 width: 25%;
-                white-space: nowrap;
+                white-space: pre-line; /* Allows \n to render as line breaks while wrapping cleanly */
+                line-height: 1.25;
             }
 
             &.col-content {
                 width: 60%;
                 white-space: pre-wrap;
                 word-break: break-word;
+
+                &,
+                * {
+                    @include satin-font-main;
+                }
             }
 
             &.col-action {
