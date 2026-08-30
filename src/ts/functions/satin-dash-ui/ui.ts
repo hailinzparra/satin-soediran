@@ -135,7 +135,7 @@ export const get_patient_prefix = (
 
 export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit) => {
     // Age calculations
-    let age = '??y'
+    let age = '??th'
     const age_obj = get_age_metrics(visit.patient.demographic.birthdate)
     if (age_obj) {
         if (age_obj.y < 18) {

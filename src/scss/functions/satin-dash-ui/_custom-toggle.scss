@@ -22,7 +22,7 @@ $slider-satin: #2563eb;
 
 .btn-actions {
     @include base.satin-font-main;
-    background-color: #2563eb;
+    background-color: base.$color-blue-600;
     color: #ffffff;
     border: none;
     border-radius: 8px;
@@ -35,7 +35,7 @@ $slider-satin: #2563eb;
         opacity 0.2s ease;
 
     &:hover {
-        background-color: #1d4ed8;
+        background-color: base.$color-blue-700;
     }
 
     &.hidden {

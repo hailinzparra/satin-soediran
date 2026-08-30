@@ -23,6 +23,14 @@ export class SatinDashUIExtractor extends SatinBaseFunctionExtractor<SatinDashUI
             // already exists? dont readd
             if (this.parent.data.extracted_workspaces.has(wid)) return
 
+            // Find the child list element inside this workspace panel (e.g., div#kunjungan-list-1141)
+            const listEl = wpanel.querySelector<HTMLDivElement>('[id^="kunjungan-list-"]')
+            const listId = listEl?.id ?? '' // returns "kunjungan-list-1141"
+
+            // Extract wname using the derived listId
+            const titleEl = listId ? document.getElementById(`${listId}_header-title-textEl`) : null
+            const wname = titleEl?.textContent?.trim() ?? ''
+
             // oohh, new panel found! lets reference it
             const lpanel = wpanel.querySelector<HTMLDivElement>(this.parent.config.selectors.queries.panel_kunjungan_list) ?? null
             const lpanel_head = (document.getElementById(`${lpanel?.id ?? ''}_header`) as HTMLDivElement) ?? null
@@ -30,6 +38,7 @@ export class SatinDashUIExtractor extends SatinBaseFunctionExtractor<SatinDashUI
 
             const extracted_workspace: SatinDashUIWorkspace = {
                 id: wid,
+                name: wname || wid,
                 els: {
                     wpanel,
                     lpanel,

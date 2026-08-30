@@ -108,6 +108,7 @@ export interface SatinDashUIVisit {
 
 export interface SatinDashUIWorkspace {
     id: string
+    name: string
     els: {
         wpanel: HTMLDivElement | null
         lpanel: HTMLDivElement | null

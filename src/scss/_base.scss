@@ -64,3 +64,20 @@ $color-female-800: #9f1239;
 $color-male-50: #eff6ff;
 $color-male-600: #2563eb;
 $color-male-800: #1e40af;
+
+// ==========================================================================
+// Semantic Aliases & Utility Mappings
+// ==========================================================================
+
+// Backgrounds
+$color-bg-subtle: $color-slate-50;
+$color-subtle: $color-slate-100;
+
+// Borders
+$color-border-subtle: $color-slate-200;
+$color-border-main: $color-slate-300;
+
+// Text / Typography
+$color-text-muted: $color-slate-500;
+$color-text-subtle: $color-slate-600;
+$color-text-main: $color-slate-900;

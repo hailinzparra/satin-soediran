@@ -67,7 +67,7 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
 
             const wrapper = create_element('div', { classes: 'custom-toggle-wrapper' })
 
-            const actions_controller = new ActionsModalController()
+            const actions_controller = new ActionsModalController(this.parent, ws)
 
             // Check settings visibility condition
             const show_actions = Boolean(this.parent.engine.get_settings().dash_enable_satin_dash_ui_show_actions_button)
@@ -120,6 +120,8 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
         if (tableview_div) {
             const tables = tableview_div.querySelectorAll<HTMLTableElement>('table.x-grid-item')
 
+            let table_has_been_updated = false
+            const new_visit_ids: string[] = []
             tables.forEach((table) => {
                 const target_td = table.querySelectorAll<HTMLTableCellElement>('td')[1]
 
@@ -127,6 +129,8 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
 
                 const existing_modern_ui = target_td.querySelector<HTMLElement>('.my-modern-ui-container')
                 if (existing_modern_ui) return
+
+                table_has_been_updated = true
 
                 const text_content = table.innerText || table.textContent || ''
                 const id_match = text_content.match(/(\d+)\s*Masuk/i)
@@ -155,20 +159,25 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
 
                 // window.addEventListener('resize', scale_rect)
 
-                let visit: SatinDashUIVisit | null = null
-                Array.from(this.parent.data.extracted_visits.keys()).forEach(extracted_visit_id => {
+                let visit_id: string | null = null
+                for (const extracted_visit_id of this.parent.data.extracted_visits.keys()) {
                     if (clean_table_id.includes(extracted_visit_id)) {
-                        visit = this.parent.data.extracted_visits.get(extracted_visit_id) ?? null
+                        visit_id = extracted_visit_id
+                        break
                     }
-                })
+                }
 
-                if (visit) {
-                    const card = build_patient_card(this.parent.engine, visit)
-                    card.style.height = '100%'
-                    card.style.width = '100%'
-                    card.style.boxSizing = 'border-box'
+                if (visit_id) {
+                    const visit: SatinDashUIVisit | null = this.parent.data.extracted_visits.get(visit_id) ?? null
+                    if (visit) {
+                        const card = build_patient_card(this.parent.engine, visit)
+                        card.style.height = '100%'
+                        card.style.width = '100%'
+                        card.style.boxSizing = 'border-box'
 
-                    modern_ui.append(card)
+                        modern_ui.append(card)
+                        new_visit_ids.push(visit_id)
+                    }
                 }
 
                 const old_inner = target_td.querySelector<HTMLElement>('.x-grid-cell-inner')
@@ -182,6 +191,11 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
                 target_td.style.boxSizing = 'border-box'
                 target_td.appendChild(modern_ui)
             })
+
+            if (table_has_been_updated) {
+                ws.visit_ids = new_visit_ids
+                this.trigger_on_inject_update()
+            }
         }
     }
 
@@ -232,6 +246,13 @@ export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFu
                 modern_ui.style.display = 'none'
                 if (old_inner) old_inner.style.opacity = '1'
             }
+        })
+    }
+
+    trigger_on_inject_update() {
+        const workspaces = this.parent.data.extracted_workspaces
+        workspaces.forEach(ws => {
+            ws.els.actions_controller?.on_inject_update()
         })
     }
 }
