@@ -64,6 +64,25 @@
         box-shadow: 0 2px 4px 0 rgba(37, 99, 235, 0.08);
     }
 
+    &.is-fresh {
+        background-color: #fffbeb;
+        border: 1px solid #fde68a;
+
+        .header-controls {
+            .fuzzy-time-text {
+                color: #d97706 !important;
+                font-weight: 700 !important;
+            }
+            .chevron-icon {
+                color: #d97706 !important;
+            }
+        }
+
+        .recipe-card-header {
+            background-color: transparent;
+        }
+    }
+
     // Header functioning as a clickable button
     &-header {
         padding: 0.625rem 0.75rem;
@@ -103,6 +122,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            width: 100%;
         }
 
         .recipe-grid {

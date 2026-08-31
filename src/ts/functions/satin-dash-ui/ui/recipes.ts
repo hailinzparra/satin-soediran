@@ -449,6 +449,7 @@ export class RecipesTabController {
             children.push(c('div', { classes: 'recipe-card-details' }, [details_content]))
         }
 
-        return c('div', { classes: 'recipe-card' }, children)
+        const card_classes = `recipe-card ${fuzzy.is_fresh ? 'is-fresh' : ''}`
+        return c('div', { classes: card_classes }, children)
     }
 }

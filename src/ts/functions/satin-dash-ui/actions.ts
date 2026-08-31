@@ -2,13 +2,19 @@ import { SatinDashUIVisit, SatinDashUIWorkspace } from '../../types/functions/sa
 import { ModalInstance, ModalUI } from '../../ui/modal'
 import { RequestPayloadBuilder } from '../../utils/api'
 import { create_element } from '../../utils/dom'
-import { format_medical_name } from '../../utils/formatter'
+import { format_medical_name, get_fuzzy_time_yll } from '../../utils/formatter'
 import { Log } from '../../utils/logger'
 import { SatinDashUIFunction } from './parent'
 import { get_age_metrics, get_patient_prefix } from './ui'
 import { PxFisikItem, PxUmumItem } from './ui/results'
 
 export interface AnamnesisItem {
+    id: string
+    date: string
+    desc: string
+}
+
+export interface AssessmentItem {
     id: string
     date: string
     desc: string
@@ -25,7 +31,21 @@ interface PatientExamCacheItem {
     anamnesis: AnamnesisItem[]
     px_umum: PxUmumItem[]
     px_fisik: PxFisikItem[]
+    assessment: AssessmentItem[]
     planning: PlanningItem[]
+}
+
+interface SectionToggles {
+    s: boolean
+    o_umum: boolean
+    o_fisik: boolean
+    a: boolean
+    p: boolean
+    // Closing attachments
+    klinis: boolean
+    ekg: boolean
+    lab: boolean
+    radio: boolean
 }
 
 // ================= HELPER FUNCTIONS =================
@@ -80,8 +100,25 @@ export class ActionsModalController {
     private konsul_title_el!: HTMLElement
     private select_el!: HTMLSelectElement
     private load_btn!: HTMLButtonElement
+    private toggle_container_el!: HTMLElement
     private last_updated_el!: HTMLElement
     private output_textarea!: HTMLTextAreaElement
+
+    // Section Toggle States (Default: S, O umum, O fisik, P = true; A = false)
+    private section_toggles: SectionToggles = {
+        s: true,
+        o_umum: true,
+        o_fisik: true,
+        a: false,
+        p: true,
+        // Default checked
+        klinis: true,
+        ekg: true,
+        lab: true,
+        radio: true,
+    }
+
+    private toggle_btns_map: Map<keyof SectionToggles, HTMLButtonElement> = new Map()
 
     // Copy button timer handler
     private copy_timeout: number | null = null
@@ -141,10 +178,10 @@ export class ActionsModalController {
         const left_panel = create_element('div', { classes: 'sn-konsul-panel left-panel' })
         const right_panel = create_element('div', { classes: 'sn-konsul-panel right-panel' })
 
-        // Left Area: Select Dropdown + Load Button + Subtitle
+        // Left Area: Select Dropdown + Load Button + Section Toggles + Subtitle
         const select_label = create_element('label', {
             classes: 'sn-field-label',
-            text: 'Pilih Pasien',
+            text: 'Pilih Pasien "[MRS] Nama Pasien (No. RM)"',
         })
 
         this.select_el = create_element('select', {
@@ -152,10 +189,18 @@ export class ActionsModalController {
         }) as HTMLSelectElement
 
         this.load_btn = create_element('button', {
-            classes: 'sn-btn-load btn-actions', // Matching action button styling
+            classes: 'sn-btn-load btn-actions',
             text: 'Muat Data',
             attrs: { disabled: 'true' },
         }) as HTMLButtonElement
+
+        // Section Toggle Buttons Container
+        this.toggle_container_el = create_element('div', {
+            classes: 'sn-section-toggles-container',
+            attrs: { style: 'display: none;' },
+        })
+
+        this.create_toggle_buttons()
 
         this.last_updated_el = create_element('span', {
             classes: 'sn-subtitle-updated',
@@ -169,12 +214,16 @@ export class ActionsModalController {
                 const cache = this.exam_cache.get(selected_visit_id)
                 if (cache) {
                     this.update_last_updated_text(cache.timestamp)
+                    this.update_toggle_buttons_state(cache)
+                    this.toggle_container_el.style.display = 'flex'
                 } else {
                     this.last_updated_el.textContent = 'Terakhir diperbarui -'
+                    this.toggle_container_el.style.display = 'none'
                 }
             } else {
                 this.load_btn.disabled = true
                 this.last_updated_el.textContent = 'Terakhir diperbarui -'
+                this.toggle_container_el.style.display = 'none'
             }
             this.update_output_text()
         })
@@ -186,7 +235,13 @@ export class ActionsModalController {
             }
         })
 
-        left_panel.append(select_label, this.select_el, this.load_btn, this.last_updated_el)
+        left_panel.append(
+            select_label,
+            this.select_el,
+            this.load_btn,
+            this.toggle_container_el,
+            this.last_updated_el
+        )
 
         // Right Area: Uneditable Textarea + Copy Button
         const output_label = create_element('label', {
@@ -250,6 +305,86 @@ export class ActionsModalController {
         return accordion_item
     }
 
+    private create_toggle_buttons(): void {
+        // Row 1: SOAP Toggles
+        const soap_configs: { key: keyof SectionToggles; label: string }[] = [
+            { key: 's', label: 'S' },
+            { key: 'o_umum', label: 'OU' },
+            { key: 'o_fisik', label: 'OF' },
+            { key: 'a', label: 'A' },
+            { key: 'p', label: 'P' },
+        ]
+
+        const soap_row = create_element('div', { classes: 'sn-toggle-row soap-row' })
+
+        soap_configs.forEach(({ key, label }) => {
+            const is_active = this.section_toggles[key]
+            const btn = create_element('button', {
+                classes: `sn-toggle-btn ${is_active ? 'is-active' : ''}`,
+                text: label,
+            }) as HTMLButtonElement
+
+            btn.addEventListener('click', () => {
+                if (btn.disabled) return
+                this.section_toggles[key] = !this.section_toggles[key]
+                btn.classList.toggle('is-active', this.section_toggles[key])
+                this.update_output_text()
+            })
+
+            this.toggle_btns_map.set(key, btn)
+            soap_row.append(btn)
+        })
+
+        // Row 2: Closing Attachment Toggles (25% each)
+        const closing_configs: { key: keyof SectionToggles; label: string }[] = [
+            { key: 'klinis', label: 'Klinis' },
+            { key: 'ekg', label: 'EKG' },
+            { key: 'lab', label: 'Lab' },
+            { key: 'radio', label: 'Radio' },
+        ]
+
+        const closing_row = create_element('div', { classes: 'sn-toggle-row closing-row' })
+
+        closing_configs.forEach(({ key, label }) => {
+            const is_active = this.section_toggles[key]
+            const btn = create_element('button', {
+                classes: `sn-toggle-btn sn-toggle-btn-quarter ${is_active ? 'is-active' : ''}`,
+                text: label,
+            }) as HTMLButtonElement
+
+            btn.addEventListener('click', () => {
+                this.section_toggles[key] = !this.section_toggles[key]
+                btn.classList.toggle('is-active', this.section_toggles[key])
+                this.update_output_text()
+            })
+
+            this.toggle_btns_map.set(key, btn)
+            closing_row.append(btn)
+        })
+
+        this.toggle_container_el.append(soap_row, closing_row)
+    }
+
+    private update_toggle_buttons_state(cache: PatientExamCacheItem): void {
+        const toggle_data_presence: Record<keyof SectionToggles, boolean> = {
+            s: cache.anamnesis.length > 0,
+            o_umum: cache.px_umum.length > 0,
+            o_fisik: cache.px_fisik.length > 0,
+            a: cache.assessment.length > 0,
+            p: cache.planning.length > 0,
+            // Always enabled attachments
+            klinis: true,
+            ekg: true,
+            lab: true,
+            radio: true,
+        }
+
+        this.toggle_btns_map.forEach((btn, key) => {
+            const has_data = toggle_data_presence[key]
+            btn.disabled = !has_data
+        })
+    }
+
     private create_accordion(title: string, content_el: HTMLElement): HTMLElement {
         const header_title = create_element('span', {
             classes: 'sn-accordion-title',
@@ -304,11 +439,50 @@ export class ActionsModalController {
         return lines.join('\n')
     }
 
+    private format_closing_sentence(): string {
+        const { klinis, ekg, lab, radio } = this.section_toggles
+        const advice_suffix = 'Mohon advice selanjutnya dokter, terima kasih 🙏🏻'
+
+        // Non-klinis attachments
+        const attachments: string[] = []
+        if (ekg) attachments.push('ekg')
+        if (lab) attachments.push('lab')
+        if (radio) attachments.push('radiologi')
+        if (klinis) attachments.push('klinis pasien')
+
+        let sentence = ''
+
+        if ((!klinis && attachments.length > 0) || (klinis && attachments.length > 1)) {
+            sentence += 'Hasil '
+        }
+
+        if (attachments.length > 1) {
+            const last_attachment = attachments[attachments.length - 1]
+            attachments[attachments.length - 1] = `dan ${last_attachment}`
+        }
+
+        if (attachments.length > 2) {
+            sentence += attachments.join(', ')
+        }
+        else {
+            sentence += attachments.join(' ')
+        }
+
+        if (attachments.length > 0) {
+            sentence += ` terlampir. ${advice_suffix}`
+        } else {
+            sentence += advice_suffix
+        }
+
+        return sentence.charAt(0).toUpperCase() + sentence.slice(1)
+    }
+
     private format_konsul_report(
         visit: SatinDashUIVisit,
         anamnesis_list: AnamnesisItem[],
         px_umum_list: PxUmumItem[],
         px_fisik_list: PxFisikItem[],
+        assessment_list: AssessmentItem[],
         planning_list: PlanningItem[]
     ): string {
         let age = '?? tahun'
@@ -328,8 +502,9 @@ export class ActionsModalController {
         )
         const formatted_patient_name = `${prefix} ${format_medical_name(visit.patient.name)}`
 
+        // S: Subjective
         let subjective_section = ''
-        if (anamnesis_list.length > 0) {
+        if (this.section_toggles.s && anamnesis_list.length > 0) {
             const latest_anamnesis = anamnesis_list[0]
             const plain_anamnesis = strip_html(latest_anamnesis.desc)
             if (plain_anamnesis) {
@@ -337,8 +512,9 @@ export class ActionsModalController {
             }
         }
 
+        // O: Objective
         const obj_parts: string[] = []
-        if (px_umum_list.length > 0) {
+        if (this.section_toggles.o_umum && px_umum_list.length > 0) {
             const latest_px_umum = px_umum_list[0]
             const formatted_umum = this.format_px_umum_cell(latest_px_umum)
             if (formatted_umum) {
@@ -346,7 +522,7 @@ export class ActionsModalController {
             }
         }
 
-        if (px_fisik_list.length > 0) {
+        if (this.section_toggles.o_fisik && px_fisik_list.length > 0) {
             const latest_px_fisik = px_fisik_list[0]
             const plain_fisik = strip_html(latest_px_fisik.desc)
             if (plain_fisik) {
@@ -359,8 +535,20 @@ export class ActionsModalController {
             objective_section = `\n\nO:\n${obj_parts.join('\n\n')}`
         }
 
+        // A: Assessment
+        let assessment_section = ''
+        let plain_assessment = ''
+        if (this.section_toggles.a && assessment_list.length > 0) {
+            const latest_assessment = assessment_list[0]
+            plain_assessment = strip_html(latest_assessment.desc)
+            if (plain_assessment) {
+                assessment_section = `\n\nA:\n${plain_assessment}`
+            }
+        }
+
+        // P: Planning
         let planning_section = ''
-        if (planning_list.length > 0) {
+        if (this.section_toggles.p && planning_list.length > 0) {
             const latest_planning = planning_list[0]
             const plain_planning = strip_html(latest_planning.desc)
             if (plain_planning) {
@@ -368,15 +556,19 @@ export class ActionsModalController {
             }
         }
 
-        let patient_ward = 'baru IGD'
+        let ward_text = 'baru IGD'
         const is_er_ward = /^\s*\bRD\b/i.test(visit.room.name)
-        if (!is_er_ward) patient_ward = `${visit.room.name.replace('Bangsal ', '')}/${visit.room.bed_name}`
+        if (!is_er_ward) ward_text = `${visit.room.name.replace('Bangsal ', '')}/${visit.room.bed_name}`
+        const bed_name_head_text = is_er_ward ? '' : `${visit.room.bed_name}/`
+        const insurance_head_text = is_er_ward ? `/${visit.patient.insurance.type}` : `${plain_assessment ? `/${plain_assessment.replace(/[\r\n]+/g, ', ')}` : ''}`
 
-        return `Assalamu'alaikum wr. wb. Dokter, mohon izin melaporkan pasien ${patient_ward}.
+        const closing_sentence = this.format_closing_sentence()
 
-*${formatted_patient_name}/${age}/${visit.patient.mrn}/${visit.patient.insurance.type}*${subjective_section}${objective_section}${planning_section}
+        return `Assalamu'alaikum wr. wb. Dokter, mohon izin melaporkan pasien ${ward_text}.
 
-Hasil ekg, lab, radiologi terlampir. Mohon advice selanjutnya dokter, terima kasih 🙏🏻`
+*${bed_name_head_text}${formatted_patient_name}/${age}/${visit.patient.mrn}${insurance_head_text}*${subjective_section}${objective_section}${assessment_section}${planning_section}
+
+${closing_sentence}`
     }
 
     private update_output_text(): void {
@@ -392,12 +584,14 @@ Hasil ekg, lab, radiologi terlampir. Mohon advice selanjutnya dokter, terima kas
             const anamnesis_list = cache ? cache.anamnesis : []
             const px_umum_list = cache ? cache.px_umum : []
             const px_fisik_list = cache ? cache.px_fisik : []
+            const assessment_list = cache ? cache.assessment : []
             const planning_list = cache ? cache.planning : []
             this.output_textarea.value = this.format_konsul_report(
                 visit,
                 anamnesis_list,
                 px_umum_list,
                 px_fisik_list,
+                assessment_list,
                 planning_list
             )
         } else {
@@ -433,55 +627,76 @@ Hasil ekg, lab, radiologi terlampir. Mohon advice selanjutnya dokter, terima kas
         this.load_btn.innerText = 'Memuat data...'
 
         try {
-            const [anamnesis_result, umum_result, fisik_result, planning_result] =
-                await Promise.all([
-                    registration_id
-                        ? this.parent.engine.api.api_request<any[]>({
-                            base_path: 'medicalrecord/anamnesis',
-                            payload: new RequestPayloadBuilder({
-                                KUNJUNGAN: visit_id,
-                                PENDAFTARAN: registration_id,
-                                page: 1,
-                                start: 0,
-                                limit: 25,
-                            }),
-                        })
-                        : Promise.resolve(null),
-
-                    this.parent.engine.api.api_request<any[]>({
-                        base_path: 'medicalrecord/pemeriksaan/umum/tandavital',
+            const [
+                anamnesis_result,
+                umum_result,
+                fisik_result,
+                assessment_result,
+                planning_result,
+            ] = await Promise.all([
+                // Anamnesis (Subjective)
+                registration_id
+                    ? this.parent.engine.api.api_request<any[]>({
+                        base_path: 'medicalrecord/anamnesis',
                         payload: new RequestPayloadBuilder({
                             KUNJUNGAN: visit_id,
+                            PENDAFTARAN: registration_id,
                             page: 1,
                             start: 0,
                             limit: 25,
                         }),
+                    })
+                    : Promise.resolve(null),
+
+                // Px Umum
+                this.parent.engine.api.api_request<any[]>({
+                    base_path: 'medicalrecord/pemeriksaan/umum/tandavital',
+                    payload: new RequestPayloadBuilder({
+                        KUNJUNGAN: visit_id,
+                        page: 1,
+                        start: 0,
+                        limit: 25,
                     }),
+                }),
 
-                    registration_id
-                        ? this.parent.engine.api.api_request<any[]>({
-                            base_path: 'medicalrecord/pemeriksaan/fisik',
-                            payload: new RequestPayloadBuilder({
-                                KUNJUNGAN: visit_id,
-                                PENDAFTARAN: registration_id,
-                                page: 1,
-                                start: 0,
-                                limit: 25,
-                            }),
-                        })
-                        : Promise.resolve(null),
-
-                    this.parent.engine.api.api_request<any[]>({
-                        base_path: 'medicalrecord/perencanaan/rencanaterapi',
+                // Px Fisik
+                registration_id
+                    ? this.parent.engine.api.api_request<any[]>({
+                        base_path: 'medicalrecord/pemeriksaan/fisik',
                         payload: new RequestPayloadBuilder({
                             KUNJUNGAN: visit_id,
+                            PENDAFTARAN: registration_id,
                             page: 1,
                             start: 0,
                             limit: 25,
                         }),
-                    }),
-                ])
+                    })
+                    : Promise.resolve(null),
 
+                // Assessment / Diagnosis
+                this.parent.engine.api.api_request<any[]>({
+                    base_path: 'medicalrecord/penilaian/diagnosis',
+                    payload: new RequestPayloadBuilder({
+                        KUNJUNGAN: visit_id,
+                        page: 1,
+                        start: 0,
+                        limit: 25,
+                    }),
+                }),
+
+                // Planning / Therapy Plan
+                this.parent.engine.api.api_request<any[]>({
+                    base_path: 'medicalrecord/perencanaan/rencanaterapi',
+                    payload: new RequestPayloadBuilder({
+                        KUNJUNGAN: visit_id,
+                        page: 1,
+                        start: 0,
+                        limit: 25,
+                    }),
+                }),
+            ])
+
+            // Parse Anamnesis
             let anamnesis_list: AnamnesisItem[] = []
             if (anamnesis_result && anamnesis_result.data && Array.isArray(anamnesis_result.data)) {
                 anamnesis_list = anamnesis_result.data.map((raw: any) => ({
@@ -494,6 +709,7 @@ Hasil ekg, lab, radiologi terlampir. Mohon advice selanjutnya dokter, terima kas
                 )
             }
 
+            // Parse Px Umum
             let px_umum_list: PxUmumItem[] = []
             if (umum_result && umum_result.data && Array.isArray(umum_result.data)) {
                 px_umum_list = umum_result.data.map((raw: any) => ({
@@ -522,6 +738,7 @@ Hasil ekg, lab, radiologi terlampir. Mohon advice selanjutnya dokter, terima kas
                 )
             }
 
+            // Parse Px Fisik
             let px_fisik_list: PxFisikItem[] = []
             if (fisik_result && fisik_result.data && Array.isArray(fisik_result.data)) {
                 px_fisik_list = fisik_result.data.map((raw: any) => ({
@@ -534,6 +751,20 @@ Hasil ekg, lab, radiologi terlampir. Mohon advice selanjutnya dokter, terima kas
                 )
             }
 
+            // Parse Assessment
+            let assessment_list: AssessmentItem[] = []
+            if (assessment_result && assessment_result.data && Array.isArray(assessment_result.data)) {
+                assessment_list = assessment_result.data.map((raw: any) => ({
+                    id: String(raw.ID || ''),
+                    date: raw.TANGGAL || '',
+                    desc: raw.DIAGNOSIS || '',
+                }))
+                assessment_list.sort(
+                    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+                )
+            }
+
+            // Parse Planning
             let planning_list: PlanningItem[] = []
             if (planning_result && planning_result.data && Array.isArray(planning_result.data)) {
                 planning_list = planning_result.data.map((raw: any) => ({
@@ -547,15 +778,20 @@ Hasil ekg, lab, radiologi terlampir. Mohon advice selanjutnya dokter, terima kas
             }
 
             const now = Date.now()
-            this.exam_cache.set(visit_id, {
+            const cache_item: PatientExamCacheItem = {
                 timestamp: now,
                 anamnesis: anamnesis_list,
                 px_umum: px_umum_list,
                 px_fisik: px_fisik_list,
+                assessment: assessment_list,
                 planning: planning_list,
-            })
+            }
+
+            this.exam_cache.set(visit_id, cache_item)
 
             this.update_last_updated_text(now)
+            this.update_toggle_buttons_state(cache_item)
+            this.toggle_container_el.style.display = 'flex'
             this.update_output_text()
         } catch (err) {
             Log.error('Failed to fetch patient exam data:', err)
@@ -585,6 +821,7 @@ Hasil ekg, lab, radiologi terlampir. Mohon advice selanjutnya dokter, terima kas
                 })
                 this.select_el.append(empty_opt)
                 this.load_btn.disabled = true
+                this.toggle_container_el.style.display = 'none'
                 this.last_updated_el.textContent = 'Terakhir diperbarui -'
             } else {
                 const default_opt = create_element('option', {
@@ -595,8 +832,10 @@ Hasil ekg, lab, radiologi terlampir. Mohon advice selanjutnya dokter, terima kas
 
                 visit_ids.forEach((id) => {
                     const visit = this.parent.data.extracted_visits.get(id)
+                    const mrs_fuzzy = get_fuzzy_time_yll(visit?.admission_date ?? '')
+                    const mrs_text = `${mrs_fuzzy.text ? `${mrs_fuzzy.text}` : '--'}`
                     const label_text = visit
-                        ? `${format_medical_name(visit.patient.name)} (${visit.patient.mrn})`
+                        ? `[${mrs_text}] ${format_medical_name(visit.patient.name)} (${visit.patient.mrn})`
                         : `${this.ws.name} (${id})`
 
                     const opt = create_element('option', {
@@ -618,9 +857,14 @@ Hasil ekg, lab, radiologi terlampir. Mohon advice selanjutnya dokter, terima kas
                 const cache = this.exam_cache.get(selected_visit_id)
                 if (cache) {
                     this.update_last_updated_text(cache.timestamp)
+                    this.update_toggle_buttons_state(cache)
+                    this.toggle_container_el.style.display = 'flex'
                 } else {
                     this.last_updated_el.textContent = 'Terakhir diperbarui -'
+                    this.toggle_container_el.style.display = 'none'
                 }
+            } else {
+                this.toggle_container_el.style.display = 'none'
             }
 
             this.update_output_text()

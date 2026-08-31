@@ -71,33 +71,6 @@
         }
     }
 
-    /* Header Controls (Fuzzy Time + Chevron alignment) */
-    .recipe-title {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
-
-        .header-controls {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-left: 0.5rem;
-            flex-shrink: 0;
-
-            .fuzzy-time-text {
-                font-size: 0.6875rem;
-                font-weight: 600;
-                color: $color-slate-400;
-            }
-
-            .chevron-icon {
-                font-size: 0.75rem;
-                color: $color-slate-400;
-            }
-        }
-    }
-
     /* Preserve line breaks for formatted table cell content */
     .details-table td {
         white-space: pre-wrap;
@@ -133,21 +106,6 @@
                 text-align: center;
                 white-space: nowrap;
             }
-        }
-    }
-
-    /* Fresh Card Highlight (< 24 Hours) */
-    .recipe-card.is-fresh {
-        background-color: #fffbeb;
-        border: 1px solid #fde68a;
-
-        .fuzzy-time-text {
-            color: #d97706;
-            font-weight: 700;
-        }
-
-        .recipe-card-header {
-            background-color: transparent;
         }
     }
 

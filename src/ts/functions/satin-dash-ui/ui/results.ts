@@ -97,6 +97,63 @@ function build_date_cell(raw_date: string): HTMLElement {
     })
 }
 
+// ================= CLINICAL SCORE HELPERS =================
+
+function calculate_news2_score(
+    rr: number,
+    spo2: number,
+    sys: number,
+    pr: number,
+    temp: number,
+    gcs_total: number
+): number {
+    let score = 0
+
+    // Respiration Rate
+    if (rr <= 8 || rr >= 25) score += 3
+    else if (rr >= 21) score += 2
+    else if (rr >= 9 && rr <= 11) score += 1
+
+    // SpO2 (Scale 1)
+    if (spo2 <= 91) score += 3
+    else if (spo2 <= 93) score += 2
+    else if (spo2 <= 95) score += 1
+
+    // Systolic Blood Pressure
+    if (sys <= 90 || sys >= 220) score += 3
+    else if (sys <= 100) score += 2
+    else if (sys <= 110) score += 1
+
+    // Pulse / Heart Rate
+    if (pr <= 40 || pr >= 131) score += 3
+    else if (pr >= 111) score += 2
+    else if (pr <= 50 || (pr >= 91 && pr <= 110)) score += 1
+
+    // Temperature
+    if (temp <= 35.0) score += 3
+    else if (temp >= 39.1) score += 2
+    else if ((temp >= 35.1 && temp <= 36.0) || (temp >= 38.1 && temp <= 39.0)) score += 1
+
+    // Consciousness (GCS < 15 implies altered mental status / non-alert)
+    if (gcs_total > 0 && gcs_total < 15) score += 3
+
+    return score
+}
+
+function get_news2_risk_category(score: number): string {
+    if (score >= 7) return 'Risiko Tinggi'
+    if (score >= 5) return 'Risiko Sedang'
+    return 'Risiko Rendah'
+}
+
+function calculate_qsofa_score(rr: number, sys: number, gcs_total: number): number {
+    let score = 0
+    if (rr >= 22) score++
+    if (sys > 0 && sys <= 100) score++
+    if (gcs_total > 0 && gcs_total < 15) score++
+    return score
+}
+
 // ================= CONTROLLER CLASS =================
 
 export class ResultsTabController {
@@ -442,19 +499,65 @@ export class ResultsTabController {
         if (item.loc) lines.push(`Kesadaran ${item.loc}`)
 
         const { eye, verbal, motor } = item.gcs
+        const eye_n = Number(eye) || 0
+        const verbal_n = Number(verbal) || 0
+        const motor_n = Number(motor) || 0
+        const gcs_total = eye_n + verbal_n + motor_n
+
         if (eye || verbal || motor) {
             lines.push(`GCS E${eye}V${verbal}M${motor}`)
         }
 
         const { sys, dia } = item.vital_sign.bp
+        const sys_n = Number(sys) || 0
+        const dia_n = Number(dia) || 0
+
         if (sys || dia) {
             lines.push(`TD ${sys}/${dia} mmHg`)
         }
+
+        const pr_n = Number(item.vital_sign.pr) || 0
+        const temp_n = Number(item.vital_sign.temp) || 0
+        const rr_n = Number(item.vital_sign.rr) || 0
+        const spo2_n = Number(item.vital_sign.spo2) || 0
 
         if (item.vital_sign.pr) lines.push(`N ${item.vital_sign.pr} x/menit`)
         if (item.vital_sign.temp) lines.push(`S ${item.vital_sign.temp} °C`)
         if (item.vital_sign.rr) lines.push(`RR ${item.vital_sign.rr} x/menit`)
         if (item.vital_sign.spo2) lines.push(`SpO2 ${item.vital_sign.spo2}%`)
+
+        // --- DERIVED METRICS & SCORES (Displayed below SpO2) ---
+
+        // National Early Warning Score 2 (NEWS2)
+        if (sys_n > 0 && pr_n > 0 && temp_n > 0 && rr_n > 0 && spo2_n > 0) {
+            const news2 = calculate_news2_score(rr_n, spo2_n, sys_n, pr_n, temp_n, gcs_total)
+            const risk = get_news2_risk_category(news2)
+            lines.push(`NEWS2 ${news2} (${risk})`)
+        }
+
+        // Pulse Pressure (PP)
+        if (sys_n > 0 && dia_n > 0) {
+            const pp = sys_n - dia_n
+            lines.push(`PP ${pp} mmHg`)
+        }
+
+        // Mean Arterial Pressure (MAP)
+        if (sys_n > 0 && dia_n > 0) {
+            const map = Math.round(dia_n + (sys_n - dia_n) / 3)
+            lines.push(`MAP ${map} mmHg`)
+        }
+
+        // quick SOFA (qSOFA)
+        if (rr_n > 0 || sys_n > 0 || gcs_total > 0) {
+            const qsofa = calculate_qsofa_score(rr_n, sys_n, gcs_total)
+            lines.push(`qSOFA ${qsofa}/3`)
+        }
+
+        // Shock Index (SI)
+        if (pr_n > 0 && sys_n > 0) {
+            const si = (pr_n / sys_n).toFixed(2)
+            lines.push(`SI ${si}`)
+        }
 
         return lines.join('\n')
     }

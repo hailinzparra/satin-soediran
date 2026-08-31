@@ -3,6 +3,7 @@ import { SatinDashUIVisit } from '../../types/functions/satin-dash-ui'
 import { create_element } from '../../utils/dom'
 import { ResultsTabController } from './ui/results'
 import { RecipesTabController } from './ui/recipes'
+import { format_medical_name, get_fuzzy_time_yll } from '../../utils/formatter'
 
 const c = create_element
 
@@ -59,13 +60,25 @@ export const get_los_metrics = (adm_date?: string | null, dis_date?: string | nu
         if (isNaN(start.getTime()) || isNaN(end.getTime())) return null
 
         const total_milliseconds = end.getTime() - start.getTime()
-        if (total_milliseconds < 0) return { d: 0, h: 0, total_hours: 0, is_discharged }
+        if (total_milliseconds < 0) {
+            return { d: 0, h: 0, m: 0, total_hours: 0, total_minutes: 0, is_discharged }
+        }
 
-        const total_hours = Math.floor(total_milliseconds / (1000 * 60 * 60))
+        const total_minutes = Math.floor(total_milliseconds / (1000 * 60))
+        const total_hours = Math.floor(total_minutes / 60)
+
         const days = Math.floor(total_hours / 24)
         const hours = total_hours % 24
+        const minutes = total_minutes % 60
 
-        return { d: days, h: hours, total_hours, is_discharged }
+        return {
+            d: days,
+            h: hours,
+            m: minutes,
+            total_hours,
+            total_minutes,
+            is_discharged
+        }
     } catch (e) {
         return null
     }
@@ -154,15 +167,18 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
     const formatted_patient_name = `${prefix} ${visit.patient.name}`
 
     // Length Of Stay (LOS) metrics & Fresh status calculation
-    let los_text = 'LOS: --'
+    let los_text = '--'
     let is_fresh = false
     const los_obj = get_los_metrics(visit.admission_date, visit.discharge_date)
     if (los_obj) {
-        los_text = `${los_obj.d}h ${los_obj.h}j`
+        los_text = `${los_obj.d} hari ${los_obj.h} jam ${los_obj.m} menit`
         if (los_obj.total_hours < 24 && !los_obj.is_discharged) {
             is_fresh = true
         }
     }
+
+    const mrs_fuzzy = get_fuzzy_time_yll(visit.admission_date ?? '')
+    const mrs_text = `${mrs_fuzzy.text ? `${mrs_fuzzy.text}` : '--'}`
 
     const is_female = visit.patient.demographic.gender_id === '2'
     const genderClass = is_female ? 'gender-female' : 'gender-male'
@@ -177,7 +193,7 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
             c('div', { classes: 'patient-card__header-row' }, [
                 c('span', { classes: 'badge-bed', text: `${room_name}/${visit.room.bed_name}` }),
                 c('div', { classes: 'header-tags' }, [
-                    c('span', { classes: 'los-tag', text: los_text })
+                    c('span', { classes: 'los-tag', text: mrs_text })
                 ])
             ]),
             c('div', { classes: 'patient-card__identity' }, [
@@ -189,7 +205,7 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
                     ]),
                     c('div', { classes: 'patient-card__mrn', text: `${visit.patient.mrn || '??'}` })
                 ])
-            ])
+            ]),
         ]),
         c('div', { classes: 'patient-card__insurance', text: `${visit.patient.insurance.type || '??'} (Kls. ${visit.patient.insurance.class || '??'})` })
     ])
@@ -268,6 +284,8 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
     ])
 
     // 3. Tab Display Pane (Content)
+    const formatted_admission_date = visit.admission_date ? `${get_fuzzy_time_yll(visit.admission_date).text} (${format_date_variants(visit.admission_date).longtime})` : '--'
+    const formatted_discharge_date = visit.discharge_date ? `${get_fuzzy_time_yll(visit.discharge_date).text} (${format_date_variants(visit.discharge_date).longtime})` : '--'
     const tab_panes: Record<string, HTMLElement> = {
         overview: c('div', { classes: 'tab-pane' }, [
             c('div', { classes: 'mb-2' }, [
@@ -276,27 +294,28 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
             ]),
             c('div', {}, [
                 c('div', {}, [c('strong', { text: 'DPJP: ' }), c('span', { text: visit.dpjp.name })]),
-                c('div', {}, [c('strong', { text: 'Masuk: ' }), c('span', { text: format_date_variants(visit.admission_date ?? '').longtime })]),
-                c('div', {}, [c('strong', { text: 'Keluar: ' }), c('span', { text: format_date_variants(visit.discharge_date ?? '').longtime })]),
+                c('div', {}, [c('strong', { text: 'Masuk: ' }), c('span', { text: formatted_admission_date })]),
+                c('div', {}, [c('strong', { text: 'Keluar: ' }), c('span', { text: formatted_discharge_date })]),
+                c('div', {}, [c('strong', { text: 'Lama: ' }), c('span', { text: los_text })]),
             ]),
         ]),
 
         details: c('div', { classes: 'tab-pane hidden' }, [
             c('div', { classes: 'details-sections' }, [
                 c('div', { classes: 'details-block' }, [
-                    c('h4', { text: 'Demografi' }),
+                    c('h4', { text: `Demografi (${format_medical_name(visit.patient.name) || '??'})` }),
                     c('div', {}, [
                         c('div', {}, [c('span', { text: 'TTL: ' }), c('strong', { classes: 'capitalize', text: `${visit.patient.demographic.birthplace.toLowerCase() || '??'}, ${format_date_variants(visit.patient.demographic.birthdate).long.split(', ')[1] || '??'}` })]),
                         c('div', {}, [c('span', { text: 'Alamat: ' }), c('strong', { classes: 'capitalize', text: visit.patient.demographic.address.toLowerCase() || '??' })]),
-                        c('div', {}, [c('span', { text: 'Pekerjaan: ' }), c('strong', { classes: 'capitalize', text: visit.patient.demographic.occupation.toLowerCase() || '??' })]),
-                        c('div', {}, [c('span', { text: 'Pendidikan: ' }), c('strong', { classes: 'capitalize', text: visit.patient.demographic.education.toLowerCase() || '??' })]),
-                        c('div', {}, [c('span', { text: 'Status Perkawinan: ' }), c('strong', { classes: 'capitalize', text: visit.patient.demographic.marriage_status.toLowerCase() || '??' })]),
+                        c('div', {}, [c('span', { text: 'Pekerjaan: ' }), c('strong', { text: visit.patient.demographic.occupation || '??' })]),
+                        c('div', {}, [c('span', { text: 'Pendidikan: ' }), c('strong', { text: visit.patient.demographic.education || '??' })]),
+                        c('div', {}, [c('span', { text: 'Status Perkawinan: ' }), c('strong', { text: visit.patient.demographic.marriage_status || '??' })]),
                         c('div', {}, [c('span', { text: 'Golongan Darah: ' }), c('strong', { text: visit.patient.demographic.blood_type || '??' })]),
                         c('div', {}, [c('span', { text: 'Kontak: ' }), c('strong', { text: visit.patient.demographic.contact_num || '??' })]),
                     ])
                 ]),
                 c('div', { classes: 'details-block' }, [
-                    c('h4', { text: 'Penjamin' }),
+                    c('h4', { text: `Penjamin (${visit.patient.insurance.type || '??'})` }),
                     c('div', {}, [
                         c('div', {}, [c('span', { text: 'No. Peserta: ' }), c('strong', { text: visit.patient.insurance.membership.id || '??' })]),
                         c('div', {}, [c('span', { text: 'SEP: ' }), c('strong', { text: visit.patient.insurance.sep_id || '??' })]),
