@@ -1,8 +1,9 @@
 import { SatinApiContext } from '../../../api/context'
+import { SatinEngine } from '../../../engine/base'
 import { SoediranDataOrderResep } from '../../../types/api/soediran/data'
 import { RequestPayloadBuilder } from '../../../utils/api'
 import { create_element } from '../../../utils/dom'
-import { format_medical_name } from '../../../utils/formatter'
+import { format_medical_name, get_fuzzy_time_yll } from '../../../utils/formatter'
 import { Log } from '../../../utils/logger'
 import { format_date_variants } from '../ui'
 
@@ -41,12 +42,14 @@ export class RecipesTabController {
     private orders_lowercase: Set<string> = new Set()
 
     public pane_el: HTMLElement
+    private api_client: SatinApiContext
 
     constructor(
+        private engine: SatinEngine,
         private visit_id: string,
-        private api_client: SatinApiContext,
         private on_loaded?: (count: number) => void // <-- Added callback optional parameter
     ) {
+        this.api_client = this.engine.api
         this.pane_el = c('div', { classes: 'tab-pane hidden' })
         this.render_skeleton()
     }
@@ -374,20 +377,28 @@ export class RecipesTabController {
             toggle_lowercase_btn
         ])
 
-        const formatted_date = order.date ? format_date_variants(order.date).longtime : '--'
+        const show_dpsc_name = this.engine.get_settings().emr_show_drug_prescriber_name
+
+        const formatted_date = order.date ? `${format_date_variants(order.date).longtime}` : '--'
+        const fuzzy = get_fuzzy_time_yll(order.date)
+
+        const header_right = c('div', { classes: 'header-controls' }, [
+            fuzzy.text ? c('span', { classes: 'fuzzy-time-text', text: fuzzy.text }) : null,
+            c('span', { classes: 'chevron-icon', text: is_expanded ? '▲' : '▼' })
+        ].filter(Boolean) as HTMLElement[])
+
         const header_el = c('div', {
             classes: 'recipe-card-header',
         }, [
             c('div', { classes: 'recipe-title' }, [
                 c('span', { text: formatted_date }),
-                // c('span', { text: `${formatted_date} (${order.status})` }),
-                c('span', { classes: 'text-xs text-slate-400', text: is_expanded ? '▲' : '▼' })
+                header_right
             ]),
             c('div', { /* classes: 'recipe-grid' */ }, [
                 // c('div', {}, [c('strong', { text: 'Status: ' }), c('span', { text: order.status })]),
                 // c('div', {}, [c('strong', { text: 'Tanggal: ' }), c('span', { text: formatted_date })]),
                 // c('div', {}, [c('strong', { text: 'No. Order: ' }), c('span', { text: order.nomor })]),
-                c('div', {}, [c('strong', { text: 'Oleh (No. Order): ' }), c('span', { text: `${format_medical_name(order.prescriber)} (${order.nomor})` })]),
+                c('div', {}, [c('strong', { text: show_dpsc_name ? 'Oleh (No. Order): ' : 'No. Order: ' }), c('span', { text: show_dpsc_name ? `${format_medical_name(order.prescriber)} (${order.nomor})` : order.nomor })]),
                 // c('div', {}, [c('strong', { text: 'Depo: ' }), c('span', { text: order.depo })]),
                 c('div', {}, [c('strong', { text: 'Depo (Ruangan): ' }), c('span', { text: `${order.depo} (${order.ward.replace('Bangsal ', '')})` })]),
             ]),

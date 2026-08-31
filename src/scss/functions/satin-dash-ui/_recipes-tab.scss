@@ -76,6 +76,25 @@
             background-color: rgba($color-blue-50, 0.5);
         }
 
+        .header-controls {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: 0.5rem;
+            flex-shrink: 0;
+
+            .fuzzy-time-text {
+                font-size: 0.6875rem;
+                font-weight: 600;
+                color: $color-slate-400;
+            }
+
+            .chevron-icon {
+                font-size: 0.75rem;
+                color: $color-slate-400;
+            }
+        }
+
         .recipe-title {
             font-size: 0.8125rem;
             font-weight: 700;

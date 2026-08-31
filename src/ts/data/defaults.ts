@@ -12,7 +12,7 @@ export const DEFAULT_SATIN_SETTINGS: SatinSettingsData = {
 
     dash_enable_satin_dash_ui: false,
     dash_enable_satin_dash_ui_on_by_default: false,
-    dash_enable_satin_dash_ui_show_actions_button: false,
+    dash_enable_satin_dash_ui_show_actions_button: true,
     dash_show_openinnewtab_button: false,
 
     emr_enable_manager: true,

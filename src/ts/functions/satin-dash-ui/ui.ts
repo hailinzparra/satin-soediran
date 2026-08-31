@@ -253,7 +253,7 @@ export const build_patient_card = (engine: SatinEngine, visit: SatinDashUIVisit)
             }
         })
 
-    const recipeController = new RecipesTabController(visit.id, engine.api, (count: number) => {
+    const recipeController = new RecipesTabController(engine, visit.id, (count: number) => {
         if (tab_badges['recipes']) {
             tab_badges['recipes'].innerText = `${count}`
         }

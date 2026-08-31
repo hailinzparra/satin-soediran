@@ -93,12 +93,12 @@ export class PopupSettingsContent extends PopupContent {
                 sub: 'Langsung menggunakan mode Satin Dash UI setiap kali panel dibuka.',
                 ind: 1,
             },
-            {
-                key: 'dash_enable_satin_dash_ui_show_actions_button',
-                title: '<span class="text-slate-500">(Satin Dash UI)</span>: Menu "Aksi"',
-                sub: 'Munculkan tombol menu "Aksi" untuk draft konsul, batch operation, dll.',
-                ind: 1,
-            },
+            // {
+            //     key: 'dash_enable_satin_dash_ui_show_actions_button',
+            //     title: '<span class="text-slate-500">(Satin Dash UI)</span>: Menu "Aksi"',
+            //     sub: 'Munculkan tombol menu "Aksi" untuk draft konsul, batch operation, dll.',
+            //     ind: 1,
+            // },
             // {
             //     key: 'dash_show_openinnewtab_button',
             //     title: '<span class="text-slate-500">Tampilkan</span> (Tombol Tab Baru)',
@@ -117,18 +117,18 @@ export class PopupSettingsContent extends PopupContent {
                 title: '<span class="text-slate-500">Tampilkan</span> (Harga Obat)',
                 sub: 'Munculkan estimasi harga obat di halaman rekam medis.',
             },
-            {
-                key: 'emr_show_drug_price_full_display',
-                title: '<span class="text-slate-500">(Harga Obat)</span>: Tampilan Penuh',
-                sub: 'Tampilkan lebih banyak rincian harga obat.',
-                ind: 1,
-            },
-            {
-                key: 'emr_show_drug_price_show_unit_summary',
-                title: '<span class="text-slate-500">(Harga Obat)</span>: Total Harga Satuan',
-                sub: 'Munculkan total harga obat jika masing-masing diambil satu.',
-                ind: 1,
-            },
+            // {
+            //     key: 'emr_show_drug_price_full_display',
+            //     title: '<span class="text-slate-500">(Harga Obat)</span>: Tampilan Penuh',
+            //     sub: 'Tampilkan lebih banyak rincian harga obat.',
+            //     ind: 1,
+            // },
+            // {
+            //     key: 'emr_show_drug_price_show_unit_summary',
+            //     title: '<span class="text-slate-500">(Harga Obat)</span>: Total Harga Satuan',
+            //     sub: 'Munculkan total harga obat jika masing-masing diambil satu.',
+            //     ind: 1,
+            // },
             {
                 key: 'emr_show_drug_prescriber_name',
                 title: '<span class="text-slate-500">Tampilkan</span> (Nama Pembuat Resep)',
@@ -143,7 +143,7 @@ export class PopupSettingsContent extends PopupContent {
         this.reset_btn = c('button', {
             attrs: { type: 'button' },
             classes: 'swal2-deny inline-flex justify-center rounded-md bg-red-600 px-2.5 py-1.5 text-[12px] font-semibold text-white shadow-sm hover:bg-red-500 transition ease-in-out duration-150 order-1 sm:mr-auto cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600',
-            text: 'Atur Ulang Default',
+            text: 'Reset',
         }) as HTMLButtonElement
 
         this.cancel_btn = c('button', {
@@ -212,7 +212,7 @@ export class PopupSettingsContent extends PopupContent {
         this.update_button_states()
 
         const action_wrapper = c('div', {
-            classes: 'swal2-actions flex flex-wrap items-center justify-end w-full mt-6 gap-2',
+            classes: 'swal2-actions sticky top-[-10px] bg-white p-2 mt-3 flex w-full flex-wrap items-center justify-end gap-2 z-10 border-t border-slate-100',
         }, [
             this.reset_btn,
             this.cancel_btn,
@@ -227,8 +227,10 @@ export class PopupSettingsContent extends PopupContent {
         const dash_header = create_sub_header('Fitur Khusus (Dashboard)')
         const emr_header = create_sub_header('Fitur Khusus (Rekam Medis)')
 
-        const wrapper = c('div', { classes: 'bg-white border border-slate-200 rounded-2xl shadow-sm p-6 max-w-xl mx-auto pt-2 overflow-hidden' }, [
+        const wrapper = c('div', { classes: 'bg-white border border-slate-200 rounded-2xl shadow-sm p-6 max-w-xl mx-auto pt-2 overflow-auto' }, [
             wrapper_title,
+
+            action_wrapper,
 
             global_header,
             ...global_toggles,
@@ -238,9 +240,9 @@ export class PopupSettingsContent extends PopupContent {
 
             emr_header,
             ...emr_toggles,
-
-            action_wrapper,
         ])
+
+        wrapper.style.maxHeight = 'calc(100vh - 80px)'
 
         const container = c('div', { classes: 'tab-content-container' }, [wrapper])
 
