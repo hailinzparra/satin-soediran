@@ -5,9 +5,9 @@ import { ResultsMenuRenderer } from './main'
 export type DividerOption = 'Kosong' | '===' | '--' | '.'
 
 export class ResultsMenuTextAllRenderer {
-    private lab_first: boolean = false
+    private lab_first: boolean = true
     private main_divider: DividerOption = '==='
-    private lab_divider: DividerOption = 'Kosong'
+    private lab_divider: DividerOption = '--'
     private radio_divider: DividerOption = '--'
 
     private el: {
@@ -50,9 +50,9 @@ export class ResultsMenuTextAllRenderer {
     constructor(public main_renderer: ResultsMenuRenderer) { }
 
     build_dom_elements(target_el: HTMLDivElement) {
-        // 1. "Lab Dulu" toggle button
+        const btn_lab_cls = `${ResultsMenuTextAllRenderer.classes.btn_toggle} ${this.lab_first ? ResultsMenuTextAllRenderer.classes.btn_toggle_active : ''}`
         this.el.btn_lab_first = create_element('button', {
-            classes: ResultsMenuTextAllRenderer.classes.btn_toggle,
+            classes: btn_lab_cls,
             text: 'Lab Dulu',
         })
 
@@ -198,12 +198,12 @@ export class ResultsMenuTextAllRenderer {
     }
 
     private reset_filters() {
-        this.lab_first = false
+        this.lab_first = true
         this.main_divider = '==='
-        this.lab_divider = 'Kosong'
+        this.lab_divider = '--'
         this.radio_divider = '--'
 
-        this.el.btn_lab_first?.classList.remove(ResultsMenuTextAllRenderer.classes.btn_toggle_active)
+        this.el.btn_lab_first?.classList.add(ResultsMenuTextAllRenderer.classes.btn_toggle_active)
 
         this.update_radio_group_ui(this.el.main_divider_buttons, this.main_divider)
         this.update_radio_group_ui(this.el.lab_divider_buttons, this.lab_divider)
@@ -226,7 +226,6 @@ export class ResultsMenuTextAllRenderer {
         const trimmed = text.trim()
         if (!trimmed) return ''
 
-        // Standardize newlines replacing sequence of double-newlines
         if (divider === 'Kosong') {
             return trimmed.replace(/\n\s*\n+/g, '\n')
         }

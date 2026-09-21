@@ -233,7 +233,7 @@ export class ResultsMenuTextLabRenderer {
             this.config.shorten_values = true
             this.config.split_by_date = true
             this.config.short_date = true
-            this.config.reverse_dates = true
+            this.config.reverse_dates = false
             this.sync_ui_button_states()
             this.sync_text_output()
         })
