@@ -1,11 +1,13 @@
 export type CentralizedParamId =
     'BLD_HEMOGLOBIN' | 'BLD_ERITROSIT' | 'BLD_HEMATOKRIT' | 'BLD_LEUKOSIT' | 'BLD_TROMBOSIT' |
     'BLD_MCV' | 'BLD_MCH' | 'BLD_MCHC' | 'BLD_RDW_CV' | 'BLD_MPV' |
-    'BLD_LED_BBS_I' | 'BLD_LED_BBS_II' |
-    'BLD_CT' | 'BLD_BT' |
     'BLD_BLOOD_TYPE_ABO' |
 
     'HJL_EOSINOFIL' | 'HJL_BASOFIL' | 'HJL_NEUTROFIL' | 'HJL_LIMFOSIT' | 'HJL_MONOSIT' |
+
+    'BLD_CT' | 'BLD_BT' |
+    'BLD_PT' | 'BLD_APTT' | 'BLD_INR' |
+    'BLD_LED_BBS_I' | 'BLD_LED_BBS_II' |
 
     'LPD_TC' | 'LPD_TG' | 'LPD_HDL' | 'LPD_LDL' |
 
@@ -43,12 +45,13 @@ export type CentralizedParamId =
     'URN_MAC_WARNA' | 'URN_MAC_KEJERNIHAN' | 'URN_MAC_BERAT_JENIS' | 'URN_MAC_PH' |
     'URN_MAC_LEUKOSIT' | 'URN_MAC_NITRIT' | 'URN_MAC_PROTEIN' | 'URN_MAC_GLUKOSA' |
     'URN_MAC_KETON' | 'URN_MAC_UROBILINOGEN' | 'URN_MAC_BILIRUBIN' | 'URN_MAC_DARAH' |
-    'URN_MIC_ERITROSIT' | 'URN_MIC_LEUKOSIT' | 'URN_MIC_EPITHEL' | 'URN_MIC_BAKTERI' |
+    'URN_MIC_ERITROSIT' | 'URN_MIC_LEUKOSIT' | 'URN_MIC_EPITHEL' |
+    'URN_MIC_BAKTERI' | 'URN_MIC_JAMUR' |
     'URN_MIC_SILINDER_GRANULA' | 'URN_MIC_SILINDER_HIALIN' |
     'URN_MIC_KRISTAL_URAT_AMORF' | 'URN_MIC_KRISTAL_FOSFAT_AMORF' |
 
     'FCL_MAC_WARNA' | 'FCL_MAC_KONSISTENSI' | 'FCL_MAC_LENDIR' | 'FCL_MAC_DARAH' |
-    'FCL_MIC_ERITROSIT' | 'FCL_MIC_LEUKOSIT'
+    'FCL_MIC_ERITROSIT' | 'FCL_MIC_LEUKOSIT' | 'FCL_MIC_PARASIT'
 
 export const SOEDIRAN_RAW_LAB_MAP: Record<string, CentralizedParamId> = {
     // DR 2
@@ -71,12 +74,6 @@ export const SOEDIRAN_RAW_LAB_MAP: Record<string, CentralizedParamId> = {
     '8054015': 'BLD_RDW_CV',
     '8054012': 'BLD_MPV',
 
-    '8049001': 'BLD_LED_BBS_I',
-    '8049002': 'BLD_LED_BBS_II',
-
-    '8045001': 'BLD_CT',
-    '8046001': 'BLD_BT',
-
     '8047001': 'BLD_BLOOD_TYPE_ABO',
 
     '8054002': 'HJL_EOSINOFIL',
@@ -84,6 +81,16 @@ export const SOEDIRAN_RAW_LAB_MAP: Record<string, CentralizedParamId> = {
     '8054013': 'HJL_NEUTROFIL',
     '8054007': 'HJL_LIMFOSIT',
     '8054011': 'HJL_MONOSIT',
+
+    '8045001': 'BLD_CT',
+    '8046001': 'BLD_BT',
+
+    '8057001': 'BLD_PT', // example mrn: 694857
+    '8055001': 'BLD_APTT',
+    '8057002': 'BLD_INR',
+
+    '8049001': 'BLD_LED_BBS_I',
+    '8049002': 'BLD_LED_BBS_II',
 
     '8588001': 'LPD_TC',
     '8591001': 'LPD_TG',
@@ -172,6 +179,7 @@ export const SOEDIRAN_RAW_LAB_MAP: Record<string, CentralizedParamId> = {
     '8160011': 'URN_MIC_LEUKOSIT',
     '8160009': 'URN_MIC_EPITHEL',
     '8160008': 'URN_MIC_BAKTERI',
+    '8160017': 'URN_MIC_JAMUR', // example mrn: 645503
     '8160022': 'URN_MIC_SILINDER_GRANULA',
     '8160023': 'URN_MIC_SILINDER_HIALIN',
     '8160020': 'URN_MIC_KRISTAL_URAT_AMORF',
@@ -183,4 +191,5 @@ export const SOEDIRAN_RAW_LAB_MAP: Record<string, CentralizedParamId> = {
     '8161006': 'FCL_MAC_DARAH',
     '8161007': 'FCL_MIC_ERITROSIT',
     '8161002': 'FCL_MIC_LEUKOSIT',
+    '8161008': 'FCL_MIC_PARASIT', // example mrn: 797651
 }

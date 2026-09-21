@@ -8,8 +8,6 @@ export const PANELS_CONFIG: PanelsConfig = {
         parameter_ids: [
             'BLD_HEMOGLOBIN', 'BLD_ERITROSIT', 'BLD_HEMATOKRIT', 'BLD_LEUKOSIT', 'BLD_TROMBOSIT',
             'BLD_MCV', 'BLD_MCH', 'BLD_MCHC', 'BLD_RDW_CV', 'BLD_MPV',
-            'BLD_LED_BBS_I', 'BLD_LED_BBS_II',
-            'BLD_CT', 'BLD_BT',
             'BLD_BLOOD_TYPE_ABO',
         ]
     },
@@ -17,6 +15,14 @@ export const PANELS_CONFIG: PanelsConfig = {
         panel_name: 'Hitung Jenis Leukosit',
         parameter_ids: [
             'HJL_EOSINOFIL', 'HJL_BASOFIL', 'HJL_NEUTROFIL', 'HJL_LIMFOSIT', 'HJL_MONOSIT',
+        ]
+    },
+    DEFAULT_PANEL_HSD: {
+        panel_name: 'Hemostasis & LED',
+        parameter_ids: [
+            'BLD_BT', 'BLD_CT',
+            'BLD_PT', 'BLD_APTT', 'BLD_INR',
+            'BLD_LED_BBS_I', 'BLD_LED_BBS_II',
         ]
     },
     // ---------- CLINICAL_CHEMISTRY ----------
@@ -111,7 +117,8 @@ export const PANELS_CONFIG: PanelsConfig = {
             'URN_MAC_WARNA', 'URN_MAC_KEJERNIHAN', 'URN_MAC_BERAT_JENIS', 'URN_MAC_PH',
             'URN_MAC_LEUKOSIT', 'URN_MAC_NITRIT', 'URN_MAC_PROTEIN', 'URN_MAC_GLUKOSA',
             'URN_MAC_KETON', 'URN_MAC_UROBILINOGEN', 'URN_MAC_BILIRUBIN', 'URN_MAC_DARAH',
-            'URN_MIC_ERITROSIT', 'URN_MIC_LEUKOSIT', 'URN_MIC_EPITHEL', 'URN_MIC_BAKTERI',
+            'URN_MIC_ERITROSIT', 'URN_MIC_LEUKOSIT', 'URN_MIC_EPITHEL',
+            'URN_MIC_BAKTERI', 'URN_MIC_JAMUR',
             'URN_MIC_SILINDER_GRANULA', 'URN_MIC_SILINDER_HIALIN',
             'URN_MIC_KRISTAL_URAT_AMORF', 'URN_MIC_KRISTAL_FOSFAT_AMORF',
         ],
@@ -120,7 +127,7 @@ export const PANELS_CONFIG: PanelsConfig = {
         panel_name: 'Feses Rutin',
         parameter_ids: [
             'FCL_MAC_WARNA', 'FCL_MAC_KONSISTENSI', 'FCL_MAC_LENDIR', 'FCL_MAC_DARAH',
-            'FCL_MIC_ERITROSIT', 'FCL_MIC_LEUKOSIT',
+            'FCL_MIC_ERITROSIT', 'FCL_MIC_LEUKOSIT', 'FCL_MIC_PARASIT',
         ],
     },
     // cairan: {
@@ -147,12 +154,6 @@ export const LAB_PARAM_MAP: Record<CentralizedParamId, { full: string, short: st
     'BLD_RDW_CV': { full: 'RDW-CV', short: 'RDW-CV' },
     'BLD_MPV': { full: 'MPV', short: 'MPV' },
 
-    'BLD_LED_BBS_I': { full: 'LED/BBS I', short: 'LED I' },
-    'BLD_LED_BBS_II': { full: 'LED/BBS II', short: 'LED II' },
-
-    'BLD_CT': { full: 'Waktu Pembekuan (CT)', short: 'CT' },
-    'BLD_BT': { full: 'Waktu Perdarahan (BT)', short: 'BT' },
-
     'BLD_BLOOD_TYPE_ABO': { full: 'Golongan Darah ABO', short: 'Goldar' },
 
     'HJL_EOSINOFIL': { full: 'Eosinofil%', short: 'Eos%' },
@@ -160,6 +161,16 @@ export const LAB_PARAM_MAP: Record<CentralizedParamId, { full: string, short: st
     'HJL_NEUTROFIL': { full: 'Neutrofil%', short: 'Neu%' },
     'HJL_LIMFOSIT': { full: 'Limfosit%', short: 'Lim%' },
     'HJL_MONOSIT': { full: 'Monosit%', short: 'Mon%' },
+
+    'BLD_CT': { full: 'Waktu Pembekuan (CT)', short: 'CT' },
+    'BLD_BT': { full: 'Waktu Perdarahan (BT)', short: 'BT' },
+
+    'BLD_PT': { full: 'PT', short: 'PT' },
+    'BLD_APTT': { full: 'APTT', short: 'APTT' },
+    'BLD_INR': { full: 'INR', short: 'INR' },
+
+    'BLD_LED_BBS_I': { full: 'LED/BBS I', short: 'LED I' },
+    'BLD_LED_BBS_II': { full: 'LED/BBS II', short: 'LED II' },
 
     'LPD_TC': { full: 'Kolesterol Total', short: 'TC' },
     'LPD_TG': { full: 'Trigliserida', short: 'TG' },
@@ -236,6 +247,7 @@ export const LAB_PARAM_MAP: Record<CentralizedParamId, { full: string, short: st
     'URN_MIC_LEUKOSIT': { full: '(Mikro) Leukosit', short: '(Mi) Leukosit' },
     'URN_MIC_EPITHEL': { full: '(Mikro) Epithel', short: '(Mi) Epithel' },
     'URN_MIC_BAKTERI': { full: '(Mikro) Bakteri', short: '(Mi) Bakteri' },
+    'URN_MIC_JAMUR': { full: '(Mikro) Jamur', short: '(Mi) Jamur' },
     'URN_MIC_SILINDER_GRANULA': { full: '(Mikro) Silinder Granula', short: '(Mi) Silinder Granula' },
     'URN_MIC_SILINDER_HIALIN': { full: '(Mikro) Silinder Hialin', short: '(Mi) Silinder Hialin' },
     'URN_MIC_KRISTAL_URAT_AMORF': { full: '(Mikro) Kristal Urat Amorf', short: '(Mi) Kristal Urat Amorf' },
@@ -247,6 +259,7 @@ export const LAB_PARAM_MAP: Record<CentralizedParamId, { full: string, short: st
     'FCL_MAC_DARAH': { full: 'Darah', short: 'Darah' },
     'FCL_MIC_ERITROSIT': { full: '(Mikro) Eritrosit', short: '(Mi) Eritrosit' },
     'FCL_MIC_LEUKOSIT': { full: '(Mikro) Leukosit', short: '(Mi) Leukosit' },
+    'FCL_MIC_PARASIT': { full: '(Mikro) Parasit', short: '(Mi) Parasit' },
 }
 
 export const LAB_SYMBOL_MAP: Record<string, { full: string, short: string }> = {
