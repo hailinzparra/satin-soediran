@@ -90,6 +90,21 @@ export class SatinDashUIExtractor extends SatinBaseFunctionExtractor<SatinDashUI
                 diagnosticians.push(`${prefix_title ? prefix_title + '. ' : ''}${main_dxtician}${postfix_title ? ', ' + postfix_title : ''}`)
             }
 
+            const alamat = raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.PASIEN?.ALAMAT ?? ''
+            let complete_address = alamat
+
+            if (raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.PASIEN?.KARTUIDENTITAS && raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.PASIEN?.KARTUIDENTITAS.length) {
+                const id_card = raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.PASIEN?.KARTUIDENTITAS[0]
+                const wilayah = id_card.REFERENSI?.WILAYAH?.DESKRIPSI ?? ''
+                const kecamatan = id_card.REFERENSI?.WILAYAH?.REFERENSI?.KECAMATAN?.DESKRIPSI ?? ''
+                const kabupaten = id_card.REFERENSI?.WILAYAH?.REFERENSI?.KABUPATEN?.DESKRIPSI ?? ''
+                const provinsi = id_card.REFERENSI?.WILAYAH?.REFERENSI?.PROVINSI?.DESKRIPSI ?? ''
+
+                complete_address = [alamat, wilayah, kecamatan, kabupaten, provinsi]
+                    .filter(Boolean)
+                    .join(', ')
+            }
+
             const extracted_visit: SatinDashUIVisit = {
                 id: raw.NOMOR ?? '',
                 registration: {
@@ -105,7 +120,7 @@ export class SatinDashUIExtractor extends SatinBaseFunctionExtractor<SatinDashUI
                         gender_id: raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.PASIEN?.JENIS_KELAMIN ?? '',
                         birthdate: raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.PASIEN?.TANGGAL_LAHIR ?? '',
                         birthplace: raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.PASIEN?.REFERENSI?.TEMPATLAHIR?.DESKRIPSI ?? '',
-                        address: raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.PASIEN?.ALAMAT ?? '',
+                        address: complete_address,
                         religion: raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.PASIEN?.REFERENSI?.AGAMA?.DESKRIPSI ?? '',
                         education: raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.PASIEN?.REFERENSI?.PENDIDIKAN?.DESKRIPSI ?? '',
                         occupation: raw.REFERENSI?.PENDAFTARAN?.REFERENSI?.PASIEN?.REFERENSI?.PEKERJAAN?.DESKRIPSI ?? '',

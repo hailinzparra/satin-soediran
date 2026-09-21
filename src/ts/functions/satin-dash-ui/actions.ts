@@ -832,10 +832,19 @@ ${closing_sentence}`
 
                 visit_ids.forEach((id) => {
                     const visit = this.parent.data.extracted_visits.get(id)
+                    let prefix = ''
+                    if (visit) {
+                        const age_obj = get_age_metrics(visit.patient.demographic.birthdate)
+                        prefix = get_patient_prefix(
+                            age_obj?.y ?? 100,
+                            visit.patient.demographic.gender_id,
+                            visit.patient.demographic.marriage_status,
+                        )
+                    }
                     const mrs_fuzzy = get_fuzzy_time_yll(visit?.admission_date ?? '')
                     const mrs_text = `${mrs_fuzzy.text ? `${mrs_fuzzy.text}` : '--'}`
                     const label_text = visit
-                        ? `[${mrs_text}] ${format_medical_name(visit.patient.name)} (${visit.patient.mrn})`
+                        ? `[${mrs_text}] ${prefix ? prefix + ' ' : ''}${format_medical_name(visit.patient.name)} (${visit.patient.mrn})`
                         : `${this.ws.name} (${id})`
 
                     const opt = create_element('option', {
