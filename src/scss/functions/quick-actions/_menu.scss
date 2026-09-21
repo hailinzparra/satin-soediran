@@ -27,13 +27,32 @@
         backdrop-filter: blur(4px);
         transition: all 0.2s ease;
 
-        &:hover {
+        &:hover:not(:disabled) {
             background: rgba(255, 255, 255, 0.25);
             border-color: rgba(255, 255, 255, 0.7);
         }
 
+        // Disabled State
+        &:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+
+            span {
+                opacity: 0.7;
+            }
+
+            kbd {
+                opacity: 0.5;
+            }
+        }
+
         span {
             opacity: 0.95;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         kbd {
@@ -69,7 +88,7 @@
         width: 100%;
         box-sizing: border-box;
         background-color: #f8fafc;
-        border: 1.5px solid #00a896; // Teal accent matching SIMRS header
+        border: 1.5px solid #00a896;
         border-radius: 6px;
         color: #1e293b;
         padding: 8px 12px;
@@ -109,13 +128,13 @@
             .satin-item-badges {
                 display: flex;
                 align-items: center;
-                gap: 0.375rem; // 6px gap between badges
+                gap: 0.375rem;
             }
 
             .satin-item-badge {
                 padding: 0.125rem 0.375rem;
                 border-radius: 0.25rem;
-                font-size: 0.625rem; // 10px
+                font-size: 0.625rem;
                 font-weight: 600;
                 text-transform: uppercase;
 
@@ -125,13 +144,12 @@
                 }
 
                 &.satin-badge-id {
-                    background-color: #e0f2fe; // Sky 100
-                    color: #0369a1; // Sky 700
+                    background-color: #e0f2fe;
+                    color: #0369a1;
                     font-family: monospace;
                 }
             }
 
-            // Keyboard selection (Active option)
             &.selected {
                 background-color: #00a896;
                 color: #ffffff;
@@ -142,7 +160,6 @@
                 }
             }
 
-            // Mouse hover without selecting (doesn't conflict with keyboard selected index)
             &:hover:not(.selected) {
                 background-color: #f1f5f9;
             }

@@ -110,6 +110,7 @@ export class SoediranApiDriver extends BaseApiDriver {
             success: true,
             data: finalized_data ?? null,
             total: result.total,
+            result,
         }
     }
 

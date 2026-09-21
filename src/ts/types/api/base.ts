@@ -29,6 +29,7 @@ export interface BaseApiResponse<T> {
     data: T | null
     status?: number | boolean
     total?: number
+    result?: any
     error?: {
         message: string
         code?: string | number

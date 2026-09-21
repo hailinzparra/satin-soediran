@@ -1,6 +1,7 @@
 import { SoediranEvent } from '../../types/api/soediran/base'
 import { SatinBaseFunctionExtractor } from '../../types/functions/base'
 import { QuickActionsConfig, TagihanPendaftaranResponse } from '../../types/functions/quick-actions'
+import { format_medical_name } from '../../utils/formatter'
 import { QuickActionsFunction } from './parent'
 
 export class QuickActionsExtractor extends SatinBaseFunctionExtractor<QuickActionsFunction, QuickActionsConfig> {
@@ -37,7 +38,7 @@ export class QuickActionsExtractor extends SatinBaseFunctionExtractor<QuickActio
         this.parent.data.patient = {
             ...this.parent.data.patient,
             mrn: mrn,
-            name: name,
+            name: format_medical_name(name),
             reg_id: reg_id,
         }
     }
