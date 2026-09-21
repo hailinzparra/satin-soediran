@@ -7,9 +7,10 @@ import {
 } from '../../types/functions/quick-actions'
 import { QuickActionsExtractor } from './extractor'
 import { QuickActionsInjector } from './injector'
+import { SatinApiContext } from '../../api/context'
 
 export interface QuickActionsData {
-    patient: PatientContext | null
+    patient: PatientContext
 }
 
 export class QuickActionsFunction extends SatinBaseFunction<QuickActionsConfig, QuickActionsExtractor, QuickActionsInjector> {
@@ -18,14 +19,24 @@ export class QuickActionsFunction extends SatinBaseFunction<QuickActionsConfig, 
     public config = DEFAULT_QUICK_ACTIONS_CONFIG
 
     public data: QuickActionsData = {
-        patient: null,
+        patient: {
+            mrn: '',
+            name: '',
+            reg_id: '',
+            visit_id: '',
+        },
+    }
+
+    public get api_client(): SatinApiContext {
+        return this.engine.api
     }
 
     get_default_data(): QuickActionsConfigData {
         return structuredClone(DEFAULT_QUICK_ACTIONS_CONFIG.data)
     }
 
-    bind_events(): void {
+    bind_events() {
         this.injector.bind_events()
+        this.extractor.bind_events()
     }
 }

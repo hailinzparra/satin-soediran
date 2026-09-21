@@ -2,6 +2,9 @@ import { SatinBaseFunctionInjector, SatinBaseFunctionTargetNode } from '../../ty
 import { QuickActionsConfig, QuickActionItem, PatientContext } from '../../types/functions/quick-actions'
 import { QuickActionsFunction } from './parent'
 import { Toast } from '../../utils/toast'
+import { RequestPayloadBuilder } from '../../utils/api'
+import { get_current_date_time, irandom } from '../../utils/misc'
+import { Log } from '../../utils/logger'
 
 export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActionsFunction, QuickActionsConfig> {
     private readonly menu_class = 'satin-quick-actions-menu'
@@ -289,6 +292,52 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         }
     }
 
+    // Core implementation method
+    private async add_layanan(visit_id: string, tindakan_id: number): Promise<boolean> {
+        if (!visit_id) {
+            Log.error('add_layanan requires a valid visit_id')
+            return false
+        }
+
+        const payload = {
+            ID: `data.model.TindakanMedis-${irandom(1, 100)}`,
+            KUNJUNGAN: visit_id,
+            TINDAKAN: tindakan_id,
+            TANGGAL: get_current_date_time(),
+            VERIFIKASI: 0,
+            VERIFIKASI_OLEH: 0,
+            VERIFIKASI_TANGGAL: null,
+            OLEH: 0,
+            STATUS: 1,
+            SIMPAN: true,
+        }
+
+        const result = await this.parent.api_client.api_request({
+            base_path: 'layanan/tindakanmedis',
+            payload: new RequestPayloadBuilder({
+                _dc: Date.now(),
+            }),
+        }, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        })
+
+        return result.success
+    }
+
+    // Convenient helper methods for specific actions
+    private async add_visite(visit_id: string): Promise<boolean> {
+        return this.add_layanan(visit_id, 8393)
+    }
+
+    private async add_ekg(visit_id: string): Promise<boolean> {
+        return this.add_layanan(visit_id, 4474)
+    }
+
+    // Updated execution handler
     private async execute_action(item: QuickActionItem): Promise<void> {
         const patient_context: PatientContext = this.parent.data.patient || {
             mrn: 'UNKNOWN',
@@ -300,10 +349,25 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         Toast.pop(item.get_processing_msg(patient_context), Toast.type.info)
 
         try {
-            await new Promise((resolve) => setTimeout(resolve, 1200))
-            Toast.pop(item.get_success_msg(patient_context), Toast.type.success)
-        } catch (err) {
-            console.error(err)
+            let is_success = false
+
+            if (item.id === 'visite') {
+                is_success = await this.add_visite(patient_context.visit_id)
+            } else if (item.id === 'ekg') {
+                is_success = await this.add_ekg(patient_context.visit_id)
+            } else {
+                // Mock execution delay for other unimplemented actions
+                await new Promise((resolve) => setTimeout(resolve, 1200))
+                is_success = true
+            }
+
+            if (is_success) {
+                Toast.pop(item.get_success_msg(patient_context), Toast.type.success)
+            } else {
+                Toast.pop(item.get_error_msg(patient_context), Toast.type.error)
+            }
+        } catch (err: any) {
+            Log.error(err)
             Toast.pop(item.get_error_msg(patient_context), Toast.type.error)
         }
     }

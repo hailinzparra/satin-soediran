@@ -1,27 +1,56 @@
+import { SoediranEvent } from '../../types/api/soediran/base'
 import { SatinBaseFunctionExtractor } from '../../types/functions/base'
-import { QuickActionsConfig } from '../../types/functions/quick-actions'
+import { QuickActionsConfig, TagihanPendaftaranResponse } from '../../types/functions/quick-actions'
 import { QuickActionsFunction } from './parent'
 
 export class QuickActionsExtractor extends SatinBaseFunctionExtractor<QuickActionsFunction, QuickActionsConfig> {
     public async on_execute(): Promise<void> {
-        this.extract_data()
     }
 
-    extract_data(): void {
-        const mrn_el = document.querySelector('.js-patient-mrn, .patient-mrn')
-        const name_el = document.querySelector('.js-patient-name, .patient-name')
-        const reg_el = document.querySelector('.js-registration-id, .no-pendaftaran')
+    bind_events(): void {
+        window.addEventListener(SoediranEvent.TagihanPendaftaranFetched, (custom_event) => {
+            this.extract_name_mrn_reg(custom_event as CustomEvent<TagihanPendaftaranResponse>)
+        })
 
-        const mrn = mrn_el?.textContent?.trim() || '00.79.78.75'
-        const name = name_el?.textContent?.trim() || 'SULARJO'
-        const reg_id = reg_el?.textContent?.replace('No. Pendaftaran:', '').trim() || '260921.0609'
-        const visit_id = `VST-${reg_id}`
+        window.addEventListener(SoediranEvent.AdmisiFetched, (custom_event) => {
+            this.extract_visit_id(custom_event as CustomEvent<any>)
+        })
+    }
+
+    extract_name_mrn_reg(custom_event: CustomEvent<TagihanPendaftaranResponse>): void {
+        const data = custom_event.detail.data
+        if (!data) return
+
+        let mrn = ''
+        let name = ''
+        let reg_id = ''
+
+        if (data.length) {
+            const raw = data[0]
+            if (raw) {
+                mrn = raw.REFERENSI?.PENDAFTARAN?.NORM ?? ''
+                name = raw.REFERENSI?.PENDAFTARAN?.REFERENSI.PASIEN?.NAMA ?? ''
+                reg_id = raw.PENDAFTARAN ?? ''
+            }
+        }
 
         this.parent.data.patient = {
-            mrn,
-            name,
-            reg_id,
-            visit_id,
+            ...this.parent.data.patient,
+            mrn: mrn,
+            name: name,
+            reg_id: reg_id,
+        }
+    }
+
+    extract_visit_id(custom_event: CustomEvent<any>): void {
+        const payload = custom_event.detail.payload
+        if (!payload) return
+
+        const visit_id = payload.KUNJUNGAN ?? ''
+
+        this.parent.data.patient = {
+            ...this.parent.data.patient,
+            visit_id: visit_id,
         }
     }
 }

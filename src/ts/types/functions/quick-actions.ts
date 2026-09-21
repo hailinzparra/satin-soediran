@@ -1,3 +1,5 @@
+import { BaseApiResponse } from '../api/base'
+import { SoediranDataTagihanPendaftaran } from '../api/soediran/data'
 import { SatinDriver } from '../driver'
 import { SatinBaseFunctionConfig, SatinBaseFunctionConfigData, SatinBaseFunctionConfigSelectors } from './base'
 
@@ -36,6 +38,7 @@ export const DEFAULT_QUICK_ACTIONS_CONFIG: QuickActionsConfig = {
 }
 
 // helper interface
+export type TagihanPendaftaranResponse = BaseApiResponse<Array<SoediranDataTagihanPendaftaran>>
 
 export interface PatientContext {
     mrn: string

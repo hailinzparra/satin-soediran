@@ -18,7 +18,7 @@ export class SatinApiContext {
     build_url(options: BaseApiRequestOptions): string {
         const domain = options.domain || this.get_origin_domain()
         const query_string = options.payload.to_query_string()
-        return `${domain}${this.active_driver.config.paths.api}${options.base_path}?${query_string}`
+        return `${domain}${this.active_driver.config.paths.api}${options.base_path}${query_string ? `?${query_string}` : ''}`
     }
 
     prepare_request(options: BaseApiRequestOptions) {
@@ -28,10 +28,13 @@ export class SatinApiContext {
         return { driver, session, url }
     }
 
-    async api_request<T = any>(options: BaseApiRequestOptions): Promise<BaseApiResponse<T>> {
+    async api_request<T = any>(
+        options: BaseApiRequestOptions,
+        init?: RequestInit,
+    ): Promise<BaseApiResponse<T>> {
         const { driver, session, url } = this.prepare_request(options)
         try {
-            const result = await driver.api_request<T>(session, url)
+            const result = await driver.api_request<T>(session, url, init)
             return result
         } catch (err) {
             Log.error(`Failed to request data:`, err)

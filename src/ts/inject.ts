@@ -1,6 +1,44 @@
 import { SoediranEvent, SoediranUrlRouteFilters } from './types/api/soediran/base'
 import { Log } from './utils/logger'
 
+const extract_payload = (options: any): any => {
+    if (!options) return null
+
+    if (options.jsonData) {
+        return typeof options.jsonData === 'string'
+            ? JSON.parse(options.jsonData)
+            : options.jsonData
+    }
+
+    if (options.rawData) {
+        if (typeof options.rawData === 'string') {
+            try {
+                return JSON.parse(options.rawData)
+            } catch {
+                return options.rawData
+            }
+        }
+        return options.rawData
+    }
+
+    if (options.xmlData) {
+        return options.xmlData
+    }
+
+    if (options.params) {
+        if (typeof options.params === 'string') {
+            const parsed_params: Record<string, string> = {}
+            new URLSearchParams(options.params).forEach((val, key) => {
+                parsed_params[key] = val
+            })
+            return parsed_params
+        }
+        return options.params
+    }
+
+    return null
+}
+
 const start_sencha_interceptor = (): void => {
     if (typeof Ext === 'undefined' || !Ext.Ajax) {
         setTimeout(start_sencha_interceptor, 100)
@@ -32,6 +70,8 @@ const start_sencha_interceptor = (): void => {
                 }
             }
 
+            const payload = extract_payload(options);
+
             (Object.keys(SoediranUrlRouteFilters) as SoediranEvent[]).forEach((event_key) => {
                 try {
                     const filter = SoediranUrlRouteFilters[event_key]
@@ -39,8 +79,8 @@ const start_sencha_interceptor = (): void => {
                         and_group.every(condition => url.includes(condition))
                     )
                     if (is_matched) {
-                        const data = JSON.parse(response.responseText)
-                        const custom_event = new CustomEvent(event_key, { detail: data })
+                        const data = JSON.parse(response.responseText)?.data ?? null
+                        const custom_event = new CustomEvent(event_key, { detail: { data, payload } })
                         window.dispatchEvent(custom_event)
                     }
                 }

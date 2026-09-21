@@ -63,6 +63,7 @@ export class SatinDashUIExtractor extends SatinBaseFunctionExtractor<SatinDashUI
     private extract_visits(custom_event: CustomEvent<SatinDashUIVisitResponse>) {
         const data = custom_event.detail.data
         if (!data) return
+        if (!(data instanceof Array)) return
 
         this.parent.data.extracted_visits.clear()
         data.forEach(raw => {

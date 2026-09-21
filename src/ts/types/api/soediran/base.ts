@@ -2,6 +2,8 @@ export enum SoediranEvent {
     SessionRefreshed = 'SessionRefreshed',
     KunjunganFetched = 'KunjunganFetched',
     HistoryOrderResepFetched = 'HistoryOrderResepFetched',
+    TagihanPendaftaranFetched = 'TagihanPendaftaranFetched',
+    AdmisiFetched = 'AdmisiFetched',
 }
 
 export const SoediranUrlRouteFilters: Record<SoediranEvent, string[][]> = {
@@ -15,6 +17,12 @@ export const SoediranUrlRouteFilters: Record<SoediranEvent, string[][]> = {
     [SoediranEvent.HistoryOrderResepFetched]: [
         ['/kunjungan', 'JENIS_KUNJUNGAN=11'],
         ['/orderresep', 'HISTORY=1'],
+    ],
+    [SoediranEvent.TagihanPendaftaranFetched]: [
+        ['/tagihanpendaftaran'],
+    ],
+    [SoediranEvent.AdmisiFetched]: [
+        ['/admisi', 'KUNJUNGAN='],
     ],
 }
 
