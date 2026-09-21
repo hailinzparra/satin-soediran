@@ -173,6 +173,7 @@ const start = async () => {
         logLevel: 'silent',
         define: {
             __PROD__: JSON.stringify(is_prod),
+            __VERSION__: JSON.stringify(config.version),
         },
         plugins: [{
             name: 'terminal-notifier',

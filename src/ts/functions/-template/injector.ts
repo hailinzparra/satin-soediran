@@ -1,11 +1,15 @@
 // import { SatinBaseFunctionInjector, SatinBaseFunctionTargetNode } from '../../types/functions/base'
-// import { SatinDashUIConfig } from '../../types/functions/satin-dash-ui'
-// import { SatinDashUIFunction } from './parent'
+// import { QuickActionsConfig } from '../../types/functions/quick-actions'
+// import { QuickActionsFunction } from './parent'
 
-// export class SatinDashUIInjector extends SatinBaseFunctionInjector<SatinDashUIFunction, SatinDashUIConfig> {
+// export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActionsFunction, QuickActionsConfig> {
 //     public async on_execute(): Promise<void> {
+//         // if feature enabled, what happen on each tick?
+//         // do it here
 //     }
 
 //     public reset(target_node?: SatinBaseFunctionTargetNode): void {
+//         // if feature disabled, what happen on each tick?
+//         // do it here
 //     }
 // }

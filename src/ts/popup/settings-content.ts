@@ -113,6 +113,11 @@ export class PopupSettingsContent extends PopupContent {
                 sub: 'Munculkan tombol menu "Hasil" untuk meninjau hasil lab dan radiologi dengan mudah.',
             },
             {
+                key: 'emr_show_quick_actions_menu',
+                title: '<span class="text-slate-500">Tampilkan</span> (Menu "Quick Actions")',
+                sub: 'Munculkan tombol menu "Quick Actions" untuk akses cepat ke berbagai fitur.',
+            },
+            {
                 key: 'emr_show_drug_price',
                 title: '<span class="text-slate-500">Tampilkan</span> (Harga Obat)',
                 sub: 'Munculkan estimasi harga obat di halaman rekam medis.',
@@ -221,7 +226,7 @@ export class PopupSettingsContent extends PopupContent {
 
         const wrapper_title = c('div', {
             classes: 'text-[16px] font-bold text-slate-700 mt-4 mb-2 pb-1'
-        }, [c('span', { html: '<span class="text-slate-500">Pengaturan Ekstensi</span> (Satin Soediran)' })])
+        }, [c('span', { html: `<span class="text-slate-500">Pengaturan Ekstensi</span> (Satin Soediran ${__VERSION__})` })])
 
         const global_header = create_sub_header('Fitur Umum', true)
         const dash_header = create_sub_header('Fitur Khusus (Dashboard)')

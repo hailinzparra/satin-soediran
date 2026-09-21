@@ -1,15 +1,15 @@
 // import { SatinBaseFunction } from '../../types/functions/base'
-// import { DEFAULT_SATIN_DASH_UI_CONFIG, SatinDashUIConfig, SatinDashUIConfigData } from '../../types/functions/satin-dash-ui'
-// import { SatinDashUIExtractor } from './extractor'
-// import { SatinDashUIInjector } from './injector'
+// import { DEFAULT_QUICK_ACTIONS_CONFIG, QuickActionsConfig, QuickActionsConfigData } from '../../types/functions/quick-actions'
+// import { QuickActionsExtractor } from './extractor'
+// import { QuickActionsInjector } from './injector'
 
-// export class SatinDashUIFunction extends SatinBaseFunction<SatinDashUIConfig, SatinDashUIExtractor, SatinDashUIInjector> {
-//     public extractor = new SatinDashUIExtractor(this)
-//     public injector = new SatinDashUIInjector(this)
-//     public config = DEFAULT_SATIN_DASH_UI_CONFIG
+// export class QuickActionsFunction extends SatinBaseFunction<QuickActionsConfig, QuickActionsExtractor, QuickActionsInjector> {
+//     public extractor = new QuickActionsExtractor(this)
+//     public injector = new QuickActionsInjector(this)
+//     public config = DEFAULT_QUICK_ACTIONS_CONFIG
 
-//     get_default_data(): SatinDashUIConfigData {
-//         return structuredClone(DEFAULT_SATIN_DASH_UI_CONFIG.data)
+//     get_default_data(): QuickActionsConfigData {
+//         return structuredClone(DEFAULT_QUICK_ACTIONS_CONFIG.data)
 //     }
 // }
 
