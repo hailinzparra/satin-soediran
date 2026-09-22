@@ -18,6 +18,7 @@ export interface SatinSettingsData {
 
     emr_show_results_menu: boolean
     emr_show_quick_actions_menu: boolean
+    emr_show_notes_filter_menu: boolean
 
     emr_show_cppt_copy_button: boolean
 }

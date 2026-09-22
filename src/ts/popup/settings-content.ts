@@ -113,6 +113,11 @@ export class PopupSettingsContent extends PopupContent {
                 sub: 'Munculkan tombol menu "Hasil" untuk meninjau hasil lab dan radiologi dengan mudah.',
             },
             {
+                key: 'emr_show_notes_filter_menu',
+                title: '<span class="text-slate-500">Tampilkan</span> (Menu "Filter CPPT")',
+                sub: 'Munculkan tombol menu "Filter CPPT" untuk memfilter dan memilah riwayat CPPT.',
+            },
+            {
                 key: 'emr_show_quick_actions_menu',
                 title: '<span class="text-slate-500">Tampilkan</span> (Menu "Quick Actions")',
                 sub: 'Munculkan tombol menu "Quick Actions" untuk akses cepat ke berbagai fitur.',

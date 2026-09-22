@@ -27,6 +27,7 @@ export const DEFAULT_SATIN_SETTINGS: SatinSettingsData = {
 
     emr_show_results_menu: false,
     emr_show_quick_actions_menu: false,
+    emr_show_notes_filter_menu: false,
 
     emr_show_cppt_copy_button: false,
 }

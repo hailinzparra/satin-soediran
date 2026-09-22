@@ -1,0 +1,126 @@
+@use "../../base";
+
+.satin-notes-filter-menu {
+    @include base.satin-font-main;
+    font-family: inherit;
+    padding: 10px 12px;
+    background-color: #f4f6f9;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 99;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+    button,
+    input {
+        font-family: inherit;
+    }
+
+    .satin-notes-filter-toggles {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        .satin-notes-toggle-group {
+            display: inline-flex;
+            background-color: #e2e8f0;
+            padding: 3px;
+            border-radius: 8px;
+            gap: 2px;
+        }
+
+        .satin-notes-filter-btn {
+            padding: 4px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: #64748b;
+            border-radius: 6px;
+            transition: all 0.15s ease-in-out;
+            text-transform: uppercase;
+
+            &:hover {
+                color: #1e293b;
+            }
+
+            &.active {
+                background-color: #ffffff;
+                color: #2563eb;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
+        }
+
+        .satin-notes-search-input {
+            padding: 5px 12px;
+            font-size: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 20px;
+            outline: none;
+            background-color: #ffffff;
+            color: #1e293b;
+            transition: border-color 0.15s ease;
+            width: 180px;
+
+            &:focus {
+                border-color: #2563eb;
+            }
+        }
+    }
+
+    .satin-notes-dates-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        overflow-x: auto;
+        padding-bottom: 2px;
+        scrollbar-width: thin;
+
+        &::-webkit-scrollbar {
+            height: 4px;
+        }
+        &::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 2px;
+        }
+
+        .satin-notes-date-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 80px;
+            width: max-content;
+            gap: 4px;
+            padding: 5px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid #e2e8f0;
+            background-color: #ffffff;
+            color: #64748b;
+            border-radius: 6px;
+            white-space: nowrap;
+            transition: all 0.15s ease-in-out;
+
+            &:hover {
+                background-color: #f8fafc;
+                border-color: #cbd5e1;
+            }
+
+            &.active {
+                background-color: #1d4ed8;
+                color: #ffffff;
+                border-color: #1d4ed8;
+                font-weight: 700;
+                box-shadow: 0 2px 4px rgba(29, 78, 216, 0.2);
+            }
+        }
+    }
+}

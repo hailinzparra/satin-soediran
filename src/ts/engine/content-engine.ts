@@ -1,6 +1,7 @@
 import { AllowCopyFunction } from '../functions/allow-copy'
 import { DrugPriceFunction } from '../functions/drug-price/parent'
 import { EMRManagerFunction } from '../functions/emr-manager/parent'
+import { NotesFilterFunction } from '../functions/notes-filter/parent'
 import { PrescriberNameFunction } from '../functions/prescriber-name/parent'
 import { QuickActionsFunction } from '../functions/quick-actions/parent'
 import { ResultsMenuFunction } from '../functions/results-menu/parent'
@@ -29,6 +30,7 @@ export class SatinContentEngine extends SatinEngine {
         new PrescriberNameFunction(this),
         new ResultsMenuFunction(this),
         new QuickActionsFunction(this),
+        new NotesFilterFunction(this),
     ]
 
     get_all_functions = (): SatinCoreFunction[] => [
