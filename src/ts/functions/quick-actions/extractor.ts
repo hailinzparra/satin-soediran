@@ -11,10 +11,12 @@ export class QuickActionsExtractor extends SatinBaseFunctionExtractor<QuickActio
     bind_events(): void {
         window.addEventListener(SoediranEvent.TagihanPendaftaranFetched, (custom_event) => {
             this.extract_name_mrn_reg(custom_event as CustomEvent<TagihanPendaftaranResponse>)
+            this.parent.injector.on_execute()
         })
 
         window.addEventListener(SoediranEvent.AdmisiFetched, (custom_event) => {
             this.extract_visit_id(custom_event as CustomEvent<any>)
+            this.parent.injector.on_execute()
         })
     }
 

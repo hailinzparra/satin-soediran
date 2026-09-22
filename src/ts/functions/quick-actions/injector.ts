@@ -107,6 +107,7 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         menus.forEach(menu => menu.remove())
         this.close_palette()
         this.last_trigger_context_id = null
+        this.parent.reset_data()
     }
 
     inject_menu(): void {
@@ -119,6 +120,7 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
             if (!is_already_exists) {
                 const menu = this.create_menu()
                 parent_header.append(menu)
+                this.attach_destruction_listener(menu)
             }
         }
     }
@@ -146,6 +148,23 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         return menu
     }
 
+    private attach_destruction_listener(element: HTMLElement): void {
+        const observer = new MutationObserver(() => {
+            // checks if element is no longer attached to the active DOM tree
+            if (!element.isConnected) {
+                observer.disconnect()
+
+                // reset patient data
+                this.parent.reset_data()
+                this.last_trigger_context_id = null
+                this.close_palette()
+            }
+        })
+
+        // Observe document body for subtree changes
+        observer.observe(document.body, { childList: true, subtree: true })
+    }
+
     private update_trigger_state(): void {
         const trigger_btn = document.querySelector(`.${this.menu_class} .satin-quick-actions-trigger`) as HTMLButtonElement
         if (!trigger_btn) return
@@ -159,7 +178,7 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         const current_context_key = patient_name || ''
 
         // Exit early if the context key hasn't changed
-        if (this.last_trigger_context_id === current_context_key) {
+        if (this.last_trigger_context_id === current_context_key && trigger_btn.disabled === false) {
             return
         }
 

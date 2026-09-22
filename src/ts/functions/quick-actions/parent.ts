@@ -27,6 +27,15 @@ export class QuickActionsFunction extends SatinBaseFunction<QuickActionsConfig, 
         },
     }
 
+    public reset_data(): void {
+        this.data.patient = {
+            mrn: '',
+            name: '',
+            reg_id: '',
+            visit_id: '',
+        }
+    }
+
     public get api_client(): SatinApiContext {
         return this.engine.api
     }
