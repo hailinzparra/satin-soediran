@@ -68,7 +68,7 @@ export class NotesFilterInjector extends SatinBaseFunctionInjector<NotesFilterFu
         // Search Input Field
         const search_input = document.createElement('input')
         search_input.type = 'text'
-        search_input.placeholder = 'Search author name...'
+        search_input.placeholder = 'e.g. imad...'
         search_input.className = 'satin-notes-search-input'
         search_input.style.display =
             this.parent.data.values_to_render.active_category === 'SEARCH' ? 'inline-block' : 'none'
