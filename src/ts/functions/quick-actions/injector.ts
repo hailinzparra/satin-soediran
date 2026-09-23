@@ -40,30 +40,30 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
             get_success_msg: (ctx) => `Pembacaan EKG added! (${ctx.name} - Visit: ${ctx.visit_id})`,
             get_error_msg: (ctx) => `Failed to add Pembacaan EKG (${ctx.name} - Visit: ${ctx.visit_id})`,
         },
-        // {
-        //     id: 'sign_resume',
-        //     label: 'Sign "Resume Medis"',
-        //     category: 'Sign',
-        //     get_secondary_badge: (ctx) => ({
-        //         label: `REG: ${ctx?.reg_id || '---'}`,
-        //         raw_id: ctx?.reg_id || '',
-        //     }),
-        //     get_processing_msg: (ctx) => `Signing Resume Medis... (${ctx.name} - Reg: ${ctx.reg_id})`,
-        //     get_success_msg: (ctx) => `Resume Medis signed! (${ctx.name} - Reg: ${ctx.reg_id})`,
-        //     get_error_msg: (ctx) => `Failed to sign Resume Medis (${ctx.name} - Reg: ${ctx.reg_id})`,
-        // },
-        // {
-        //     id: 'sign_harian',
-        //     label: 'Sign "Pengkajian Harian"',
-        //     category: 'Sign',
-        //     get_secondary_badge: (ctx) => ({
-        //         label: `VISIT: ${ctx?.visit_id || '---'}`,
-        //         raw_id: ctx?.visit_id || '',
-        //     }),
-        //     get_processing_msg: (ctx) => `Signing Pengkajian Harian... (${ctx.name} - Visit: ${ctx.visit_id})`,
-        //     get_success_msg: (ctx) => `Pengkajian Harian signed! (${ctx.name} - Visit: ${ctx.visit_id})`,
-        //     get_error_msg: (ctx) => `Failed to sign Pengkajian Harian (${ctx.name} - Visit: ${ctx.visit_id})`,
-        // },
+        {
+            id: 'sign_resume',
+            label: 'Sign "Resume Medis"',
+            category: 'Sign',
+            get_secondary_badge: (ctx) => ({
+                label: `REG: ${ctx?.reg_id || '---'}`,
+                raw_id: ctx?.reg_id || '',
+            }),
+            get_processing_msg: (ctx) => `Signing Resume Medis... (${ctx.name} - Reg: ${ctx.reg_id})`,
+            get_success_msg: (ctx) => `Resume Medis signed! (${ctx.name} - Reg: ${ctx.reg_id})`,
+            get_error_msg: (ctx) => `Failed to sign Resume Medis (${ctx.name} - Reg: ${ctx.reg_id})`,
+        },
+        {
+            id: 'sign_harian',
+            label: 'Sign "Pengkajian Harian"',
+            category: 'Sign',
+            get_secondary_badge: (ctx) => ({
+                label: `VISIT: ${ctx?.visit_id || '---'}`,
+                raw_id: ctx?.visit_id || '',
+            }),
+            get_processing_msg: (ctx) => `Signing Pengkajian Harian... (${ctx.name} - Visit: ${ctx.visit_id})`,
+            get_success_msg: (ctx) => `Pengkajian Harian signed! (${ctx.name} - Visit: ${ctx.visit_id})`,
+            get_error_msg: (ctx) => `Failed to sign Pengkajian Harian (${ctx.name} - Visit: ${ctx.visit_id})`,
+        },
     ]
 
     public async on_execute(): Promise<void> {
@@ -386,113 +386,49 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         return result.success
     }
 
-    private async sign_document(
+    private sign_document(
         doc_type: 'pengkajian_harian' | 'resume_medis',
-        reg_id: string,
-        visit_id?: string
+        passphrase?: string
     ): Promise<boolean> {
-        if (!reg_id) {
-            Log.error('sign_document requires a valid reg_id')
-            return false
-        }
+        return new Promise((resolve) => {
+            const request_id = `sign_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+            const target_doc_type = doc_type === 'pengkajian_harian' ? 'harian' : 'resume'
 
-        const is_harian = doc_type === 'pengkajian_harian'
+            // Setup response timeout (10 seconds)
+            const timeout_id = setTimeout(() => {
+                window.removeEventListener('SATIN_EXT_AUTO_SIGN_RESPONSE_EVENT', response_handler)
+                Log.error(`Auto-sign request timed out for request ${request_id}`)
+                resolve(false)
+            }, 10000)
 
-        // Shared base payload properties
-        const base_payload = {
-            TITLE: is_harian ? `PENGKAJIAN HARIAN - ${visit_id}` : `RESUME MEDIS - ${reg_id}`,
-            NAME: is_harian ? 'mr.3312010-PengkajianHarian' : 'mr.3312010-CetakMR2ResumeMedis',
-            FINAL: 0,
-            ENABLE_BUTTON_SIGN: true,
-            PARAMETER: is_harian
-                ? { PNOPEN: reg_id, PKUNJUNGAN: visit_id, CETAK_HEADER: 1 }
-                : { PNOPEN: reg_id },
-            PRINT_NAME: 'CetakMR',
-            TYPE: 'Pdf',
-            EXT: 'pdf',
-            REQUEST_FOR_PRINT: false,
-            ALLOW_DOWNLOAD: false,
-            CONNECTION_NUMBER: 0,
-            COPIES: 1,
-        }
+            // Event listener for response from main world
+            const response_handler = (e: Event) => {
+                const customEvent = e as CustomEvent<{ request_id: string; success: boolean; error?: string }>
+                if (customEvent.detail?.request_id === request_id) {
+                    clearTimeout(timeout_id)
+                    window.removeEventListener('SATIN_EXT_AUTO_SIGN_RESPONSE_EVENT', response_handler)
 
-        // Step 1: Initial POST request (without SIGN: 1) to get the report hash URL
-        const init_payload = {
-            ...base_payload,
-            DOCUMENT_STORAGE: {
-                REF_ID: is_harian ? visit_id : reg_id,
-                DOCUMENT_DIRECTORY_ID: is_harian ? 13 : 2,
-            },
-            id: `data.model.RequestReport-${irandom(1, 100)}`,
-        }
+                    if (!customEvent.detail.success) {
+                        Log.error('Sign failed:', customEvent.detail.error)
+                    }
 
-        const init_result = await this.parent.api_client.api_request({
-            base_path: 'plugins/request-report',
-            payload: new RequestPayloadBuilder(),
-        }, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: JSON.stringify(init_payload),
+                    resolve(customEvent.detail.success)
+                }
+            }
+
+            window.addEventListener('SATIN_EXT_AUTO_SIGN_RESPONSE_EVENT', response_handler)
+
+            // Dispatch request to main world inject.ts
+            window.dispatchEvent(
+                new CustomEvent('SATIN_EXT_AUTO_SIGN_REQUEST_EVENT', {
+                    detail: {
+                        request_id,
+                        doc_type: target_doc_type,
+                        passphrase,
+                    },
+                })
+            )
         })
-
-        if (!init_result.success || !init_result.result?.url) {
-            Log.error('Failed to obtain report URL from initial request')
-            return false
-        }
-
-        // Extract the hash from the returned URL string
-        const report_url: string = init_result.result?.url
-        const match = report_url.match(/requestReport=([a-f0-9]+)/i)
-        const report_hash = match ? match[1] : null
-
-        if (!report_hash) {
-            Log.error('Failed to parse requestReport hash from URL:', report_url)
-            return false
-        }
-
-        // Step 2: GET request to preview/initialize the document stream with the hash
-        // const get_result = await this.parent.api_client.api_request({
-        //     base_path: `report/${report_hash}`,
-        //     payload: new RequestPayloadBuilder({}, false),
-        // }, {
-        //     method: 'GET',
-        //     headers: {
-        //         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-        //     },
-        // })
-
-        // if (!get_result.success) {
-        //     Log.error('Failed to fetch report stream for hash:', report_hash)
-        //     return false
-        // }
-
-        // Step 3: POST request (with SIGN: 1) to finalize and attach the signature QR
-        const sign_payload = {
-            ...base_payload,
-            DOCUMENT_STORAGE: {
-                REF_ID: is_harian ? visit_id : reg_id,
-                DOCUMENT_DIRECTORY_ID: is_harian ? 13 : 2,
-                SIGN: 1,
-            },
-            id: `data.model.RequestReport-${irandom(1, 100)}`,
-        }
-
-        const sign_result = await this.parent.api_client.api_request({
-            base_path: 'plugins/request-report',
-            payload: new RequestPayloadBuilder(),
-        }, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: JSON.stringify(sign_payload),
-        })
-
-        return sign_result.success && sign_result.data?.sign === true
     }
 
     private async add_visite(visit_id: string): Promise<boolean> {
@@ -521,13 +457,9 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
             } else if (item.id === 'ekg') {
                 is_success = await this.add_ekg(patient_context.visit_id)
             } else if (item.id === 'sign_resume') {
-                is_success = await this.sign_document('resume_medis', patient_context.reg_id)
+                is_success = await this.sign_document('resume_medis')
             } else if (item.id === 'sign_harian') {
-                is_success = await this.sign_document(
-                    'pengkajian_harian',
-                    patient_context.reg_id,
-                    patient_context.visit_id
-                )
+                is_success = await this.sign_document('pengkajian_harian')
             } else {
                 // Fallback for unhandled actions
                 await new Promise((resolve) => setTimeout(resolve, 1200))
