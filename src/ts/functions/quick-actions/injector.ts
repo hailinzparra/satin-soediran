@@ -5,6 +5,7 @@ import { Toast } from '../../utils/toast'
 import { RequestPayloadBuilder } from '../../utils/api'
 import { get_current_date_time, irandom } from '../../utils/misc'
 import { Log } from '../../utils/logger'
+import { SATIN_EXT_AUTO_SIGN_REQUEST_EVENT, SATIN_EXT_AUTO_SIGN_RESPONSE_EVENT, SATIN_EXT_KIRIM_ORDER_RESEP_REQUEST_EVENT, SATIN_EXT_KIRIM_ORDER_RESEP_RESPONSE_EVENT } from '../../inject'
 
 export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActionsFunction, QuickActionsConfig> {
     private readonly menu_class = 'satin-quick-actions-menu'
@@ -53,6 +54,18 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
             get_error_msg: (ctx) => `Failed to sign Resume Medis (${ctx.name} - Reg: ${ctx.reg_id})`,
         },
         {
+            id: 'sign_awal',
+            label: 'Sign "Pengkajian Awal"',
+            category: 'Sign',
+            get_secondary_badge: (ctx) => ({
+                label: `VISIT: ${ctx?.visit_id || '---'}`,
+                raw_id: ctx?.visit_id || '',
+            }),
+            get_processing_msg: (ctx) => `Signing Pengkajian Awal... (${ctx.name} - Visit: ${ctx.visit_id})`,
+            get_success_msg: (ctx) => `Pengkajian Awal signed! (${ctx.name} - Visit: ${ctx.visit_id})`,
+            get_error_msg: (ctx) => `Failed to sign Pengkajian Awal (${ctx.name} - Visit: ${ctx.visit_id})`,
+        },
+        {
             id: 'sign_harian',
             label: 'Sign "Pengkajian Harian"',
             category: 'Sign',
@@ -63,6 +76,18 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
             get_processing_msg: (ctx) => `Signing Pengkajian Harian... (${ctx.name} - Visit: ${ctx.visit_id})`,
             get_success_msg: (ctx) => `Pengkajian Harian signed! (${ctx.name} - Visit: ${ctx.visit_id})`,
             get_error_msg: (ctx) => `Failed to sign Pengkajian Harian (${ctx.name} - Visit: ${ctx.visit_id})`,
+        },
+        {
+            id: 'kirim_resep',
+            label: 'Submit "Resep"',
+            category: 'Resep',
+            get_secondary_badge: (ctx) => ({
+                label: `REG: ${ctx?.reg_id || '---'}`,
+                raw_id: ctx?.reg_id || '',
+            }),
+            get_processing_msg: (ctx) => `Submitting Resep... (${ctx.name} - Reg: ${ctx.reg_id})`,
+            get_success_msg: (ctx) => `Resep submitted! (${ctx.name} - Reg: ${ctx.reg_id})`,
+            get_error_msg: (ctx) => `Failed to submit Resep (${ctx.name} - Reg: ${ctx.reg_id})`,
         },
     ]
 
@@ -80,7 +105,6 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
             if (e.altKey && e.code === 'Slash') {
                 e.preventDefault()
                 const trigger = document.querySelector(`.${this.menu_class} .satin-quick-actions-trigger`) as HTMLButtonElement
-                // Block key shortcut when disabled
                 if (trigger && !trigger.disabled) {
                     this.toggle_palette(trigger)
                 }
@@ -133,7 +157,6 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         trigger_btn.type = 'button'
         trigger_btn.className = 'satin-quick-actions-trigger'
 
-        // Initial state set to disabled while waiting for context
         trigger_btn.disabled = true
         trigger_btn.innerHTML = `<span>Loading patient context...</span><kbd>Alt+/</kbd>`
 
@@ -150,18 +173,15 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
 
     private attach_destruction_listener(element: HTMLElement): void {
         const observer = new MutationObserver(() => {
-            // checks if element is no longer attached to the active DOM tree
             if (!element.isConnected) {
                 observer.disconnect()
 
-                // reset patient data
                 this.parent.reset_data()
                 this.last_trigger_context_id = null
                 this.close_palette()
             }
         })
 
-        // Observe document body for subtree changes
         observer.observe(document.body, { childList: true, subtree: true })
     }
 
@@ -177,7 +197,6 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
 
         const current_context_key = patient_name || ''
 
-        // Exit early if the context key hasn't changed
         if (this.last_trigger_context_id === current_context_key && trigger_btn.disabled === false) {
             return
         }
@@ -387,44 +406,87 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
     }
 
     private sign_document(
-        doc_type: 'pengkajian_harian' | 'resume_medis',
+        doc_type: 'harian' | 'resume' | 'awal',
         passphrase?: string
     ): Promise<boolean> {
         return new Promise((resolve) => {
             const request_id = `sign_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
-            const target_doc_type = doc_type === 'pengkajian_harian' ? 'harian' : 'resume'
 
-            // Setup response timeout (10 seconds)
             const timeout_id = setTimeout(() => {
-                window.removeEventListener('SATIN_EXT_AUTO_SIGN_RESPONSE_EVENT', response_handler)
+                window.removeEventListener(SATIN_EXT_AUTO_SIGN_RESPONSE_EVENT, response_handler)
                 Log.error(`Auto-sign request timed out for request ${request_id}`)
                 resolve(false)
             }, 10000)
 
-            // Event listener for response from main world
             const response_handler = (e: Event) => {
-                const customEvent = e as CustomEvent<{ request_id: string; success: boolean; error?: string }>
-                if (customEvent.detail?.request_id === request_id) {
+                const custom_event = e as CustomEvent<{
+                    request_id: string
+                    success: boolean
+                    error?: string
+                }>
+                if (custom_event.detail?.request_id === request_id) {
                     clearTimeout(timeout_id)
-                    window.removeEventListener('SATIN_EXT_AUTO_SIGN_RESPONSE_EVENT', response_handler)
+                    window.removeEventListener(SATIN_EXT_AUTO_SIGN_RESPONSE_EVENT, response_handler)
 
-                    if (!customEvent.detail.success) {
-                        Log.error('Sign failed:', customEvent.detail.error)
+                    if (!custom_event.detail.success) {
+                        Log.error('Sign failed:', custom_event.detail.error)
                     }
 
-                    resolve(customEvent.detail.success)
+                    resolve(custom_event.detail.success)
                 }
             }
 
-            window.addEventListener('SATIN_EXT_AUTO_SIGN_RESPONSE_EVENT', response_handler)
+            window.addEventListener(SATIN_EXT_AUTO_SIGN_RESPONSE_EVENT, response_handler)
 
-            // Dispatch request to main world inject.ts
             window.dispatchEvent(
-                new CustomEvent('SATIN_EXT_AUTO_SIGN_REQUEST_EVENT', {
+                new CustomEvent(SATIN_EXT_AUTO_SIGN_REQUEST_EVENT, {
                     detail: {
                         request_id,
-                        doc_type: target_doc_type,
+                        doc_type,
                         passphrase,
+                    },
+                })
+            )
+        })
+    }
+
+    private kirim_order_resep(passphrase?: string): Promise<boolean> {
+        return new Promise((resolve) => {
+            const request_id = `resep_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+
+            const timeout_id = setTimeout(() => {
+                window.removeEventListener(SATIN_EXT_KIRIM_ORDER_RESEP_RESPONSE_EVENT, response_handler)
+                Log.error(`Kirim order resep request timed out for request ${request_id}`)
+                resolve(false)
+            }, 12000)
+
+            const response_handler = (e: Event) => {
+                const custom_event = e as CustomEvent<{
+                    request_id: string
+                    success: boolean
+                    error?: string
+                }>
+                if (custom_event.detail?.request_id === request_id) {
+                    clearTimeout(timeout_id)
+                    window.removeEventListener(SATIN_EXT_KIRIM_ORDER_RESEP_RESPONSE_EVENT, response_handler)
+
+                    if (!custom_event.detail.success) {
+                        Log.error('Kirim order resep failed:', custom_event.detail.error)
+                    }
+
+                    resolve(custom_event.detail.success)
+                }
+            }
+
+            window.addEventListener(SATIN_EXT_KIRIM_ORDER_RESEP_RESPONSE_EVENT, response_handler)
+
+            window.dispatchEvent(
+                new CustomEvent(SATIN_EXT_KIRIM_ORDER_RESEP_REQUEST_EVENT, {
+                    detail: {
+                        request_id,
+                        passphrase,
+                        auto_sign: false, // TODO: rn set to true doesnt work, consider-
+                        // highlight button? so that user can press enter on sign button rightaway
                     },
                 })
             )
@@ -457,11 +519,14 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
             } else if (item.id === 'ekg') {
                 is_success = await this.add_ekg(patient_context.visit_id)
             } else if (item.id === 'sign_resume') {
-                is_success = await this.sign_document('resume_medis')
+                is_success = await this.sign_document('resume')
             } else if (item.id === 'sign_harian') {
-                is_success = await this.sign_document('pengkajian_harian')
+                is_success = await this.sign_document('harian')
+            } else if (item.id === 'sign_awal') {
+                is_success = await this.sign_document('awal')
+            } else if (item.id === 'kirim_resep') {
+                is_success = await this.kirim_order_resep()
             } else {
-                // Fallback for unhandled actions
                 await new Promise((resolve) => setTimeout(resolve, 1200))
                 is_success = true
             }
