@@ -1,13 +1,16 @@
 import { auto_sign_document_in_main_world } from './auto-sign'
 import { extract_workspace_patient_summary } from './extractors'
+import { execute_navigation_in_main_world } from './navigation'
 import { execute_kirim_order_resep } from './order-resep'
 import {
     AutoSignRequestPayload,
     KirimOrderResepRequestPayload,
+    NavigateRequestPayload,
     SATIN_EXT_AUTO_SIGN_REQUEST_EVENT,
     SATIN_EXT_KIRIM_ORDER_RESEP_REQUEST_EVENT,
+    SATIN_EXT_NAVIGATE_REQUEST_EVENT,
     SATIN_EXT_PATIENT_DATA_EVENT,
-    SATIN_EXT_PATIENT_REQUEST_EVENT,
+    SATIN_EXT_PATIENT_REQUEST_EVENT
 } from './types'
 import { Log } from '../utils/logger'
 
@@ -35,6 +38,13 @@ export const start_workspace_bridge = (): void => {
         const custom_event = e as CustomEvent<KirimOrderResepRequestPayload>
         if (custom_event.detail) {
             execute_kirim_order_resep(custom_event.detail)
+        }
+    })
+
+    window.addEventListener(SATIN_EXT_NAVIGATE_REQUEST_EVENT, (e: Event) => {
+        const custom_event = e as CustomEvent<NavigateRequestPayload>
+        if (custom_event.detail) {
+            execute_navigation_in_main_world(custom_event.detail)
         }
     })
 }

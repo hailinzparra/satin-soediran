@@ -50,8 +50,8 @@ export interface PatientContext {
 export interface QuickActionItem {
     id: string
     label: string
-    category: 'Layanan' | 'Sign' | 'Resep'
-    get_secondary_badge: (ctx: PatientContext | null) => { label: string; raw_id: string }
+    category: 'Layanan' | 'Sign' | 'Resep' | 'Navigation'
+    get_secondary_badge: (ctx: PatientContext | null) => { label?: string; raw_id?: string }
     get_processing_msg: (ctx: PatientContext) => string
     get_success_msg: (ctx: PatientContext) => string
     get_error_msg: (ctx: PatientContext) => string

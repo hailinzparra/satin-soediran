@@ -5,7 +5,17 @@ import { Toast } from '../../utils/toast'
 import { RequestPayloadBuilder } from '../../utils/api'
 import { get_current_date_time, irandom } from '../../utils/misc'
 import { Log } from '../../utils/logger'
-import { SATIN_EXT_AUTO_SIGN_REQUEST_EVENT, SATIN_EXT_AUTO_SIGN_RESPONSE_EVENT, SATIN_EXT_KIRIM_ORDER_RESEP_REQUEST_EVENT, SATIN_EXT_KIRIM_ORDER_RESEP_RESPONSE_EVENT } from '../../inject'
+import {
+    SATIN_EXT_AUTO_SIGN_REQUEST_EVENT,
+    SATIN_EXT_AUTO_SIGN_RESPONSE_EVENT,
+    SATIN_EXT_KIRIM_ORDER_RESEP_REQUEST_EVENT,
+    SATIN_EXT_KIRIM_ORDER_RESEP_RESPONSE_EVENT,
+    SATIN_EXT_NAVIGATE_REQUEST_EVENT,
+    SATIN_EXT_NAVIGATE_RESPONSE_EVENT,
+    MainTabAlias,
+    RekamMedisLeftAlias,
+    RekamMedisInnerAlias
+} from '../../inject'
 
 export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActionsFunction, QuickActionsConfig> {
     private readonly menu_class = 'satin-quick-actions-menu'
@@ -15,6 +25,7 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
     private is_events_bound = false
     private selected_index = 0
     private last_trigger_context_id: string | null = null
+    private last_search_query = ''
 
     private readonly actions: QuickActionItem[] = [
         {
@@ -78,6 +89,96 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
             get_error_msg: (ctx) => `Failed to sign Pengkajian Harian (${ctx.name} - Visit: ${ctx.visit_id})`,
         },
         {
+            id: 'goto_lab_riwayat',
+            label: 'Goto "Laboratorium" > "Riwayat"',
+            category: 'Navigation',
+            get_secondary_badge: () => ({}),
+            get_processing_msg: () => 'Navigating to Laboratorium > Riwayat...',
+            get_success_msg: () => 'Navigated to Laboratorium > Riwayat',
+            get_error_msg: () => 'Failed to navigate to Laboratorium > Riwayat',
+        },
+        {
+            id: 'goto_rad_riwayat',
+            label: 'Goto "Radiologi" > "Riwayat"',
+            category: 'Navigation',
+            get_secondary_badge: () => ({}),
+            get_processing_msg: () => 'Navigating to Radiologi > Riwayat...',
+            get_success_msg: () => 'Navigated to Radiologi > Riwayat',
+            get_error_msg: () => 'Failed to navigate to Radiologi > Riwayat',
+        },
+        {
+            id: 'goto_resep',
+            label: 'Goto "E-Resep"',
+            category: 'Navigation',
+            get_secondary_badge: () => ({}),
+            get_processing_msg: () => 'Navigating to E-Resep...',
+            get_success_msg: () => 'Navigated to E-Resep',
+            get_error_msg: () => 'Failed to navigate to E-Resep',
+        },
+        {
+            id: 'goto_rujukan_internal',
+            label: 'Goto "Rujukan Internal"',
+            category: 'Navigation',
+            get_secondary_badge: () => ({}),
+            get_processing_msg: () => 'Navigating to Rujukan Internal...',
+            get_success_msg: () => 'Navigated to Rujukan Internal',
+            get_error_msg: () => 'Failed to navigate to Rujukan Internal',
+        },
+        {
+            id: 'goto_rujukan_eksternal',
+            label: 'Goto "Rujukan Eksternal"',
+            category: 'Navigation',
+            get_secondary_badge: () => ({}),
+            get_processing_msg: () => 'Navigating to Rujukan Eksternal...',
+            get_success_msg: () => 'Navigated to Rujukan Eksternal',
+            get_error_msg: () => 'Failed to navigate to Rujukan Eksternal',
+        },
+        {
+            id: 'goto_penunjang',
+            label: 'Goto "Rekam Medis" > "Pemeriksaan" > "Penunjang"',
+            category: 'Navigation',
+            get_secondary_badge: () => ({}),
+            get_processing_msg: () => 'Navigating to Rekam Medis > Pemeriksaan > Penunjang...',
+            get_success_msg: () => 'Navigated to Penunjang',
+            get_error_msg: () => 'Failed to navigate to Penunjang',
+        },
+        {
+            id: 'goto_diagnosis',
+            label: 'Goto "Rekam Medis" > "Penilaian" > "Diagnosis"',
+            category: 'Navigation',
+            get_secondary_badge: () => ({}),
+            get_processing_msg: () => 'Navigating to Rekam Medis > Penilaian > Diagnosis...',
+            get_success_msg: () => 'Navigated to Diagnosis',
+            get_error_msg: () => 'Failed to navigate to Diagnosis',
+        },
+        {
+            id: 'goto_diagnosis_icd',
+            label: 'Goto "Rekam Medis" > "Diagnosis (ICD)"',
+            category: 'Navigation',
+            get_secondary_badge: () => ({}),
+            get_processing_msg: () => 'Navigating to Rekam Medis > Diagnosis (ICD)...',
+            get_success_msg: () => 'Navigated to Diagnosis (ICD)',
+            get_error_msg: () => 'Failed to navigate to Diagnosis (ICD)',
+        },
+        {
+            id: 'goto_cppt',
+            label: 'Goto "Rekam Medis" > "CPPT"',
+            category: 'Navigation',
+            get_secondary_badge: () => ({}),
+            get_processing_msg: () => 'Navigating to Rekam Medis > CPPT...',
+            get_success_msg: () => 'Navigated to CPPT',
+            get_error_msg: () => 'Failed to navigate to CPPT',
+        },
+        {
+            id: 'goto_resume_medis',
+            label: 'Goto "Rekam Medis" > "Resume Medis"',
+            category: 'Navigation',
+            get_secondary_badge: () => ({}),
+            get_processing_msg: () => 'Navigating to Rekam Medis > Resume Medis...',
+            get_success_msg: () => 'Navigated to Resume Medis',
+            get_error_msg: () => 'Failed to navigate to Resume Medis',
+        },
+        {
             id: 'kirim_resep',
             label: 'Submit "Resep"',
             category: 'Resep',
@@ -131,6 +232,7 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         menus.forEach(menu => menu.remove())
         this.close_palette()
         this.last_trigger_context_id = null
+        this.last_search_query = ''
         this.parent.reset_data()
     }
 
@@ -237,6 +339,7 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         input.type = 'text'
         input.className = 'satin-quick-input'
         input.placeholder = 'Type action or command...'
+        input.value = this.last_search_query
 
         const dropdown = document.createElement('ul')
         dropdown.className = 'satin-quick-dropdown'
@@ -278,16 +381,19 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
 
             filtered_actions.forEach((item, index) => {
                 const secondary = item.get_secondary_badge(patient)
+                const id_badge_html = secondary.label
+                    ? `<span class="satin-item-badge satin-badge-id">${secondary.label}</span>`
+                    : ''
 
                 const li = document.createElement('li')
                 li.className = `satin-quick-item ${index === 0 ? 'selected' : ''}`
                 li.dataset.actionId = item.id
-                li.dataset.contextId = secondary.raw_id
+                li.dataset.contextId = secondary.raw_id || ''
 
                 li.innerHTML = `
                     <span class="satin-item-label">${item.label}</span>
                     <div class="satin-item-badges">
-                        <span class="satin-item-badge satin-badge-id">${secondary.label}</span>
+                        ${id_badge_html}
                         <span class="satin-item-badge satin-badge-cat">${item.category}</span>
                     </div>
                 `
@@ -327,14 +433,18 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         })
 
         input.addEventListener('input', (e) => {
-            render_items((e.target as HTMLInputElement).value)
+            this.last_search_query = (e.target as HTMLInputElement).value
+            render_items(this.last_search_query)
         })
 
         document.body.appendChild(palette)
         this.active_palette = palette
 
-        render_items()
+        render_items(this.last_search_query)
         input.focus()
+        if (this.last_search_query) {
+            input.select()
+        }
     }
 
     private update_badges_if_opened(): void {
@@ -349,14 +459,15 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
             if (!action) return
 
             const secondary = action.get_secondary_badge(patient)
+            const raw_id = secondary.raw_id || ''
 
-            if (li.dataset.contextId === secondary.raw_id) {
+            if (li.dataset.contextId === raw_id) {
                 return
             }
 
-            li.dataset.contextId = secondary.raw_id
+            li.dataset.contextId = raw_id
             const id_badge = li.querySelector('.satin-badge-id')
-            if (id_badge) {
+            if (id_badge && secondary.label) {
                 id_badge.textContent = secondary.label
             }
         })
@@ -368,6 +479,49 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
             this.active_palette = null
             this.selected_index = 0
         }
+    }
+
+    private navigate_to(main: MainTabAlias, left?: RekamMedisLeftAlias, inner?: RekamMedisInnerAlias): Promise<boolean> {
+        return new Promise((resolve) => {
+            const request_id = `nav_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+
+            const timeout_id = setTimeout(() => {
+                window.removeEventListener(SATIN_EXT_NAVIGATE_RESPONSE_EVENT, response_handler)
+                Log.error(`Navigation request timed out for request ${request_id}`)
+                resolve(false)
+            }, 8000)
+
+            const response_handler = (e: Event) => {
+                const custom_event = e as CustomEvent<{
+                    request_id: string
+                    success: boolean
+                    error?: string
+                }>
+                if (custom_event.detail?.request_id === request_id) {
+                    clearTimeout(timeout_id)
+                    window.removeEventListener(SATIN_EXT_NAVIGATE_RESPONSE_EVENT, response_handler)
+
+                    if (!custom_event.detail.success) {
+                        Log.error('Navigation failed:', custom_event.detail.error)
+                    }
+
+                    resolve(custom_event.detail.success)
+                }
+            }
+
+            window.addEventListener(SATIN_EXT_NAVIGATE_RESPONSE_EVENT, response_handler)
+
+            window.dispatchEvent(
+                new CustomEvent(SATIN_EXT_NAVIGATE_REQUEST_EVENT, {
+                    detail: {
+                        request_id,
+                        main,
+                        left,
+                        inner,
+                    },
+                })
+            )
+        })
     }
 
     private async add_layanan(visit_id: string, tindakan_id: number): Promise<boolean> {
@@ -514,7 +668,27 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         try {
             let is_success = false
 
-            if (item.id === 'visite') {
+            if (item.id === 'goto_resep') {
+                is_success = await this.navigate_to('resep')
+            } else if (item.id === 'goto_cppt') {
+                is_success = await this.navigate_to('rekammedis', 'cppt')
+            } else if (item.id === 'goto_diagnosis') {
+                is_success = await this.navigate_to('rekammedis', 'penilaian', 'diagnosis')
+            } else if (item.id === 'goto_diagnosis_icd') {
+                is_success = await this.navigate_to('rekammedis', 'diagnosis_icd')
+            } else if (item.id === 'goto_resume_medis') {
+                is_success = await this.navigate_to('rekammedis', 'resume_medis')
+            } else if (item.id === 'goto_rujukan_internal') {
+                is_success = await this.navigate_to('konsul')
+            } else if (item.id === 'goto_rujukan_eksternal') {
+                is_success = await this.navigate_to('rujukan')
+            } else if (item.id === 'goto_lab_riwayat') {
+                is_success = await this.navigate_to('lab', undefined, 'riwayat')
+            } else if (item.id === 'goto_rad_riwayat') {
+                is_success = await this.navigate_to('rad', undefined, 'riwayat')
+            } else if (item.id === 'goto_penunjang') {
+                is_success = await this.navigate_to('rekammedis', 'pemeriksaan', 'penunjang')
+            } else if (item.id === 'visite') {
                 is_success = await this.add_visite(patient_context.visit_id)
             } else if (item.id === 'ekg') {
                 is_success = await this.add_ekg(patient_context.visit_id)
