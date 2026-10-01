@@ -3,6 +3,7 @@ import { RequestPayloadBuilder } from '../../../utils/api'
 import { create_element } from '../../../utils/dom'
 import { get_fuzzy_time_yll } from '../../../utils/formatter'
 import { Log } from '../../../utils/logger'
+import { copy_text } from '../../../utils/misc'
 import { format_date_variants } from '../ui'
 
 const c = create_element
@@ -970,9 +971,9 @@ export class ResultsTabController {
         copy_btn.addEventListener('click', async (e) => {
             e.stopPropagation()
 
-            try {
-                await navigator.clipboard.writeText(text_to_copy)
+            const success = await copy_text(text_to_copy)
 
+            if (success) {
                 // Reset existing timer if clicked repeatedly before 2 seconds expire
                 if (copy_timeout !== null) {
                     clearTimeout(copy_timeout)
@@ -986,8 +987,8 @@ export class ResultsTabController {
                     copy_btn.classList.remove('copied')
                     copy_timeout = null
                 }, 2000)
-            } catch (err) {
-                Log.error('Failed to copy text:', err)
+            } else {
+                Log.error('Failed to copy text')
             }
         })
 

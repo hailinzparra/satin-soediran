@@ -19,3 +19,35 @@ export function get_current_date_time(): string {
 export function irandom(min: number, max: number): number {
     return Math.floor(Math.random() * (max - min + 1)) + min
 }
+
+export async function copy_text(text: string): Promise<boolean> {
+    if (navigator.clipboard && window.isSecureContext) {
+        try {
+            await navigator.clipboard.writeText(text)
+            return true
+        } catch (err) {
+            // Fall back if writeText fails/permission denied
+        }
+    }
+
+    // Fallback for HTTP / non-secure contexts
+    const text_area = document.createElement('textarea')
+    text_area.value = text
+    text_area.style.position = 'fixed'
+    text_area.style.left = '-999999px'
+    text_area.style.top = '-999999px'
+    document.body.appendChild(text_area)
+
+    text_area.focus()
+    text_area.select()
+
+    let success = false
+    try {
+        success = document.execCommand('copy')
+    } catch (err) {
+        success = false
+    }
+
+    document.body.removeChild(text_area)
+    return success
+}

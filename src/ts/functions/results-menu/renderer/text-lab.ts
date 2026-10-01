@@ -1,10 +1,12 @@
 import { RESULTS_MENU_LAB_SYMBOL_MAP } from '../../../types/functions/results-menu'
 import { create_element } from '../../../utils/dom'
 import { Log } from '../../../utils/logger'
+import { copy_text } from '../../../utils/misc'
 import { ResultsMenuRenderer } from './main'
 
 export class ResultsMenuTextLabRenderer {
     public on_change?: () => void
+    private copy_timeout: number | null = null
 
     private el: {
         container: HTMLDivElement | null
@@ -297,10 +299,30 @@ export class ResultsMenuTextLabRenderer {
             this.sync_text_output()
         })
 
-        this.el.btn_copy?.addEventListener('click', () => {
+        this.el.btn_copy?.addEventListener('click', async () => {
             if (this.el.textarea && this.el.textarea.value) {
-                navigator.clipboard.writeText(this.el.textarea.value)
-                    .catch(err => Log.error('Could not copy text: ', err))
+                const success = await copy_text(this.el.textarea.value)
+                if (success) {
+                    if (this.copy_timeout !== null) {
+                        clearTimeout(this.copy_timeout)
+                    }
+
+                    const orig_text = this.el.btn_copy?.innerText || 'SALIN TEKS'
+                    if (this.el.btn_copy) {
+                        this.el.btn_copy.innerText = 'TERSALIN!'
+                        this.el.btn_copy.classList.add('copied')
+                    }
+
+                    this.copy_timeout = window.setTimeout(() => {
+                        if (this.el.btn_copy) {
+                            this.el.btn_copy.innerText = orig_text
+                            this.el.btn_copy.classList.remove('copied')
+                        }
+                        this.copy_timeout = null
+                    }, 2000)
+                } else {
+                    Log.error('Could not copy text')
+                }
             }
         })
     }

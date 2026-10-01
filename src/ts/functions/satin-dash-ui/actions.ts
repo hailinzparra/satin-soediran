@@ -4,6 +4,7 @@ import { RequestPayloadBuilder } from '../../utils/api'
 import { create_element } from '../../utils/dom'
 import { format_medical_name, get_fuzzy_time_yll } from '../../utils/formatter'
 import { Log } from '../../utils/logger'
+import { copy_text } from '../../utils/misc'
 import { SatinDashUIFunction } from './parent'
 import { get_age_metrics, get_patient_prefix } from './ui'
 import { PxFisikItem, PxUmumItem } from './ui/results'
@@ -263,9 +264,9 @@ export class ActionsModalController {
             e.stopPropagation()
             if (!this.output_textarea.value) return
 
-            try {
-                await navigator.clipboard.writeText(this.output_textarea.value)
+            const success = await copy_text(this.output_textarea.value)
 
+            if (success) {
                 if (this.copy_timeout !== null) {
                     clearTimeout(this.copy_timeout)
                 }
@@ -278,8 +279,8 @@ export class ActionsModalController {
                     copy_btn.classList.remove('copied')
                     this.copy_timeout = null
                 }, 2000)
-            } catch (err) {
-                Log.error('Failed to copy text:', err)
+            } else {
+                Log.error('Failed to copy text')
             }
         })
 

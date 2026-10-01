@@ -5,6 +5,7 @@ import { RequestPayloadBuilder } from '../../../utils/api'
 import { create_element } from '../../../utils/dom'
 import { format_medical_name, get_fuzzy_time_yll } from '../../../utils/formatter'
 import { Log } from '../../../utils/logger'
+import { copy_text } from '../../../utils/misc'
 import { format_date_variants } from '../ui'
 
 // State interface for Recipe tab management
@@ -243,23 +244,25 @@ export class RecipesTabController {
 
         const formatted_text = `Terapi ${order.ward}:\n` + lines.join('\n')
 
-        navigator.clipboard.writeText(formatted_text).then(() => {
-            button_el.innerText = 'COPIED!'
-            button_el.classList.add('is-copied')
+        copy_text(formatted_text).then(success => {
+            if (success) {
+                button_el.innerText = 'COPIED!'
+                button_el.classList.add('is-copied')
 
-            if (this.copy_timers.has(order.nomor)) {
-                window.clearTimeout(this.copy_timers.get(order.nomor))
+                if (this.copy_timers.has(order.nomor)) {
+                    window.clearTimeout(this.copy_timers.get(order.nomor))
+                }
+
+                const timer_id = window.setTimeout(() => {
+                    button_el.innerText = 'COPY'
+                    button_el.classList.remove('is-copied')
+                    this.copy_timers.delete(order.nomor)
+                }, 2000)
+
+                this.copy_timers.set(order.nomor, timer_id)
+            } else {
+                Log.error('Failed to copy therapy details')
             }
-
-            const timer_id = window.setTimeout(() => {
-                button_el.innerText = 'COPY'
-                button_el.classList.remove('is-copied')
-                this.copy_timers.delete(order.nomor)
-            }, 2000)
-
-            this.copy_timers.set(order.nomor, timer_id)
-        }).catch(err => {
-            Log.error('Failed to copy therapy details:', err)
         })
     }
 
