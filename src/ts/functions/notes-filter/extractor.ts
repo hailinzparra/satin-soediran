@@ -22,6 +22,9 @@ export class NotesFilterExtractor extends SatinBaseFunctionExtractor<NotesFilter
         for (const table of record_tables) {
             const row_id = table.id || table.getAttribute('data-recordid') || Math.random().toString()
 
+            // Stop propagation on the 3rd cell container to isolate mouse interaction from parent row listeners
+            this.prevent_button_snapping(table)
+
             // 1. Target the Metadata/Author cell (2nd column) specifically
             const meta_cell = table.querySelector<HTMLElement>('td:nth-child(2)') || table
 
@@ -90,5 +93,28 @@ export class NotesFilterExtractor extends SatinBaseFunctionExtractor<NotesFilter
             available_dates: sorted_dates,
             user_name,
         }
+    }
+
+    /**
+     * Prevents parent row selection/scrolling by stopping pre-click mouse events on the action cell container.
+     */
+    private prevent_button_snapping(table: HTMLElement): void {
+        const action_cell = table.querySelector<HTMLElement>('td:nth-child(3)')
+        if (!action_cell) return
+
+        if (action_cell.dataset.snapFixed === 'true') return
+        action_cell.dataset.snapFixed = 'true'
+
+        const stop_propagation = (e: Event) => {
+            e.stopPropagation()
+        }
+
+        // Intercept initial mouse/pointer down & up phases on the whole 3rd column cell in capture mode
+        action_cell.addEventListener('mousedown', stop_propagation, true)
+        action_cell.addEventListener('mouseup', stop_propagation, true)
+        action_cell.addEventListener('pointerdown', stop_propagation, true)
+        action_cell.addEventListener('pointerup', stop_propagation, true)
+
+        // Note: click event is intentionally left unblocked so button handlers execute normally
     }
 }

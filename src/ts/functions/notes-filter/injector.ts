@@ -8,6 +8,7 @@ export class NotesFilterInjector extends SatinBaseFunctionInjector<NotesFilterFu
     private dates_row_element: HTMLElement | null = null
     private active_date_buttons: Map<string, HTMLButtonElement> = new Map()
     private current_dates_signature = ''
+    private is_collapsed = true
 
     public async on_execute(): Promise<void> {
         const cppt_list = document.querySelector<HTMLElement>(this.parent.config.selectors.queries.rm_cppt_list)
@@ -29,6 +30,7 @@ export class NotesFilterInjector extends SatinBaseFunctionInjector<NotesFilterFu
         this.dates_row_element = null
         this.active_date_buttons.clear()
         this.current_dates_signature = ''
+        this.is_collapsed = true
 
         this.parent.reset_data()
     }
@@ -42,6 +44,9 @@ export class NotesFilterInjector extends SatinBaseFunctionInjector<NotesFilterFu
 
         const container = document.createElement('div')
         container.className = this.container_class
+        if (this.is_collapsed) {
+            container.classList.add('collapsed')
+        }
 
         // Toggle Row (ALL, MINE, DOCTORS, SEARCH)
         const toggle_row = document.createElement('div')
@@ -86,29 +91,55 @@ export class NotesFilterInjector extends SatinBaseFunctionInjector<NotesFilterFu
         dates_row.className = 'satin-notes-dates-row'
         this.dates_row_element = dates_row
 
-        container.appendChild(toggle_row)
-        container.appendChild(dates_row)
+        // Chevron Toggle Button
+        const collapse_btn = document.createElement('button')
+        collapse_btn.type = 'button'
+        collapse_btn.className = 'satin-notes-collapse-btn'
+        collapse_btn.title = 'Toggle Menu "Filter CPPT"'
+        collapse_btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>`
 
-        parent_node.appendChild(container)
-
-        this.attach_destruction_listener(container)
-
-        // Dynamic Scroller Padding Adjustment
+        // Dynamic Scroller Target Selection
         const scroller =
             parent_node.querySelector<HTMLElement>('.x-scroller') ||
             parent_node.querySelector<HTMLElement>('.x-grid-view') ||
             parent_node
 
         if (scroller) {
-            const resizeObserver = new ResizeObserver((entries) => {
-                for (const entry of entries) {
-                    const height =
-                        entry.borderBoxSize?.[0]?.blockSize ?? entry.target.getBoundingClientRect().height
-                    scroller.style.paddingTop = `${height}px`
-                }
-            })
-            resizeObserver.observe(container)
+            scroller.style.transition = 'padding-top 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
         }
+
+        const update_scroller_padding = () => {
+            if (!scroller) return
+            if (this.is_collapsed) {
+                scroller.style.paddingTop = '0px'
+            } else {
+                const height = container.getBoundingClientRect().height
+                scroller.style.paddingTop = `${height}px`
+            }
+        }
+
+        collapse_btn.addEventListener('click', () => {
+            this.is_collapsed = !this.is_collapsed
+            container.classList.toggle('collapsed', this.is_collapsed)
+            update_scroller_padding()
+        })
+
+        container.appendChild(toggle_row)
+        container.appendChild(dates_row)
+        container.appendChild(collapse_btn)
+
+        parent_node.appendChild(container)
+
+        this.attach_destruction_listener(container)
+
+        // ResizeObserver adjusts padding when content dimensions change while expanded
+        const resize_observer = new ResizeObserver(() => {
+            update_scroller_padding()
+        })
+        resize_observer.observe(container)
+
+        // Apply initial padding state (0px since collapsed by default)
+        update_scroller_padding()
     }
 
     private set_category(cat: FilterCategory): void {
@@ -148,15 +179,13 @@ export class NotesFilterInjector extends SatinBaseFunctionInjector<NotesFilterFu
         const user_name = (this.parent.data.extracted_data.user_name || '').toLowerCase()
         const { active_category, active_date, search_query } = this.parent.data.values_to_render
 
-        // Construct local today date string (YYYY-MM-DD) avoiding GMT offset shifts
         const now = new Date()
         const local_year = now.getFullYear()
         const local_month = String(now.getMonth() + 1).padStart(2, '0')
         const local_day = String(now.getDate()).padStart(2, '0')
         const today_str = `${local_year}-${local_month}-${local_day}`
 
-        // Category / Author criteria matcher
-        const matches_category_fn = (rec: typeof records[0]) => {
+        const matches_category_fn = (rec: (typeof records)[0]) => {
             const author_lower = rec.author.toLowerCase()
 
             if (active_category === 'MINE') {
@@ -172,39 +201,33 @@ export class NotesFilterInjector extends SatinBaseFunctionInjector<NotesFilterFu
         }
 
         const category_matching_records = records.filter(matches_category_fn)
-
         const date_items: { key: string; label: string }[] = []
 
-        // 1. ALL Date Button
         date_items.push({
             key: 'ALL',
-            label: `ALL (${category_matching_records.length}/${records.length})`
+            label: `ALL (${category_matching_records.length}/${records.length})`,
         })
 
-        // 2. Specific Date Buttons
         available_dates.forEach((date_key) => {
             const records_on_date = records.filter((r) => r.date === date_key)
             const total_on_date = records_on_date.length
             const category_matches_on_date = records_on_date.filter(matches_category_fn).length
 
-            // Format date key ("YYYY-MM-DD") to "DD-MM"
             const date_parts = date_key.split('-')
             const formatted_dd_mm = date_parts.length === 3 ? `${date_parts[2]}-${date_parts[1]}` : date_key
 
-            // Star symbol appears only if date is local today and has notes
             const is_today = date_key === today_str
             const has_matches = total_on_date > 0
             const star_prefix = is_today && has_matches ? '★' : ''
 
             date_items.push({
                 key: date_key,
-                label: `${star_prefix}${formatted_dd_mm} (${category_matches_on_date}/${total_on_date})`
+                label: `${star_prefix}${formatted_dd_mm} (${category_matches_on_date}/${total_on_date})`,
             })
         })
 
         const new_signature = date_items.map((item) => item.key).join('|')
 
-        // In-place DOM update when structure hasn't changed
         if (this.current_dates_signature === new_signature && this.active_date_buttons.size > 0) {
             date_items.forEach((item) => {
                 const btn = this.active_date_buttons.get(item.key)
@@ -216,7 +239,6 @@ export class NotesFilterInjector extends SatinBaseFunctionInjector<NotesFilterFu
             return
         }
 
-        // Full DOM rebuild
         this.dates_row_element.innerHTML = ''
         this.active_date_buttons.clear()
         this.current_dates_signature = new_signature
@@ -242,7 +264,6 @@ export class NotesFilterInjector extends SatinBaseFunctionInjector<NotesFilterFu
             let matches_category = true
             let matches_date = true
 
-            // Category / Author matching
             const author_lower = rec.author.toLowerCase()
             if (active_category === 'MINE') {
                 matches_category = user_name !== '' && author_lower.includes(user_name)
@@ -252,7 +273,6 @@ export class NotesFilterInjector extends SatinBaseFunctionInjector<NotesFilterFu
                 matches_category = author_lower.includes(search_query.toLowerCase())
             }
 
-            // Date matching
             if (active_date !== 'ALL') {
                 matches_date = rec.date === active_date
             }
