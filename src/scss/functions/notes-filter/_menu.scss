@@ -30,19 +30,34 @@
         font-family: inherit;
     }
 
+    /* Shortcut button hidden by default (expanded state) */
+    .satin-notes-mine-shortcut {
+        display: none;
+    }
+
     /* Collapsed State */
     &.collapsed {
         transform: translateY(-100%);
         pointer-events: none;
         box-shadow: none;
 
-        /* Floating Circular Handle when collapsed */
-        .satin-notes-collapse-btn {
+        /* Container grouping handle + shortcut in collapsed state */
+        .satin-notes-collapsed-controls {
             pointer-events: auto;
             position: absolute;
             top: 100%;
             left: 50%;
             transform: translate(-50%, 0);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Floating Circular Handle when collapsed */
+        .satin-notes-collapse-btn {
+            pointer-events: auto;
+            position: static;
+            transform: none;
             width: 28px;
             height: 18px;
             border-radius: 0 0 10px 10px;
@@ -53,6 +68,37 @@
 
             svg {
                 transform: rotate(180deg);
+            }
+        }
+
+        /* Visible shortcut button when collapsed */
+        .satin-notes-mine-shortcut {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 18px;
+            padding: 0 8px;
+            font-size: 9px;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid #cbd5e1;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            background-color: #f4f6f9;
+            color: #64748b;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.15s ease-in-out;
+            text-transform: uppercase;
+
+            &:hover {
+                color: #1e293b;
+                background-color: #e2e8f0;
+            }
+
+            &.active {
+                background-color: #ffffff;
+                color: #2563eb;
+                border-color: #93c5fd;
             }
         }
     }

@@ -91,12 +91,32 @@ export class NotesFilterInjector extends SatinBaseFunctionInjector<NotesFilterFu
         dates_row.className = 'satin-notes-dates-row'
         this.dates_row_element = dates_row
 
+        // Collapsed Controls Container (Handle + MINE Shortcut)
+        const collapsed_controls = document.createElement('div')
+        collapsed_controls.className = 'satin-notes-collapsed-controls'
+
         // Chevron Toggle Button
         const collapse_btn = document.createElement('button')
         collapse_btn.type = 'button'
         collapse_btn.className = 'satin-notes-collapse-btn'
         collapse_btn.title = 'Toggle Menu "Filter CPPT"'
         collapse_btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>`
+
+        // Collapsed MINE Shortcut Button (Toggle MINE <-> ALL)
+        const mine_shortcut_btn = document.createElement('button')
+        mine_shortcut_btn.type = 'button'
+        mine_shortcut_btn.textContent = 'MINE'
+        mine_shortcut_btn.className = `satin-notes-mine-shortcut ${this.parent.data.values_to_render.active_category === 'MINE' ? 'active' : ''
+            }`
+        mine_shortcut_btn.addEventListener('click', (e) => {
+            e.stopPropagation()
+            const current_cat = this.parent.data.values_to_render.active_category
+            const next_cat: FilterCategory = current_cat === 'MINE' ? 'ALL' : 'MINE'
+            this.set_category(next_cat)
+        })
+
+        collapsed_controls.appendChild(collapse_btn)
+        collapsed_controls.appendChild(mine_shortcut_btn)
 
         // Dynamic Scroller Target Selection
         const scroller =
@@ -126,7 +146,7 @@ export class NotesFilterInjector extends SatinBaseFunctionInjector<NotesFilterFu
 
         container.appendChild(toggle_row)
         container.appendChild(dates_row)
-        container.appendChild(collapse_btn)
+        container.appendChild(collapsed_controls)
 
         parent_node.appendChild(container)
 
@@ -152,6 +172,12 @@ export class NotesFilterInjector extends SatinBaseFunctionInjector<NotesFilterFu
         buttons.forEach((btn) => {
             btn.classList.toggle('active', btn.dataset.category === cat)
         })
+
+        // Synchronize active state for collapsed MINE shortcut
+        const mine_shortcut = container.querySelector<HTMLButtonElement>('.satin-notes-mine-shortcut')
+        if (mine_shortcut) {
+            mine_shortcut.classList.toggle('active', cat === 'MINE')
+        }
 
         const search_input = container.querySelector<HTMLInputElement>('.satin-notes-search-input')
         if (search_input) {
