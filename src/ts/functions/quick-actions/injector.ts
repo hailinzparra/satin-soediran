@@ -681,8 +681,8 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         const cppt_content = document.createElement('div')
         cppt_content.style.fontSize = '12px'
         cppt_content.style.color = '#64748b'
-        cppt_content.textContent = 'konsul pasien'
-        const qn_cppt_accordion = this.create_accordion_item('Konsul Pasien', false, cppt_content)
+        cppt_content.textContent = 'CPPT will be here.'
+        const qn_cppt_accordion = this.create_accordion_item('CPPT', false, cppt_content)
 
         modal_container.appendChild(qn_diagnosis_accordion)
         modal_container.appendChild(qn_cppt_accordion)
@@ -721,7 +721,7 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         const layout = document.createElement('div')
         layout.className = 'sn-diagnosis-layout'
 
-        // Top Action Controls (Refresh & Save)
+        // Top Controls (Refresh & Save)
         const controls = document.createElement('div')
         controls.className = 'sn-diagnosis-controls'
 
@@ -740,13 +740,23 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         controls.appendChild(save_btn)
         layout.appendChild(controls)
 
-        // Current Diagnosis Field Section
+        // Section 1: Current Diagnosis Section (Meta + Textarea)
         const current_section = document.createElement('div')
         current_section.className = 'sn-diagnosis-current-section'
+
+        const current_header = document.createElement('div')
+        current_header.className = 'sn-diagnosis-current-header'
 
         const label = document.createElement('label')
         label.className = 'sn-diagnosis-field-label'
         label.textContent = 'Diagnosis Saat Ini'
+
+        const current_meta = document.createElement('div')
+        current_meta.className = 'sn-diagnosis-current-meta'
+        current_meta.textContent = '-'
+
+        current_header.appendChild(label)
+        current_header.appendChild(current_meta)
 
         const textarea = document.createElement('textarea')
         textarea.className = 'sn-diagnosis-textarea'
@@ -754,34 +764,163 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         textarea.placeholder = 'Masukkan diagnosis...'
         textarea.disabled = true
 
-        current_section.appendChild(label)
+        current_section.appendChild(current_header)
         current_section.appendChild(textarea)
         layout.appendChild(current_section)
 
-        // History Section
+        // Section 2: History Header & Pill Filter Toolbar
         const history_section = document.createElement('div')
         history_section.className = 'sn-diagnosis-history-section'
+
+        const history_toolbar = document.createElement('div')
+        history_toolbar.className = 'sn-diagnosis-history-toolbar'
 
         const history_title = document.createElement('div')
         history_title.className = 'sn-diagnosis-section-title'
         history_title.textContent = 'Riwayat Diagnosis'
 
+        // Pill Filters Container
+        const filter_container = document.createElement('div')
+        filter_container.className = 'sn-diagnosis-pill-filters'
+
+        const pill_all = document.createElement('button')
+        pill_all.type = 'button'
+        pill_all.className = 'sn-pill-btn is-active'
+        pill_all.textContent = 'ALL (0/0)'
+
+        const pill_room = document.createElement('button')
+        pill_room.type = 'button'
+        pill_room.className = 'sn-pill-btn'
+        pill_room.textContent = 'ROOM (0/0)'
+
+        const pill_search = document.createElement('button')
+        pill_search.type = 'button'
+        pill_search.className = 'sn-pill-btn'
+        pill_search.textContent = 'SEARCH (0/0)'
+
+        const search_input = document.createElement('input')
+        search_input.type = 'text'
+        search_input.className = 'sn-history-search-input'
+        search_input.placeholder = 'Cari nama ruangan...'
+        search_input.style.display = 'none'
+
+        filter_container.appendChild(pill_all)
+        filter_container.appendChild(pill_room)
+        filter_container.appendChild(pill_search)
+        filter_container.appendChild(search_input)
+
+        history_toolbar.appendChild(history_title)
+        history_toolbar.appendChild(filter_container)
+        history_section.appendChild(history_toolbar)
+
         const history_list_container = document.createElement('div')
         history_list_container.className = 'sn-diagnosis-history-list'
-
-        history_section.appendChild(history_title)
         history_section.appendChild(history_list_container)
+
         layout.appendChild(history_section)
 
-        // Scope state variables
+        // Local State Variables
         let current_diagnosis_item: any = null
         let diagnosis_history_items: any[] = []
         let original_diagnosis_text = ''
+        let active_filter_mode: 'ALL' | 'ROOM' | 'SEARCH' = 'ALL'
+        let current_room_name = '-'
 
-        // Enable/Disable Save button based on text changes
+        // Dirty state tracking
         textarea.addEventListener('input', () => {
             const is_changed = textarea.value.trim() !== original_diagnosis_text
             save_btn.disabled = !is_changed
+        })
+
+        // Filter Logic and Rendering
+        const apply_filter_and_render = () => {
+            let filtered: any[] = []
+            const total_count = diagnosis_history_items.length
+
+            if (active_filter_mode === 'ALL') {
+                filtered = diagnosis_history_items
+                search_input.style.display = 'none'
+            } else if (active_filter_mode === 'ROOM') {
+                search_input.style.display = 'none'
+                if (current_room_name !== '-') {
+                    filtered = diagnosis_history_items.filter((item) => {
+                        const room = item.REFERENSI?.KUNJUNGAN?.REFERENSI?.RUANGAN?.DESKRIPSI || ''
+                        return room.toLowerCase().includes(current_room_name.toLowerCase())
+                    })
+                } else {
+                    filtered = diagnosis_history_items
+                }
+            } else if (active_filter_mode === 'SEARCH') {
+                search_input.style.display = 'inline-block'
+                const query = search_input.value.trim().toLowerCase()
+                if (query) {
+                    filtered = diagnosis_history_items.filter((item) => {
+                        const room = item.REFERENSI?.KUNJUNGAN?.REFERENSI?.RUANGAN?.DESKRIPSI || ''
+                        return room.toLowerCase().includes(query)
+                    })
+                } else {
+                    filtered = diagnosis_history_items
+                }
+            }
+
+            // Update Pill Counts
+            let room_filtered_count = 0
+            if (current_room_name !== '-') {
+                room_filtered_count = diagnosis_history_items.filter((item) => {
+                    const room = item.REFERENSI?.KUNJUNGAN?.REFERENSI?.RUANGAN?.DESKRIPSI || ''
+                    return room.toLowerCase().includes(current_room_name.toLowerCase())
+                }).length
+            }
+
+            pill_all.textContent = `ALL (${total_count}/${total_count})`
+            pill_room.textContent = `${current_room_name} (${room_filtered_count}/${total_count})`
+            pill_search.textContent = `SEARCH (${filtered.length}/${total_count})`
+
+            // Render Cards
+            history_list_container.innerHTML = ''
+            if (filtered.length === 0) {
+                history_list_container.innerHTML = `<div class="sn-diagnosis-empty">Tidak ada riwayat diagnosis.</div>`
+            } else {
+                filtered.forEach((item) => {
+                    const card = this.render_diagnosis_item(item, (dup_text: string) => {
+                        textarea.value = dup_text
+                        textarea.dispatchEvent(new Event('input'))
+                    })
+                    history_list_container.appendChild(card)
+                })
+            }
+        }
+
+        // Pill Button Event Listeners
+        pill_all.addEventListener('click', () => {
+            active_filter_mode = 'ALL'
+            pill_all.classList.add('is-active')
+            pill_room.classList.remove('is-active')
+            pill_search.classList.remove('is-active')
+            apply_filter_and_render()
+        })
+
+        pill_room.addEventListener('click', () => {
+            active_filter_mode = 'ROOM'
+            pill_room.classList.add('is-active')
+            pill_all.classList.remove('is-active')
+            pill_search.classList.remove('is-active')
+            apply_filter_and_render()
+        })
+
+        pill_search.addEventListener('click', () => {
+            active_filter_mode = 'SEARCH'
+            pill_search.classList.add('is-active')
+            pill_all.classList.remove('is-active')
+            pill_room.classList.remove('is-active')
+            search_input.focus()
+            apply_filter_and_render()
+        })
+
+        search_input.addEventListener('input', () => {
+            if (active_filter_mode === 'SEARCH') {
+                apply_filter_and_render()
+            }
         })
 
         // Fetch / Reload Data Flow
@@ -800,7 +939,7 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
                     current_diagnosis_item = cached.current
                     diagnosis_history_items = cached.history
                 } else {
-                    // 1. Fetch Current Visit Diagnosis first
+                    // 1. Fetch Current Visit Diagnosis
                     const current_res: any = await this.parent.api_client.api_request({
                         base_path: 'medicalrecord/penilaian/diagnosis',
                         payload: new RequestPayloadBuilder({
@@ -819,7 +958,7 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
                         current_id = String(current_item.ID || '')
                     }
 
-                    // 2. Fetch Diagnosis History AFTER current diagnosis request finishes
+                    // 2. Fetch Diagnosis History AFTER current diagnosis request completes
                     let history_items: any[] = []
                     if (norm) {
                         const history_payload: any = {
@@ -831,7 +970,6 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
                             limit: 25,
                         }
 
-                        // Exclude current diagnosis ID if available
                         if (current_id) {
                             history_payload.NOT = JSON.stringify({ ID: current_id })
                         }
@@ -851,25 +989,33 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
                     this.diagnosis_cache.set(visit_id, { current: current_item, history: history_items })
                 }
 
-                // Populate Textarea with Current Diagnosis
+                // Populate Current Diagnosis Text & Meta
                 original_diagnosis_text = current_diagnosis_item?.DIAGNOSIS || ''
                 textarea.value = original_diagnosis_text
                 textarea.disabled = false
                 refresh_btn.disabled = false
 
-                // Render history list items with duplicate callback
-                history_list_container.innerHTML = ''
-                if (diagnosis_history_items.length === 0) {
-                    history_list_container.innerHTML = `<div class="sn-diagnosis-empty">Tidak ada riwayat diagnosis.</div>`
+                if (current_diagnosis_item) {
+                    current_room_name = current_diagnosis_item.REFERENSI?.KUNJUNGAN?.REFERENSI?.RUANGAN?.DESKRIPSI || '-'
+                    const raw_date = current_diagnosis_item.TANGGAL || ''
+                    const formatted_date = this.format_date(raw_date)
+
+                    const doctor_info = current_diagnosis_item.REFERENSI?.PENGGUNA
+                    let doctor_name = '-'
+                    if (doctor_info) {
+                        const title_front = doctor_info.GELAR_DEPAN ? `${doctor_info.GELAR_DEPAN}. ` : ''
+                        const title_back = doctor_info.GELAR_BELAKANG ? `, ${doctor_info.GELAR_BELAKANG}` : ''
+                        doctor_name = `${title_front}${doctor_info.NAMA || ''}${title_back}`
+                    }
+
+                    current_meta.textContent = `${current_room_name} | ${formatted_date} | ${doctor_name}`
                 } else {
-                    diagnosis_history_items.forEach((item) => {
-                        const card = this.render_diagnosis_item(item, (dup_text: string) => {
-                            textarea.value = dup_text
-                            textarea.dispatchEvent(new Event('input')) // Trigger input listener to enable save button
-                        })
-                        history_list_container.appendChild(card)
-                    })
+                    current_room_name = '-'
+                    current_meta.textContent = '-'
                 }
+
+                // Render History List
+                apply_filter_and_render()
             } catch (err) {
                 console.error('Error fetching diagnosis:', err)
                 history_list_container.innerHTML = `<div class="sn-diagnosis-error">Gagal mengambil data diagnosis.</div>`
@@ -883,7 +1029,7 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
             load_data(true)
         })
 
-        // Save Handler with PUT for update and POST for create
+        // Save Handler
         save_btn.addEventListener('click', async () => {
             const visit_id = this.parent.data.patient.visit_id
             const new_diagnosis = textarea.value.trim()
@@ -956,7 +1102,7 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
             }
         })
 
-        // Initial Execution
+        // Initial load
         load_data(false)
 
         return layout
