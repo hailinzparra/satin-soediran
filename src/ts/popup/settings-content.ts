@@ -114,8 +114,8 @@ export class PopupSettingsContent extends PopupContent {
             },
             {
                 key: 'emr_show_notes_filter_menu',
-                title: '<span class="text-slate-500">Tampilkan</span> (Menu "Filter CPPT")',
-                sub: 'Munculkan tombol menu "Filter CPPT" untuk memfilter dan memilah riwayat CPPT.',
+                title: '<span class="text-slate-500">Tampilkan</span> (Menu "Filter & Aksi CPPT")',
+                sub: 'Munculkan tombol menu "Filter & Aksi CPPT" pada panel CPPT.',
             },
             {
                 key: 'emr_show_quick_actions_menu',
