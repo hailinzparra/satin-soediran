@@ -285,7 +285,8 @@ export class NotesFilterInjector extends SatinBaseFunctionInjector<NotesFilterFu
             this.open_actions_modal(e.currentTarget as HTMLElement)
         })
 
-        toggle_row.appendChild(action_btn)
+        // toggle_row.appendChild(action_btn)
+        // TODO complete the database sync, currently AKSI is just a mockup
 
         const dates_row = document.createElement('div')
         dates_row.className = 'satin-notes-dates-row'
@@ -323,7 +324,8 @@ export class NotesFilterInjector extends SatinBaseFunctionInjector<NotesFilterFu
 
         collapsed_controls.appendChild(collapse_btn)
         collapsed_controls.appendChild(mine_shortcut_btn)
-        collapsed_controls.appendChild(action_shortcut_btn)
+        // collapsed_controls.appendChild(action_shortcut_btn)
+        // TODO complete the database sync, currently AKSI is just a mockup
 
         const scroller =
             parent_node.querySelector<HTMLElement>('.x-scroller') ||
