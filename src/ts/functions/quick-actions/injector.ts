@@ -677,7 +677,7 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         modal_container.className = 'sn-quick-notes-container'
 
         const qn_diagnosis_accordion = this.create_accordion_item('Diagnosis', true, this.render_qn_diagnosis_content())
-        const qn_cppt_accordion = this.create_accordion_item('CPPT', false, this.render_qn_cppt_content())
+        const qn_cppt_accordion = this.create_accordion_item('CPPT', true, this.render_qn_cppt_content())
 
         modal_container.appendChild(qn_diagnosis_accordion)
         modal_container.appendChild(qn_cppt_accordion)
@@ -868,7 +868,7 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
             }
 
             pill_all.textContent = `ALL (${total_count}/${total_count})`
-            pill_room.textContent = `${current_room_name} (${room_filtered_count}/${total_count})`
+            pill_room.textContent = `${current_room_name.toUpperCase()} (${room_filtered_count}/${total_count})`
             pill_search.textContent = `SEARCH (${filtered.length}/${total_count})`
 
             // Render Cards
@@ -1137,7 +1137,7 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         const dup_btn = document.createElement('button')
         dup_btn.type = 'button'
         dup_btn.className = 'sn-btn-action sn-btn-dup'
-        dup_btn.textContent = 'DUP'
+        dup_btn.textContent = 'Dup'
         // dup_btn.title = 'Duplikasi ke Diagnosis Saat Ini'
         dup_btn.addEventListener('click', (e) => {
             e.stopPropagation()
@@ -1148,7 +1148,7 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         const copy_btn = document.createElement('button')
         copy_btn.type = 'button'
         copy_btn.className = 'sn-btn-action sn-btn-copy'
-        copy_btn.textContent = 'COPY'
+        copy_btn.textContent = 'Salin'
         // copy_btn.title = 'Salin Diagnosis ke Clipboard'
         copy_btn.addEventListener('click', async (e) => {
             e.stopPropagation()
@@ -1199,20 +1199,21 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         const columns_container = document.createElement('div')
         columns_container.className = 'sn-cppt-columns-container'
 
-        // Helper for creating SOAPI textarea groups (Item 5: Default rows = 3, Subtext support)
-        const create_soapi_fields = (prefix: string, show_subtexts = false) => {
+        // Helper for creating SOAPI textarea groups with conditional subtexts
+        const create_soapi_fields = (prefix: string) => {
             const container = document.createElement('div')
             container.className = 'sn-cppt-fields'
 
             const fields = [
-                { key: 'subjective', label: 'S', subtext: '"Anamnesis" > "Riwayat Penyakit Sekarang (Umum)"' },
-                { key: 'objective', label: 'O', subtext: '"Pemeriksaan" > "Fisik"' },
-                { key: 'assessment', label: 'A', subtext: '"Penilaian" > "Diagnosis"' },
-                { key: 'planning', label: 'P', subtext: '"Perencanaan" > "Terapi"' },
-                { key: 'instruction', label: 'I', subtext: '' },
+                { key: 'subjective', label: '(S)', subtext: '"Anamnesis" > "RPS (Umum)"' },
+                { key: 'objective', label: '(O)', subtext: '"Pemeriksaan" > "Fisik"' },
+                { key: 'assessment', label: '(A)', subtext: '"Penilaian" > "Diagnosis"' },
+                { key: 'planning', label: '(P)', subtext: '"Perencanaan" > "Terapi"' },
+                { key: 'instruction', label: '(I)', subtext: '' },
             ]
 
             const textareas: Record<string, HTMLTextAreaElement> = {}
+            const labels: Record<string, HTMLLabelElement> = {}
 
             fields.forEach(({ key, label, subtext }) => {
                 const group = document.createElement('div')
@@ -1220,13 +1221,9 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
 
                 const lbl = document.createElement('label')
                 lbl.className = 'sn-cppt-field-label'
-
-                // Item 4: Subtext styling for source path
-                if (show_subtexts && subtext) {
-                    lbl.innerHTML = `${label} <span class="sn-cppt-field-subtext">(${subtext})</span>`
-                } else {
-                    lbl.textContent = label
-                }
+                lbl.dataset.baseLabel = label
+                lbl.dataset.subtext = subtext
+                lbl.textContent = label
 
                 const txt = document.createElement('textarea')
                 txt.className = `sn-cppt-textarea sn-cppt-${prefix}-${key}`
@@ -1238,9 +1235,10 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
                 container.appendChild(group)
 
                 textareas[key] = txt
+                labels[key] = lbl
             })
 
-            return { container, textareas }
+            return { container, textareas, labels }
         }
 
         const sanitize_html_text = (text: string) => {
@@ -1251,14 +1249,13 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
                 .trim()
         }
 
-        // ==================== LEFT SECTION: CPPT Saat Ini (Item 3) ====================
+        // ==================== LEFT SECTION: CPPT Saat Ini ====================
         const left_section = document.createElement('div')
         left_section.className = 'sn-cppt-column sn-cppt-left'
 
         const left_header = document.createElement('div')
         left_header.className = 'sn-cppt-col-header'
 
-        // Item 5: Top Row (Title + Controls)
         const left_top_row = document.createElement('div')
         left_top_row.className = 'sn-cppt-top-row'
 
@@ -1286,37 +1283,35 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         left_top_row.appendChild(left_title)
         left_top_row.appendChild(left_controls)
 
-        // Item 5: Stacked Dropdown & Meta under top row
         const left_select = document.createElement('select')
         left_select.className = 'sn-cppt-select'
 
         const left_meta = document.createElement('div')
         left_meta.className = 'sn-cppt-col-meta'
-        left_meta.textContent = 'Loading...'
+        left_meta.textContent = 'Memuat...'
 
         left_header.appendChild(left_top_row)
         left_header.appendChild(left_select)
         left_header.appendChild(left_meta)
 
-        const { container: left_fields_container, textareas: left_textareas } = create_soapi_fields('left', false)
+        const { container: left_fields_container, textareas: left_textareas } = create_soapi_fields('left')
 
         left_section.appendChild(left_header)
         left_section.appendChild(left_fields_container)
 
-        // ==================== RIGHT SECTION: Draft CPPT (Item 3) ====================
+        // ==================== RIGHT SECTION: Draft CPPT ====================
         const right_section = document.createElement('div')
         right_section.className = 'sn-cppt-column sn-cppt-right'
 
         const right_header = document.createElement('div')
         right_header.className = 'sn-cppt-col-header'
 
-        // Item 5: Top Row (Title + Controls)
         const right_top_row = document.createElement('div')
         right_top_row.className = 'sn-cppt-top-row'
 
         const right_title = document.createElement('div')
         right_title.className = 'sn-cppt-col-title'
-        right_title.textContent = 'Draft CPPT'
+        right_title.textContent = 'Riwayat CPPT'
 
         const right_controls = document.createElement('div')
         right_controls.className = 'sn-cppt-controls'
@@ -1328,8 +1323,8 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
 
         const right_draft_btn = document.createElement('button')
         right_draft_btn.type = 'button'
-        right_draft_btn.className = 'sn-btn sn-btn-primary'
-        right_draft_btn.textContent = 'Draft'
+        right_draft_btn.className = 'sn-btn sn-btn-dup'
+        right_draft_btn.textContent = 'Dup'
         right_draft_btn.disabled = true
 
         right_controls.appendChild(right_refresh_btn)
@@ -1338,14 +1333,18 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         right_top_row.appendChild(right_title)
         right_top_row.appendChild(right_controls)
 
+        const right_select = document.createElement('select')
+        right_select.className = 'sn-cppt-select'
+
         const right_meta = document.createElement('div')
         right_meta.className = 'sn-cppt-col-meta'
         right_meta.textContent = '-'
 
         right_header.appendChild(right_top_row)
+        right_header.appendChild(right_select)
         right_header.appendChild(right_meta)
 
-        const { container: right_fields_container, textareas: right_textareas } = create_soapi_fields('right', true)
+        const { container: right_fields_container, textareas: right_textareas, labels: right_labels } = create_soapi_fields('right')
 
         right_section.appendChild(right_header)
         right_section.appendChild(right_fields_container)
@@ -1362,7 +1361,7 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         let baseline_right_soapi = { subjective: '', objective: '', assessment: '', planning: '', instruction: '' }
         let is_mine = false
 
-        // ==================== State & Validation Helpers ====================
+        // State & Validation Helpers
         const check_left_dirty = () => {
             const is_changed =
                 left_textareas.subjective.value !== baseline_left_soapi.subjective ||
@@ -1371,10 +1370,8 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
                 left_textareas.planning.value !== baseline_left_soapi.planning ||
                 left_textareas.instruction.value !== baseline_left_soapi.instruction
 
-            // Item 2: Use asterisk (*) instead of (changed)
             left_title.textContent = is_changed ? 'CPPT Saat Ini*' : 'CPPT Saat Ini'
 
-            // Item 6: If not mine, hide buttons completely. If mine, control visibility & disabled states.
             if (!is_mine) {
                 left_save_btn.style.display = 'none'
                 right_draft_btn.style.display = 'none'
@@ -1382,10 +1379,7 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
                 left_save_btn.style.display = 'inline-block'
                 right_draft_btn.style.display = 'inline-block'
 
-                // Disable Save if no changes, enable when changed
                 left_save_btn.disabled = !is_changed
-
-                // Item 1: Draft button is always enabled if active CPPT is mine
                 right_draft_btn.disabled = false
             }
         }
@@ -1398,12 +1392,26 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
                 right_textareas.planning.value !== baseline_right_soapi.planning ||
                 right_textareas.instruction.value !== baseline_right_soapi.instruction
 
-            // Item 2: Use asterisk (*) instead of (changed)
-            right_title.textContent = is_changed ? 'Draft CPPT*' : 'Draft CPPT'
+            right_title.textContent = is_changed ? 'Riwayat CPPT*' : 'Riwayat CPPT'
         }
 
         Object.values(left_textareas).forEach((txt) => txt.addEventListener('input', check_left_dirty))
         Object.values(right_textareas).forEach((txt) => txt.addEventListener('input', check_right_dirty))
+
+        // Update subtext labels based on whether "Kunjungan Saat Ini" is chosen
+        const update_right_subtexts = (is_kunjungan_mode: boolean) => {
+            Object.keys(right_labels).forEach((key) => {
+                const lbl = right_labels[key]
+                const base = lbl.dataset.baseLabel || ''
+                const subtext = lbl.dataset.subtext || ''
+
+                if (is_kunjungan_mode && subtext) {
+                    lbl.innerHTML = `${base} <span class="sn-cppt-field-subtext">(${subtext})</span>`
+                } else {
+                    lbl.textContent = base
+                }
+            })
+        }
 
         const populate_left_cppt = (item: any) => {
             selected_cppt_item = item
@@ -1446,75 +1454,53 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
             check_right_dirty()
         }
 
-        // ==================== Left Data Loader (CPPT List) ====================
-        const load_left_cppt = async () => {
-            const visit_id = this.parent.data.patient.visit_id
-            if (!visit_id) return
+        // Populate Right Section when a historical CPPT is chosen
+        const populate_right_cppt = (item: any) => {
+            update_right_subtexts(false)
 
-            left_refresh_btn.disabled = true
-            left_save_btn.disabled = true
-            left_select.disabled = true
-            left_meta.textContent = 'Loading...'
-
-            Object.values(left_textareas).forEach((txt) => (txt.disabled = true))
-
-            try {
-                const res: any = await this.parent.api_client.api_request({
-                    base_path: 'medicalrecord/cppt',
-                    payload: new RequestPayloadBuilder({
-                        KUNJUNGAN: visit_id,
-                        STATUS: 1,
-                        page: 1,
-                        start: 0,
-                        limit: 25,
-                    }),
-                })
-
-                left_select.innerHTML = ''
-                if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
-                    cppt_list = res.data
-                    cppt_list.forEach((item: any) => {
-                        const id = item.ID || '?'
-                        const author = item.REFERENSI?.TENAGA_MEDIS?.NAMA || 'Unknown'
-                        const opt = document.createElement('option')
-                        opt.value = id
-                        opt.textContent = `${id} (${author})`
-                        left_select.appendChild(opt)
-                    })
-
-                    populate_left_cppt(cppt_list[0])
-                } else {
-                    cppt_list = []
-                    populate_left_cppt(null)
-                }
-            } catch (err) {
-                console.error('Error fetching CPPT:', err)
-                left_meta.textContent = 'Gagal memuat data.'
-            } finally {
-                left_refresh_btn.disabled = false
-                left_select.disabled = false
-                Object.values(left_textareas).forEach((txt) => (txt.disabled = false))
+            if (!item) {
+                baseline_right_soapi = { subjective: '', objective: '', assessment: '', planning: '', instruction: '' }
+                Object.values(right_textareas).forEach((txt) => (txt.value = ''))
+                right_meta.textContent = 'Belum ada data.'
+                check_right_dirty()
+                return
             }
+
+            const doctor_info = item.REFERENSI?.TENAGA_MEDIS
+            const room_info = item.REFERENSI?.KUNJUNGAN?.REFERENSI?.RUANGAN
+            const author_name = doctor_info?.NAMA || '-'
+
+            baseline_right_soapi = {
+                subjective: sanitize_html_text(item.SUBYEKTIF || item.SUBYEKTIF_ORI),
+                objective: sanitize_html_text(item.OBYEKTIF || item.OBYEKTIF_ORI),
+                assessment: sanitize_html_text(item.ASSESMENT || item.ASSESMENT_ORI),
+                planning: sanitize_html_text(item.PLANNING || item.PLANNING_ORI),
+                instruction: sanitize_html_text(item.INSTRUKSI || item.INSTRUKSI_ORI),
+            }
+
+            right_textareas.subjective.value = baseline_right_soapi.subjective
+            right_textareas.objective.value = baseline_right_soapi.objective
+            right_textareas.assessment.value = baseline_right_soapi.assessment
+            right_textareas.planning.value = baseline_right_soapi.planning
+            right_textareas.instruction.value = baseline_right_soapi.instruction
+
+            const room_name = room_info?.DESKRIPSI || '-'
+            const formatted_date = this.format_date(item.TANGGAL || '')
+            right_meta.textContent = `${room_name} | ${formatted_date}`
+
+            check_right_dirty()
         }
 
-        left_select.addEventListener('change', () => {
-            const selected_id = left_select.value
-            const target_item = cppt_list.find((item) => String(item.ID) === selected_id)
-            if (target_item) {
-                populate_left_cppt(target_item)
-            }
-        })
-
-        // ==================== Right Data Loader (4 Endpoints Extraction) ====================
-        const load_right_cppt = async () => {
+        // ==================== Right Section: 4 Endpoints Extraction ====================
+        const extract_kunjungan_saat_ini = async () => {
             const visit_id = this.parent.data.patient.visit_id
             const reg_id = this.parent.data.patient.reg_id
 
             if (!visit_id) return
 
+            update_right_subtexts(true)
             right_refresh_btn.disabled = true
-            right_draft_btn.disabled = true
-            right_meta.textContent = 'Extracting data...'
+            right_meta.textContent = 'Memuat data...'
 
             Object.values(right_textareas).forEach((txt) => (txt.disabled = true))
 
@@ -1594,7 +1580,111 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
             }
         }
 
-        // Action Listeners
+        // Synchronize Right Select Dropdown options with Left CPPT List + "Kunjungan Saat Ini"
+        const sync_right_dropdown_options = () => {
+            const current_val = right_select.value
+
+            right_select.innerHTML = ''
+
+            // Permanent Option #1: Kunjungan Saat Ini
+            const default_opt = document.createElement('option')
+            default_opt.value = 'KUNJUNGAN_SAAT_INI'
+            default_opt.textContent = 'Kunjungan Saat Ini'
+            right_select.appendChild(default_opt)
+
+            // Historical CPPT options
+            cppt_list.forEach((item: any) => {
+                const id = item.ID || '?'
+                const author = item.REFERENSI?.TENAGA_MEDIS?.NAMA || 'Unknown'
+                const opt = document.createElement('option')
+                opt.value = String(id)
+                opt.textContent = `${id} (${author})`
+                right_select.appendChild(opt)
+            })
+
+            // Retain selection if valid, otherwise fallback to "Kunjungan Saat Ini"
+            if (current_val && Array.from(right_select.options).some((o) => o.value === current_val)) {
+                right_select.value = current_val
+            } else {
+                right_select.value = 'KUNJUNGAN_SAAT_INI'
+            }
+        }
+
+        // ==================== Left Data Loader (CPPT List) ====================
+        const load_left_cppt = async () => {
+            const visit_id = this.parent.data.patient.visit_id
+            if (!visit_id) return
+
+            left_refresh_btn.disabled = true
+            left_save_btn.disabled = true
+            left_select.disabled = true
+            left_meta.textContent = 'Memuat...'
+
+            Object.values(left_textareas).forEach((txt) => (txt.disabled = true))
+
+            try {
+                const res: any = await this.parent.api_client.api_request({
+                    base_path: 'medicalrecord/cppt',
+                    payload: new RequestPayloadBuilder({
+                        KUNJUNGAN: visit_id,
+                        STATUS: 1,
+                        page: 1,
+                        start: 0,
+                        limit: 25,
+                    }),
+                })
+
+                left_select.innerHTML = ''
+                if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
+                    cppt_list = res.data
+                    cppt_list.forEach((item: any) => {
+                        const id = item.ID || '?'
+                        const author = item.REFERENSI?.TENAGA_MEDIS?.NAMA || 'Unknown'
+                        const opt = document.createElement('option')
+                        opt.value = String(id)
+                        opt.textContent = `${id} (${author})`
+                        left_select.appendChild(opt)
+                    })
+
+                    populate_left_cppt(cppt_list[0])
+                } else {
+                    cppt_list = []
+                    populate_left_cppt(null)
+                }
+
+                // Sync options to right select dropdown
+                sync_right_dropdown_options()
+            } catch (err) {
+                console.error('Error fetching CPPT:', err)
+                left_meta.textContent = 'Gagal memuat data.'
+            } finally {
+                left_refresh_btn.disabled = false
+                left_select.disabled = false
+                Object.values(left_textareas).forEach((txt) => (txt.disabled = false))
+            }
+        }
+
+        // Left Dropdown Change Handler
+        left_select.addEventListener('change', () => {
+            const selected_id = left_select.value
+            const target_item = cppt_list.find((item) => String(item.ID) === selected_id)
+            if (target_item) {
+                populate_left_cppt(target_item)
+            }
+        })
+
+        // Right Dropdown Change Handler
+        right_select.addEventListener('change', () => {
+            const val = right_select.value
+            if (val === 'KUNJUNGAN_SAAT_INI') {
+                extract_kunjungan_saat_ini()
+            } else {
+                const target_item = cppt_list.find((item) => String(item.ID) === val)
+                populate_right_cppt(target_item)
+            }
+        })
+
+        // Action Handlers
         left_refresh_btn.addEventListener('click', () => load_left_cppt())
 
         left_save_btn.addEventListener('click', async () => {
@@ -1643,8 +1733,18 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
             }
         })
 
-        right_refresh_btn.addEventListener('click', () => load_right_cppt())
+        // Right Refresh Button triggers dynamic reload based on active right selection
+        right_refresh_btn.addEventListener('click', () => {
+            const val = right_select.value
+            if (val === 'KUNJUNGAN_SAAT_INI') {
+                extract_kunjungan_saat_ini()
+            } else {
+                const target_item = cppt_list.find((item) => String(item.ID) === val)
+                populate_right_cppt(target_item)
+            }
+        })
 
+        // Draft Button Handler: Copies Right SOAPI onto Left SOAPI
         right_draft_btn.addEventListener('click', () => {
             if (!is_mine) return
 
@@ -1659,7 +1759,7 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
 
         // Initial Executions
         load_left_cppt()
-        load_right_cppt()
+        extract_kunjungan_saat_ini()
 
         return layout
     }

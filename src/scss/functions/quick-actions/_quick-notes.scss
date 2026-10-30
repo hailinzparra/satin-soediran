@@ -399,6 +399,16 @@
                                 background-color: $color-slate-100;
                             }
                         }
+
+                        &.sn-btn-dup {
+                            background-color: $color-emerald-600;
+                            color: #fff;
+                            border-color: $color-emerald-700;
+
+                            &:hover {
+                                background-color: $color-emerald-700;
+                            }
+                        }
                     }
                 }
             }
