@@ -189,7 +189,7 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
                 label: `MRN: ${ctx?.mrn || '---'}`,
                 raw_id: ctx?.mrn || '',
             }),
-            get_processing_msg: () => 'Opening Quick Notes window...',
+            get_processing_msg: () => 'Opening Quick Notes...',
             get_success_msg: () => 'Quick Notes opened',
             get_error_msg: () => 'Failed to open Quick Notes',
         },
@@ -677,12 +677,7 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         modal_container.className = 'sn-quick-notes-container'
 
         const qn_diagnosis_accordion = this.create_accordion_item('Diagnosis', true, this.render_qn_diagnosis_content())
-
-        const cppt_content = document.createElement('div')
-        cppt_content.style.fontSize = '12px'
-        cppt_content.style.color = '#64748b'
-        cppt_content.textContent = 'CPPT will be here.'
-        const qn_cppt_accordion = this.create_accordion_item('CPPT', false, cppt_content)
+        const qn_cppt_accordion = this.create_accordion_item('CPPT', false, this.render_qn_cppt_content())
 
         modal_container.appendChild(qn_diagnosis_accordion)
         modal_container.appendChild(qn_cppt_accordion)
@@ -1143,7 +1138,7 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         dup_btn.type = 'button'
         dup_btn.className = 'sn-btn-action sn-btn-dup'
         dup_btn.textContent = 'DUP'
-        dup_btn.title = 'Duplikasi ke Diagnosis Saat Ini'
+        // dup_btn.title = 'Duplikasi ke Diagnosis Saat Ini'
         dup_btn.addEventListener('click', (e) => {
             e.stopPropagation()
             on_duplicate(diagnosis_text)
@@ -1154,12 +1149,12 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         copy_btn.type = 'button'
         copy_btn.className = 'sn-btn-action sn-btn-copy'
         copy_btn.textContent = 'COPY'
-        copy_btn.title = 'Salin Diagnosis ke Clipboard'
+        // copy_btn.title = 'Salin Diagnosis ke Clipboard'
         copy_btn.addEventListener('click', async (e) => {
             e.stopPropagation()
             const copied = await copy_text(diagnosis_text)
             if (copied) {
-                Toast.pop('Diagnosis tersalin ke clipboard', 'success')
+                Toast.pop('Diagnosis tersalin', 'success')
             } else {
                 Toast.pop('Gagal menyalin diagnosis', 'error')
             }
@@ -1186,6 +1181,487 @@ export class QuickActionsInjector extends SatinBaseFunctionInjector<QuickActions
         card.appendChild(body_el)
 
         return card
+    }
+
+    private render_qn_cppt_content(): HTMLElement {
+        const layout = document.createElement('div')
+        layout.className = 'sn-cppt-layout'
+
+        const raw_user_name = this.parent.data.user_name || ''
+        const current_user_name = raw_user_name.trim().toLowerCase()
+
+        // Top Banner: Logged in user info
+        const user_bar = document.createElement('div')
+        user_bar.className = 'sn-cppt-user-bar'
+        user_bar.textContent = `Logged in as: ${raw_user_name || '-'}`
+        layout.appendChild(user_bar)
+
+        const columns_container = document.createElement('div')
+        columns_container.className = 'sn-cppt-columns-container'
+
+        // Helper for creating SOAPI textarea groups (Item 5: Default rows = 3, Subtext support)
+        const create_soapi_fields = (prefix: string, show_subtexts = false) => {
+            const container = document.createElement('div')
+            container.className = 'sn-cppt-fields'
+
+            const fields = [
+                { key: 'subjective', label: 'S', subtext: '"Anamnesis" > "Riwayat Penyakit Sekarang (Umum)"' },
+                { key: 'objective', label: 'O', subtext: '"Pemeriksaan" > "Fisik"' },
+                { key: 'assessment', label: 'A', subtext: '"Penilaian" > "Diagnosis"' },
+                { key: 'planning', label: 'P', subtext: '"Perencanaan" > "Terapi"' },
+                { key: 'instruction', label: 'I', subtext: '' },
+            ]
+
+            const textareas: Record<string, HTMLTextAreaElement> = {}
+
+            fields.forEach(({ key, label, subtext }) => {
+                const group = document.createElement('div')
+                group.className = 'sn-cppt-field-group'
+
+                const lbl = document.createElement('label')
+                lbl.className = 'sn-cppt-field-label'
+
+                // Item 4: Subtext styling for source path
+                if (show_subtexts && subtext) {
+                    lbl.innerHTML = `${label} <span class="sn-cppt-field-subtext">(${subtext})</span>`
+                } else {
+                    lbl.textContent = label
+                }
+
+                const txt = document.createElement('textarea')
+                txt.className = `sn-cppt-textarea sn-cppt-${prefix}-${key}`
+                txt.rows = 3
+                txt.placeholder = `Masukkan ${label.toLowerCase()}...`
+
+                group.appendChild(lbl)
+                group.appendChild(txt)
+                container.appendChild(group)
+
+                textareas[key] = txt
+            })
+
+            return { container, textareas }
+        }
+
+        const sanitize_html_text = (text: string) => {
+            if (!text) return ''
+            return text
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/&nbsp;/g, ' ')
+                .trim()
+        }
+
+        // ==================== LEFT SECTION: CPPT Saat Ini (Item 3) ====================
+        const left_section = document.createElement('div')
+        left_section.className = 'sn-cppt-column sn-cppt-left'
+
+        const left_header = document.createElement('div')
+        left_header.className = 'sn-cppt-col-header'
+
+        // Item 5: Top Row (Title + Controls)
+        const left_top_row = document.createElement('div')
+        left_top_row.className = 'sn-cppt-top-row'
+
+        const left_title = document.createElement('div')
+        left_title.className = 'sn-cppt-col-title'
+        left_title.textContent = 'CPPT Saat Ini'
+
+        const left_controls = document.createElement('div')
+        left_controls.className = 'sn-cppt-controls'
+
+        const left_refresh_btn = document.createElement('button')
+        left_refresh_btn.type = 'button'
+        left_refresh_btn.className = 'sn-btn sn-btn-secondary'
+        left_refresh_btn.textContent = 'Refresh'
+
+        const left_save_btn = document.createElement('button')
+        left_save_btn.type = 'button'
+        left_save_btn.className = 'sn-btn sn-btn-primary'
+        left_save_btn.textContent = 'Simpan'
+        left_save_btn.disabled = true
+
+        left_controls.appendChild(left_refresh_btn)
+        left_controls.appendChild(left_save_btn)
+
+        left_top_row.appendChild(left_title)
+        left_top_row.appendChild(left_controls)
+
+        // Item 5: Stacked Dropdown & Meta under top row
+        const left_select = document.createElement('select')
+        left_select.className = 'sn-cppt-select'
+
+        const left_meta = document.createElement('div')
+        left_meta.className = 'sn-cppt-col-meta'
+        left_meta.textContent = 'Loading...'
+
+        left_header.appendChild(left_top_row)
+        left_header.appendChild(left_select)
+        left_header.appendChild(left_meta)
+
+        const { container: left_fields_container, textareas: left_textareas } = create_soapi_fields('left', false)
+
+        left_section.appendChild(left_header)
+        left_section.appendChild(left_fields_container)
+
+        // ==================== RIGHT SECTION: Draft CPPT (Item 3) ====================
+        const right_section = document.createElement('div')
+        right_section.className = 'sn-cppt-column sn-cppt-right'
+
+        const right_header = document.createElement('div')
+        right_header.className = 'sn-cppt-col-header'
+
+        // Item 5: Top Row (Title + Controls)
+        const right_top_row = document.createElement('div')
+        right_top_row.className = 'sn-cppt-top-row'
+
+        const right_title = document.createElement('div')
+        right_title.className = 'sn-cppt-col-title'
+        right_title.textContent = 'Draft CPPT'
+
+        const right_controls = document.createElement('div')
+        right_controls.className = 'sn-cppt-controls'
+
+        const right_refresh_btn = document.createElement('button')
+        right_refresh_btn.type = 'button'
+        right_refresh_btn.className = 'sn-btn sn-btn-secondary'
+        right_refresh_btn.textContent = 'Refresh'
+
+        const right_draft_btn = document.createElement('button')
+        right_draft_btn.type = 'button'
+        right_draft_btn.className = 'sn-btn sn-btn-primary'
+        right_draft_btn.textContent = 'Draft'
+        right_draft_btn.disabled = true
+
+        right_controls.appendChild(right_refresh_btn)
+        right_controls.appendChild(right_draft_btn)
+
+        right_top_row.appendChild(right_title)
+        right_top_row.appendChild(right_controls)
+
+        const right_meta = document.createElement('div')
+        right_meta.className = 'sn-cppt-col-meta'
+        right_meta.textContent = '-'
+
+        right_header.appendChild(right_top_row)
+        right_header.appendChild(right_meta)
+
+        const { container: right_fields_container, textareas: right_textareas } = create_soapi_fields('right', true)
+
+        right_section.appendChild(right_header)
+        right_section.appendChild(right_fields_container)
+
+        columns_container.appendChild(left_section)
+        columns_container.appendChild(right_section)
+
+        layout.appendChild(columns_container)
+
+        // State Tracking
+        let cppt_list: any[] = []
+        let selected_cppt_item: any = null
+        let baseline_left_soapi = { subjective: '', objective: '', assessment: '', planning: '', instruction: '' }
+        let baseline_right_soapi = { subjective: '', objective: '', assessment: '', planning: '', instruction: '' }
+        let is_mine = false
+
+        // ==================== State & Validation Helpers ====================
+        const check_left_dirty = () => {
+            const is_changed =
+                left_textareas.subjective.value !== baseline_left_soapi.subjective ||
+                left_textareas.objective.value !== baseline_left_soapi.objective ||
+                left_textareas.assessment.value !== baseline_left_soapi.assessment ||
+                left_textareas.planning.value !== baseline_left_soapi.planning ||
+                left_textareas.instruction.value !== baseline_left_soapi.instruction
+
+            // Item 2: Use asterisk (*) instead of (changed)
+            left_title.textContent = is_changed ? 'CPPT Saat Ini*' : 'CPPT Saat Ini'
+
+            // Item 6: If not mine, hide buttons completely. If mine, control visibility & disabled states.
+            if (!is_mine) {
+                left_save_btn.style.display = 'none'
+                right_draft_btn.style.display = 'none'
+            } else {
+                left_save_btn.style.display = 'inline-block'
+                right_draft_btn.style.display = 'inline-block'
+
+                // Disable Save if no changes, enable when changed
+                left_save_btn.disabled = !is_changed
+
+                // Item 1: Draft button is always enabled if active CPPT is mine
+                right_draft_btn.disabled = false
+            }
+        }
+
+        const check_right_dirty = () => {
+            const is_changed =
+                right_textareas.subjective.value !== baseline_right_soapi.subjective ||
+                right_textareas.objective.value !== baseline_right_soapi.objective ||
+                right_textareas.assessment.value !== baseline_right_soapi.assessment ||
+                right_textareas.planning.value !== baseline_right_soapi.planning ||
+                right_textareas.instruction.value !== baseline_right_soapi.instruction
+
+            // Item 2: Use asterisk (*) instead of (changed)
+            right_title.textContent = is_changed ? 'Draft CPPT*' : 'Draft CPPT'
+        }
+
+        Object.values(left_textareas).forEach((txt) => txt.addEventListener('input', check_left_dirty))
+        Object.values(right_textareas).forEach((txt) => txt.addEventListener('input', check_right_dirty))
+
+        const populate_left_cppt = (item: any) => {
+            selected_cppt_item = item
+            if (!item) {
+                baseline_left_soapi = { subjective: '', objective: '', assessment: '', planning: '', instruction: '' }
+                Object.values(left_textareas).forEach((txt) => (txt.value = ''))
+                left_meta.textContent = 'Belum ada data CPPT.'
+                is_mine = false
+                check_left_dirty()
+                check_right_dirty()
+                return
+            }
+
+            const doctor_info = item.REFERENSI?.TENAGA_MEDIS
+            const room_info = item.REFERENSI?.KUNJUNGAN?.REFERENSI?.RUANGAN
+            const author_name = doctor_info?.NAMA || '-'
+            const author_lower = author_name.toLowerCase()
+
+            is_mine = current_user_name !== '' && author_lower.includes(current_user_name)
+
+            baseline_left_soapi = {
+                subjective: sanitize_html_text(item.SUBYEKTIF || item.SUBYEKTIF_ORI),
+                objective: sanitize_html_text(item.OBYEKTIF || item.OBYEKTIF_ORI),
+                assessment: sanitize_html_text(item.ASSESMENT || item.ASSESMENT_ORI),
+                planning: sanitize_html_text(item.PLANNING || item.PLANNING_ORI),
+                instruction: sanitize_html_text(item.INSTRUKSI || item.INSTRUKSI_ORI),
+            }
+
+            left_textareas.subjective.value = baseline_left_soapi.subjective
+            left_textareas.objective.value = baseline_left_soapi.objective
+            left_textareas.assessment.value = baseline_left_soapi.assessment
+            left_textareas.planning.value = baseline_left_soapi.planning
+            left_textareas.instruction.value = baseline_left_soapi.instruction
+
+            const room_name = room_info?.DESKRIPSI || '-'
+            const formatted_date = this.format_date(item.TANGGAL || '')
+            left_meta.textContent = `${room_name} | ${formatted_date}`
+
+            check_left_dirty()
+            check_right_dirty()
+        }
+
+        // ==================== Left Data Loader (CPPT List) ====================
+        const load_left_cppt = async () => {
+            const visit_id = this.parent.data.patient.visit_id
+            if (!visit_id) return
+
+            left_refresh_btn.disabled = true
+            left_save_btn.disabled = true
+            left_select.disabled = true
+            left_meta.textContent = 'Loading...'
+
+            Object.values(left_textareas).forEach((txt) => (txt.disabled = true))
+
+            try {
+                const res: any = await this.parent.api_client.api_request({
+                    base_path: 'medicalrecord/cppt',
+                    payload: new RequestPayloadBuilder({
+                        KUNJUNGAN: visit_id,
+                        STATUS: 1,
+                        page: 1,
+                        start: 0,
+                        limit: 25,
+                    }),
+                })
+
+                left_select.innerHTML = ''
+                if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
+                    cppt_list = res.data
+                    cppt_list.forEach((item: any) => {
+                        const id = item.ID || '?'
+                        const author = item.REFERENSI?.TENAGA_MEDIS?.NAMA || 'Unknown'
+                        const opt = document.createElement('option')
+                        opt.value = id
+                        opt.textContent = `${id} (${author})`
+                        left_select.appendChild(opt)
+                    })
+
+                    populate_left_cppt(cppt_list[0])
+                } else {
+                    cppt_list = []
+                    populate_left_cppt(null)
+                }
+            } catch (err) {
+                console.error('Error fetching CPPT:', err)
+                left_meta.textContent = 'Gagal memuat data.'
+            } finally {
+                left_refresh_btn.disabled = false
+                left_select.disabled = false
+                Object.values(left_textareas).forEach((txt) => (txt.disabled = false))
+            }
+        }
+
+        left_select.addEventListener('change', () => {
+            const selected_id = left_select.value
+            const target_item = cppt_list.find((item) => String(item.ID) === selected_id)
+            if (target_item) {
+                populate_left_cppt(target_item)
+            }
+        })
+
+        // ==================== Right Data Loader (4 Endpoints Extraction) ====================
+        const load_right_cppt = async () => {
+            const visit_id = this.parent.data.patient.visit_id
+            const reg_id = this.parent.data.patient.reg_id
+
+            if (!visit_id) return
+
+            right_refresh_btn.disabled = true
+            right_draft_btn.disabled = true
+            right_meta.textContent = 'Extracting data...'
+
+            Object.values(right_textareas).forEach((txt) => (txt.disabled = true))
+
+            try {
+                const [anamnesis_res, fisik_res, diagnosis_res, terapi_res]: any[] = await Promise.all([
+                    this.parent.api_client.api_request({
+                        base_path: 'medicalrecord/anamnesis',
+                        payload: new RequestPayloadBuilder({
+                            KUNJUNGAN: visit_id,
+                            PENDAFTARAN: reg_id,
+                            page: 1,
+                            start: 0,
+                            limit: 25,
+                        }),
+                    }).catch(() => null),
+
+                    this.parent.api_client.api_request({
+                        base_path: 'medicalrecord/pemeriksaan/fisik',
+                        payload: new RequestPayloadBuilder({
+                            KUNJUNGAN: visit_id,
+                            PENDAFTARAN: reg_id,
+                            page: 1,
+                            start: 0,
+                            limit: 25,
+                        }),
+                    }).catch(() => null),
+
+                    this.parent.api_client.api_request({
+                        base_path: 'medicalrecord/penilaian/diagnosis',
+                        payload: new RequestPayloadBuilder({
+                            KUNJUNGAN: visit_id,
+                            page: 1,
+                            start: 0,
+                            limit: 25,
+                        }),
+                    }).catch(() => null),
+
+                    this.parent.api_client.api_request({
+                        base_path: 'medicalrecord/perencanaan/rencanaterapi',
+                        payload: new RequestPayloadBuilder({
+                            KUNJUNGAN: visit_id,
+                            page: 1,
+                            start: 0,
+                            limit: 25,
+                        }),
+                    }).catch(() => null),
+                ])
+
+                const extracted_s = anamnesis_res?.data?.[0]?.DESKRIPSI ? sanitize_html_text(anamnesis_res.data[0].DESKRIPSI) : '-'
+                const extracted_o = fisik_res?.data?.[0]?.DESKRIPSI ? sanitize_html_text(fisik_res.data[0].DESKRIPSI) : '-'
+                const extracted_a = diagnosis_res?.data?.[0]?.DIAGNOSIS ? sanitize_html_text(diagnosis_res.data[0].DIAGNOSIS) : '-'
+                const extracted_p = terapi_res?.data?.[0]?.DESKRIPSI ? sanitize_html_text(terapi_res.data[0].DESKRIPSI) : '-'
+                const extracted_i = '-'
+
+                baseline_right_soapi = {
+                    subjective: extracted_s,
+                    objective: extracted_o,
+                    assessment: extracted_a,
+                    planning: extracted_p,
+                    instruction: extracted_i,
+                }
+
+                right_textareas.subjective.value = baseline_right_soapi.subjective
+                right_textareas.objective.value = baseline_right_soapi.objective
+                right_textareas.assessment.value = baseline_right_soapi.assessment
+                right_textareas.planning.value = baseline_right_soapi.planning
+                right_textareas.instruction.value = baseline_right_soapi.instruction
+
+                right_meta.textContent = 'Berhasil memuat.'
+            } catch (err) {
+                console.error('Error extracting right CPPT data:', err)
+                right_meta.textContent = 'Gagal memuat.'
+            } finally {
+                right_refresh_btn.disabled = false
+                Object.values(right_textareas).forEach((txt) => (txt.disabled = false))
+                check_right_dirty()
+            }
+        }
+
+        // Action Listeners
+        left_refresh_btn.addEventListener('click', () => load_left_cppt())
+
+        left_save_btn.addEventListener('click', async () => {
+            if (!selected_cppt_item || !selected_cppt_item.ID) return
+
+            const cppt_id = selected_cppt_item.ID
+            left_save_btn.disabled = true
+            left_refresh_btn.disabled = true
+
+            const payload = {
+                SELESAI_RAWAT_BERSAMA: '0',
+                SUBYEKTIF: left_textareas.subjective.value,
+                OBYEKTIF: left_textareas.objective.value,
+                ASSESMENT: left_textareas.assessment.value,
+                PLANNING: left_textareas.planning.value,
+                INSTRUKSI: left_textareas.instruction.value,
+                DOKTER_TBAK_OR_SBAR: null,
+                ID: Number(cppt_id),
+            }
+
+            try {
+                const save_res: any = await this.parent.api_client.api_request({
+                    base_path: `medicalrecord/cppt/${cppt_id}`,
+                    payload: new RequestPayloadBuilder(),
+                }, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                })
+
+                if (save_res && (save_res.success || save_res.status === 200)) {
+                    Toast.pop('CPPT berhasil disimpan', Toast.type.success)
+                    await load_left_cppt()
+                } else {
+                    Toast.pop('Gagal menyimpan CPPT', Toast.type.error)
+                    left_save_btn.disabled = false
+                    left_refresh_btn.disabled = false
+                }
+            } catch (err) {
+                console.error('Error saving CPPT:', err)
+                Toast.pop('Terjadi kesalahan saat menyimpan CPPT', Toast.type.error)
+                left_save_btn.disabled = false
+                left_refresh_btn.disabled = false
+            }
+        })
+
+        right_refresh_btn.addEventListener('click', () => load_right_cppt())
+
+        right_draft_btn.addEventListener('click', () => {
+            if (!is_mine) return
+
+            left_textareas.subjective.value = right_textareas.subjective.value
+            left_textareas.objective.value = right_textareas.objective.value
+            left_textareas.assessment.value = right_textareas.assessment.value
+            left_textareas.planning.value = right_textareas.planning.value
+            left_textareas.instruction.value = right_textareas.instruction.value
+
+            check_left_dirty()
+        })
+
+        // Initial Executions
+        load_left_cppt()
+        load_right_cppt()
+
+        return layout
     }
 
     private format_date(date_str: string): string {

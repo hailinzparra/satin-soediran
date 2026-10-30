@@ -8,9 +8,11 @@ import {
 import { QuickActionsExtractor } from './extractor'
 import { QuickActionsInjector } from './injector'
 import { SatinApiContext } from '../../api/context'
+import { SoediranEvent } from '../../types/api/soediran/base'
 
 export interface QuickActionsData {
     patient: PatientContext
+    user_name: string
 }
 
 export class QuickActionsFunction extends SatinBaseFunction<QuickActionsConfig, QuickActionsExtractor, QuickActionsInjector> {
@@ -25,6 +27,7 @@ export class QuickActionsFunction extends SatinBaseFunction<QuickActionsConfig, 
             reg_id: '',
             visit_id: '',
         },
+        user_name: '',
     }
 
     public reset_data(): void {
@@ -45,7 +48,16 @@ export class QuickActionsFunction extends SatinBaseFunction<QuickActionsConfig, 
     }
 
     bind_events() {
+        window.addEventListener(SoediranEvent.IsAuthenticate, (custom_event) => {
+            this.extract_user_auth(custom_event as CustomEvent<any>)
+        })
         this.injector.bind_events()
         this.extractor.bind_events()
+    }
+
+    extract_user_auth(custom_event: CustomEvent<any>): void {
+        const data = custom_event.detail?.data
+        if (!data || !data.NAME) return
+        this.data.user_name = data.NAME.trim()
     }
 }

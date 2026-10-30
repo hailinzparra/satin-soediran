@@ -214,6 +214,10 @@
             display: flex;
             flex-direction: column;
             gap: 0.6rem;
+            height: 250px;
+            min-height: 250px;
+            max-height: 250px;
+            overflow-y: auto;
         }
     }
 
@@ -302,6 +306,177 @@
             .sn-diagnosis-value {
                 font-weight: 600;
                 color: $color-slate-900;
+            }
+        }
+    }
+}
+
+.sn-cppt-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    width: 100%;
+    box-sizing: border-box;
+
+    .sn-cppt-user-bar {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: $color-slate-600;
+        background-color: $color-slate-100;
+        padding: 0.3rem 0.6rem;
+        border-radius: 0.25rem;
+        border: 1px solid $color-slate-200;
+    }
+
+    .sn-cppt-columns-container {
+        display: flex;
+        gap: 0.75rem;
+        width: 100%;
+    }
+
+    .sn-cppt-column {
+        flex: 1;
+        width: 50%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+        padding: 0.6rem;
+        background-color: $color-slate-50;
+        border: 1px solid $color-slate-200;
+        border-radius: 0.375rem;
+        box-sizing: border-box;
+
+        .sn-cppt-col-header {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+
+            .sn-cppt-top-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+
+                .sn-cppt-col-title {
+                    font-size: 0.8125rem;
+                    font-weight: 700;
+                    color: $color-slate-800;
+                }
+
+                .sn-cppt-controls {
+                    display: flex;
+                    gap: 0.35rem;
+
+                    .sn-btn {
+                        padding: 0.25rem 0.6rem;
+                        font-size: 0.75rem;
+                        font-weight: 600;
+                        border-radius: 0.25rem;
+                        cursor: pointer;
+                        border: 1px solid transparent;
+                        transition: all 0.15s ease;
+
+                        &:disabled {
+                            opacity: 0.5;
+                            cursor: not-allowed;
+                        }
+
+                        &.sn-btn-primary {
+                            background-color: $color-blue-600;
+                            color: #fff;
+                            border-color: $color-blue-600;
+
+                            &:hover:not(:disabled) {
+                                background-color: $color-blue-700;
+                            }
+                        }
+
+                        &.sn-btn-secondary {
+                            background-color: #fff;
+                            color: $color-slate-700;
+                            border-color: $color-slate-300;
+
+                            &:hover:not(:disabled) {
+                                background-color: $color-slate-100;
+                            }
+                        }
+                    }
+                }
+            }
+
+            .sn-cppt-select {
+                font-size: 0.75rem;
+                padding: 0.2rem 0.35rem;
+                border: 1px solid $color-slate-300;
+                border-radius: 0.25rem;
+                background-color: #fff;
+                color: $color-slate-900;
+                outline: none;
+                width: 100%;
+                box-sizing: border-box;
+                @include satin-font-main;
+
+                &:focus {
+                    border-color: $color-blue-600;
+                }
+
+                &:disabled {
+                    background-color: $color-slate-100;
+                    cursor: not-allowed;
+                }
+            }
+
+            .sn-cppt-col-meta {
+                font-size: 0.71875rem;
+                color: $color-slate-500;
+                font-weight: 500;
+            }
+        }
+
+        .sn-cppt-fields {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+
+            .sn-cppt-field-group {
+                display: flex;
+                flex-direction: column;
+                gap: 0.2rem;
+
+                .sn-cppt-field-label {
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    color: $color-slate-700;
+
+                    .sn-cppt-field-subtext {
+                        font-weight: 400;
+                        font-size: 0.6875rem;
+                        color: $color-slate-500;
+                    }
+                }
+
+                .sn-cppt-textarea {
+                    width: 100%;
+                    padding: 0.4rem;
+                    font-size: 0.78125rem;
+                    border: 1px solid $color-slate-300;
+                    border-radius: 0.25rem;
+                    box-sizing: border-box;
+                    resize: vertical;
+                    color: $color-slate-900;
+                    background-color: #fff;
+                    @include satin-font-main;
+
+                    &:focus {
+                        outline: none;
+                        border-color: $color-blue-600;
+                    }
+
+                    &:disabled {
+                        background-color: $color-slate-100;
+                        color: $color-slate-500;
+                        cursor: not-allowed;
+                    }
+                }
             }
         }
     }
