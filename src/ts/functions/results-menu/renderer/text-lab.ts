@@ -28,6 +28,7 @@ export class ResultsMenuTextLabRenderer {
         btn_template_flat_no_unit: HTMLButtonElement | null
         btn_template_interna_1: HTMLButtonElement | null
         btn_template_interna_2: HTMLButtonElement | null
+        btn_template_tht: HTMLButtonElement | null
         btn_template_reset: HTMLButtonElement | null
         btn_select_all_dates: HTMLButtonElement | null
         date_filter_container: HTMLDivElement | null
@@ -52,6 +53,7 @@ export class ResultsMenuTextLabRenderer {
             btn_template_flat_no_unit: null,
             btn_template_interna_1: null,
             btn_template_interna_2: null,
+            btn_template_tht: null,
             btn_template_reset: null,
             btn_select_all_dates: null,
             date_filter_container: null,
@@ -116,6 +118,7 @@ export class ResultsMenuTextLabRenderer {
         this.el.btn_template_flat_no_unit = create_element('button', { classes: ResultsMenuTextLabRenderer.classes.btn_macro, text: 'Templat: Rata & Tanpa Satuan' })
         this.el.btn_template_interna_1 = create_element('button', { classes: ResultsMenuTextLabRenderer.classes.btn_macro, text: 'Templat: Interna 1' })
         this.el.btn_template_interna_2 = create_element('button', { classes: ResultsMenuTextLabRenderer.classes.btn_macro, text: 'Templat: Interna 2' })
+        this.el.btn_template_tht = create_element('button', { classes: ResultsMenuTextLabRenderer.classes.btn_macro, text: 'Templat: THT' })
         this.el.btn_template_reset = create_element('button', { classes: `${ResultsMenuTextLabRenderer.classes.btn_macro} reset`, text: 'Reset Filter' })
 
         this.el.btn_copy = create_element('button', { classes: ResultsMenuTextLabRenderer.classes.btn_action, text: 'SALIN TEKS' })
@@ -138,6 +141,7 @@ export class ResultsMenuTextLabRenderer {
                 // this.el.btn_template_flat_no_unit,
                 this.el.btn_template_interna_1,
                 this.el.btn_template_interna_2,
+                this.el.btn_template_tht,
                 this.el.btn_template_reset,
             ]),
             this.el.btn_copy,
@@ -254,6 +258,24 @@ export class ResultsMenuTextLabRenderer {
             this.config.shorten_values = false
             this.config.split_by_date = false
             this.config.short_date = false
+            this.config.reverse_dates = true
+            this.sync_ui_button_states()
+            this.sync_text_output()
+        })
+
+        this.el.btn_template_tht?.addEventListener('click', () => {
+            this.config.short_name = false
+            this.config.flattened = true
+            this.config.use_letters = true
+            this.config.omit_empty = true
+            this.config.show_unit_label = false
+            this.config.show_unit_value = false
+            this.config.hide_panel_name = true
+            this.config.hide_symbol = false
+            this.config.single_line = true
+            this.config.shorten_values = false
+            this.config.split_by_date = true
+            this.config.short_date = true
             this.config.reverse_dates = true
             this.sync_ui_button_states()
             this.sync_text_output()
